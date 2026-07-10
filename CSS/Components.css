@@ -1,0 +1,31 @@
+/* 组件 */
+.vertical {
+    /* 垂直布局 */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.link-button {
+    /* 带框的按钮 */
+    display: inline-flex;
+    align-items: center;
+
+    /* 图标与文字的间距 */
+    gap: 8px;
+
+    text-align: left;
+    border: 1px solid #2f2f2f;
+    background-color: #0B0B10;
+    border-radius: 14px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 493;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.13s ease, color 0.5s ease;
+}
+.link-button:hover {
+    background-color: #1f1f23;
+    color: var(--theme-color);
+}

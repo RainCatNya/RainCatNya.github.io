@@ -1,0 +1,18 @@
+/* 变量 */
+:root {
+    --theme-color: #bb66e2;
+}
+
+/* Override内容 */
+body {
+    margin: 0px;
+    background-color: #12161d;
+    font-family: 'Satoshi', 'Noto Sans SC';
+    font-size: 16px;
+    font-weight: 500;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
