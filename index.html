@@ -3,26 +3,53 @@
     <head>
         <meta charset="utf-8">
         <title>雨猫 Profile</title>
-        <link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
+        <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
         <link rel="stylesheet" href="CSS/Acersic.css">
+        <link rel="stylesheet" href="CSS/Animation.css">
         <link rel="stylesheet" href="CSS/Components.css">
         <link rel="stylesheet" href="CSS/Utilities.css">
     </head>
 
-    <body class="vertical" style="padding-top: 50px;">
-        <a class="fade-up link-button text-noselect" href="https://space.bilibili.com/651662573?spm_id_from=333.1387.0.0" target="_blank">
-            个人B站
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M5 12h14"/>
-            <path d="M12 5l7 7-7 7"/>
-        </svg>
-        </a>
-        <a class="fade-up link-button text-noselect" href="poem.html">
-            神秘小诗
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M5 12h14"/>
-            <path d="M12 5l7 7-7 7"/>
-        </svg>
-        </a>
+    <body class="VLayout" style="padding-top: 90px;">
+    <div style="
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 500px;
+        background-image: 
+            linear-gradient(to bottom, 
+                rgba(187, 102, 226, 0.15) 0%, 
+                transparent 100%
+            ),
+            url('');
+        background-size: cover;
+        background-position: center top;
+        background-repeat: no-repeat;
+        pointer-events: none;
+        z-index: 0;
+    "></div>
+
+        <div class="ani-hoverHover" style="border-radius: 50%; padding: 4px; display: flex;">
+            <img src="assets/avatar.jpg" alt="猫猫头像uwu" class="round-image noselect ani-fadeup" style="width: 110px; height: 110px;">
+        </div>
+        <p class="ani-fadeup" style="animation-delay: 0.08s; margin-top: 8px; font-size: 1.8rem; font-weight: 500;">雨猫 RainCatNya</p>
+
+        <div class="HLayout">
+            <a class="link-button noselect ani-fadeup" style="animation-delay: 0.15s;" href="https://space.bilibili.com/651662573?spm_id_from=333.1387.0.0" target="_blank">
+                个人B站
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M5 12h14"/>
+                    <path d="M12 5l7 7-7 7"/>
+                </svg>
+            </a>
+            <a class="link-button noselect ani-fadeup" style="animation-delay: 0.21s;" href="poem.html">
+                神秘小诗
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M5 12h14"/>
+                    <path d="M12 5l7 7-7 7"/>
+                </svg>
+            </a>
+        </div>
     </body>
 </html>

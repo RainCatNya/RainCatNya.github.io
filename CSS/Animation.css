@@ -1,0 +1,23 @@
+/* 动画 */
+.ani-fadeup {
+    /* 基础渐入动画 */
+    animation: fadeUp 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes fadeUp {
+    0% {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.ani-hoverHover {
+    transition: transform 0.25s ease;
+}
+
+.ani-hoverHover:hover {
+    transform: translateY(-4px)
+}

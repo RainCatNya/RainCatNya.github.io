@@ -1,5 +1,5 @@
-/* 文本样式 */
-.text-noselect {
+/* 组件样式 */
+.noselect {
     /* 无法选中 */
     -webkit-user-select: none; /* Safari */
     -moz-user-select: none; /* Firefox */
@@ -7,17 +7,11 @@
     user-select: none;
 }
 
-/* 渐入动画 */
-.fade-up {
-    animation: fadeUp 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-@keyframes fadeUp {
-    0% {
-        opacity: 0;
-        transform: translateY(30px);
-    }
-    100% {
-        opacity: 1;
-        transform: translateY(0);
-    }
+/* 图片样式 */
+.round-image {
+    /* 圆形 */
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    overflow: hidden;
 }

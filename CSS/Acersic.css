@@ -1,15 +1,23 @@
 /* 变量 */
 :root {
     --theme-color: #bb66e2;
+    --bg--color: #12161d;
+
+    --font-size: 17px;
+    --font-size-button: 14px;
+
+    --spacing-small: 8px;
+    --spacing-medium: 16px;
+    --spacing-large: 24px;
 }
 
 /* Override内容 */
 body {
     margin: 0px;
-    background-color: #12161d;
+    background-color: var(--bg--color);
     font-family: 'Satoshi', 'Noto Sans SC';
-    font-size: 16px;
-    font-weight: 500;
+    font-size: var(--font-size);
+    color: white;
 }
 
 a {
