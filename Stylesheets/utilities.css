@@ -1,0 +1,21 @@
+.No-slc{
+    /* 禁止用户选中元素 */
+    user-select: none
+}
+
+.center-of-all {
+    justify-content: center; /* 水平居中 */
+    align-items: center; /* 垂直居中 */
+}
+
+.gradient-text {
+    /* 使指定文字拥有渐变 */
+    background: linear-gradient(to right, var(--gradtext-left), var(--gradtext-right));
+    background-clip: text;
+    -webkit-background-clip: text; /* Safari适配 */
+    -webkit-text-fill-color: transparent; /* 文字颜色设置为透明 */
+
+    /* 默认值 */
+    --gradtext-left: #ff6a00;
+    --gradtext-right: #ee0979;
+}

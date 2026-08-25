@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+
+<html lang="zh">
+    <head>
+        <!-- 元数据定义 -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=0.8">
+        <base href="/" target="_blank">
+        <title>Foraine 资源</title>
+
+        <!-- 加载资源 -->
+        <link rel="icon" type="image/x-icon" href="assets/Icon/foraine-icon-v2.png">
+        <link rel="stylesheet" href="Stylesheets/main.css">
+        <script src="Scripts/utilities.js"></script>
+        <script src="Scripts/component.js"></script>
+
+        <!-- 调用方法 -->
+        <script>
+            //Verify_AccessDevice() // 拒绝手机端访问
+        </script>
+    </head>
+
+<!-- Dialog框体 -->
+<div id="modal-overlay" class="modal-overlay">
+  <div class="modal-panel">
+    <div id="modal-content" style="user-select: text"></div>
+  </div>
+</div>
+
+    <body>
+        <div class="image-bg" style="top: -300px; --bg-image: url('/assets/Image/Dawn.jpg')"></div>
+        <div style="height: 200px;" ></div>
+
+        <!-- foraine 欢迎图标 --> 
+        <div  class="panel No-slc" align="center">
+            <img src="assets/Icon/foraine-icon-v2.png" style="height: 128px;">
+            <h1>资源中心</h1>
+            <p>来自星尘的礼物</p>
+        </div>
+
+        <div style="height: 20px;" ></div>
+
+        <!-- 链接 -->
+        <div  class="panel No-slc" align="center">
+            浏览..
+            <div style="height: 10px;" ></div>
+            <div style="display: flex; justify-content: center;">
+                <button dialog-inf onclick="fill_text(id='modal-content', url='Resource/Rainy/detail.txt')">Rainy工具箱</button>
+                        |  
+                <button dialog-inf onclick="fill_text(id='modal-content', url='Resource/Minecraft-Server-Resourcepack/detail.txt')">Minecraft服务器资源包</button>
+            </div>
+        </div>
+
+        <div style="height: 20px;" ></div>
+
+        <div  class="panel No-slc" align="center">
+            <button onclick="window.location.href='/index.html'">返回</button>
+        </div>
+        
+        <!-- 占位符 -->
+        <div style="height: 100px;" ></div>
+    </body>
+</html>

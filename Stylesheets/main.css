@@ -1,0 +1,110 @@
+/* 导入其他Stylesheet */
+@import url('panel.css');
+@import url('utilities.css');
+
+/* 使用自定字体 */
+@font-face {
+    font-family: 'XNSFengTangHaiYanWei';
+    src: url('/assets/Web-Font/XNSFengTangHaiYanWei.woff2');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+*, *::before, *::after {
+  /* 全局定义 */
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box; /* 使用border-box计算宽高 */
+  color: #ffffff;
+  font-size: 28px
+}
+
+body {
+  background: linear-gradient(to bottom, #4c4333 0%, #111111 100%);
+  background-color: #1a1a1a;
+  min-height: 100vh;
+  user-select: none /* 防止在视图的最左侧出现光标什么的 */
+}
+
+a {
+  text-decoration: none;
+}
+a :hover{
+  text-decoration: line-through;
+}
+
+
+:root {
+  /* 定义变量 */
+  --zlayer-top: 10086; /* 层级: 覆盖所有元素 */
+  --zlayer-tuf: -2 /* 层级: 被所有元素覆盖 */
+}
+
+.image-bg {
+  /* 实验:在顶层显示一张图片, 并拥有一个从上到下的透明度渐变 */
+  /* 位置参数: --bg-image(图片url) */
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  background-image: var(--bg-image); 
+  background-size: cover;
+  background-position: top center;
+  background-repeat: no-repeat;
+
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    black 0%,
+    black 40%,
+    transparent 90%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    black 0%,
+    black 40%,
+    transparent 90%
+  );
+
+  pointer-events: none;
+  z-index: -2; /* 不能投TUF的图层层级 */
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(6px);
+  visibility: hidden;
+  opacity: 0;
+  transition: 0.2s;
+}
+.modal-overlay.show {
+  visibility: visible;
+  opacity: 1;
+}
+.modal-panel {
+  position: relative;
+  background: #000;
+  border: 1px solid #444;
+  border-radius: 16px;
+  padding: 30px;
+  max-width: 80vw;
+  max-height: 80vh;
+  overflow: auto;
+}
+.modal-close {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 32px;
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+}

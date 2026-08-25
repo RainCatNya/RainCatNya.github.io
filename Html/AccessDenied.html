@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh">
+    <head>
+        <!-- 基本设置 -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=0.8">
+        <title>Foraine 拒绝访问</title>
+        <link rel="stylesheet" href="../Stylesheets/main.css">
+        <link rel="icon" type="image/x-icon" href="/assets/Icon/foraine-icon-v2.png">
+    </head>
+
+    <body>
+        <div style="height: 200px"></div>
+        <div align="center" id="content">
+            <img src="/assets/Icon/foraine-icon-v2.png" alt="Foraine Icon">
+            <h1 id="access-title"></h1>
+            <p id="access-message"></p>
+        </div>
+
+        <script>
+            // 解析重定向原因(reason)并显示不同信息
+            const params = new URLSearchParams(window.location.search);
+            const reason = params.get('reason') || 'default';
+            switch (reason) {
+                case 'mobile':
+                    content.innerHTML = `
+                        <div align="center" class="center-of-all panel No-slc">
+                            <img src="/assets/foraine-icon-v2.png" style="height: 128px;">
+                            <h1>暂不支持手机端访问</h1>
+                            <p style="color:#cccccc">请使用电脑端查看</p>
+                        </div>
+                        <div style="height: 450px;" ></div>
+                        <p style="font-size: 16px; color:#555555">其实是Raincat懒得做适配（</p>
+                    `;
+                    break
+                case 'page-not-found':
+                    // 在这里重写content
+                    content.innerHTML = `
+                        <div align="center" class="center-of-all panel No-slc">
+                            <img src="/assets/foraine-icon-v2.png" style="height: 128px;">
+                            <h1>页面不存在</h1>
+                            <p style="color:#cccccc">你所访问的页面迷失于星海中了..</p>
+                        </div>
+                    `;
+                    break
+                default:
+                    content.innerHTML = `
+                        <div align="center" class="center-of-all panel No-slc">
+                            <img src="/assets/foraine-icon-v2.png" style="height: 128px;">
+                            <h1>拒绝访问</h1>
+                            <p style="color:#cccccc">由于某些原因, 您无法访问此页面</p>
+                        </div>
+                    `;
+                    break
+            }
+        </script>
+
+    </body>
+</html>

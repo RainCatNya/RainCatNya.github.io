@@ -1,0 +1,28 @@
+.panel {
+    background-color: #000000;
+    width: fit-content;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+input, textarea {
+    background-color: transparent;
+    border: none;
+    border-bottom: solid #555555 2px;
+    outline: none;
+}
+input:focus, textarea:focus {
+    border-bottom: solid #945EEC 2px;
+}
+
+button {
+    padding-bottom: 1px;
+    padding-top: 1px;
+    padding-right: 7px;
+    padding-left: 7px;
+    background-color: transparent;
+    border: none;
+}
+button:hover {
+    background-color: rgba(234, 228, 234, 0.2);
+}

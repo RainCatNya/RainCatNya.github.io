@@ -1,0 +1,9 @@
+<font class="gradient-text No-slc" style="font-family: 'XNSFengTangHaiYanWei', sans-serif;">变更日志</font>
+<font style="color:#999999; font-size:20px; user-select: none">8/26</font>
+<font style="font-size:23px">启用浏览器资源缓存，大幅优化访问速度；修复指定字体显示问题
+<font style="color:#999999; font-size:20px; user-select: none">8/23</font>
+<font class="gradient-text" style="font-size:23px; --gradtext-left:#bf514e; --gradtext-right:#e297a4">千里生日更新</font>
+<font style="color:#999999; font-size:20px; user-select: none">8/22</font>
+域名重定向至 RainCatNya.github.io
+购买新域名 foraine.xyz
+<font style="color:#999999; font-size:20px; user-select: none">完整日志  </font><button onclick="window.location.href='Html/change-Log.html'" style="font-size:20px; user-select: none">查看</button>
