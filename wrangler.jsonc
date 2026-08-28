@@ -1,0 +1,43 @@
+{
+  "name": "foraine",
+  "compatibility_date": "2026-08-27",
+  "main": "./worker.js",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "not_found_handling": "none"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "foraine-db",
+      "database_id": "4b212cea-af1a-4663-aba3-54df8bd418c6"
+    }
+  ],
+  "routes": [
+    {
+      "pattern": "foraine.xyz",
+      "custom_domain": true
+    },
+    {
+      "pattern": "www.foraine.xyz",
+      "custom_domain": true
+    }
+  ],
+      "observability": {
+        "enabled": false,
+        "head_sampling_rate": 1,
+        "redact_query_string": false,
+        "logs": {
+          "enabled": true,
+          "head_sampling_rate": 1,
+          "persist": true,
+          "invocation_logs": true
+        },
+        "traces": {
+          "enabled": false,
+          "persist": true,
+          "head_sampling_rate": 1
+        }
+    }
+}

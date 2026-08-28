@@ -1,0 +1,5 @@
+<font class="gradient-text No-slc" style="font-family: 'XNSFengTangHaiYanWei', sans-serif;">网站简介</font>
+<font style="font-family: 'XNSFengTangHaiYanWei'">foraine？
+为了下一场雨的宁静，
+也为了一杯咖啡的小憩。
+<font style="color:#aaaaaa">Copyright (c) 2026 RaincatNya & fiflizc. All rights reserved.

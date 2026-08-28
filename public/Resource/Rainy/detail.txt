@@ -1,0 +1,8 @@
+<font style="color:#ffffff; font-size:23px; font-family: 'XNSFengTangHaiYanWei', sans-serif;">Rainy工具箱
+<span style="color:#bbbbbb; font-size:23px; font-family: 'XNSFengTangHaiYanWei', sans-serif;">作者 <span style="color:#985bc4; font-size:23px; font-family: 'XNSFengTangHaiYanWei', sans-serif;">雨猫Raincat<span style="color:#bbbbbb; font-size:23px; font-family: 'XNSFengTangHaiYanWei', sans-serif;">
+一个支持插件, 样式自定义, （几乎）无所不能的工具箱</font>
+<font style="color:#ffffff; font-size:23px; font-family: 'XNSFengTangHaiYanWei'">仅提供项目源码</font>
+
+<span style="color:#999999; font-size:20px">0.9b <span style="color:#e99700; font-size:20px">beta</span>
+<span style="color:#bbbbbb; font-size:23px; font-family: 'XNSFengTangHaiYanWei', sans-serif;">对架构的优化尝试, 并不稳定</span>
+<a href="/Resource/Rainy/Rainy 0.9b.zip" style="font-size:20px">下载 Rainy 0.9b.zip </a>

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+
+<html lang="zh">
+    <head>
+        <!-- 元数据定义 -->
+        <meta charset="utf-8">
+        <meta content="width=device-width, initial-scale=1.0, shrink-to-fit=no" name="viewport">
+        <title>Foraine</title>
+
+        <!-- 加载资源 -->
+        <link rel="icon" type="image/x-icon" href="/assets/Icon/foraine-icon-v2.png">
+        <link rel="stylesheet" href="Stylesheets/main.css">
+        <script src="Scripts/utilities.js"></script>
+        <script src="Scripts/component.js"></script>
+
+        <!-- 调用方法 -->
+        <script>
+            // Verify_AccessDevice() // 拒绝手机端访问
+        </script>
+    </head>
+
+    <body>
+        <!-- Dialog框体 -->
+        <div id="modal-overlay" class="modal-overlay">
+            <div class="modal-panel">
+                <div id="modal-content" style="user-select: text"></div>
+            </div>
+        </div>
+
+        <div class="image-bg" style="top: -300px; --bg-image: url('/assets/Image/Minecraft-bg.png')"></div>
+        <div style="height: 200px;" ></div>  
+
+        <!-- foraine 欢迎图标 --> 
+        <div  class="panel No-slc" align="center">
+            <img src="assets/Icon/foraine-icon-v2.png" style="height: 128px;">
+            <h1>欢迎来到 foraine !</h1>
+            <p>在这里尽情发挥你的创意</p>
+        </div>
+
+        <div style="height: 20px;" ></div>
+
+        <!-- [实验] Tips -->
+        <div  class="panel" align="center">
+            <h1 class="No-slc">Tips</h1>
+            <p id=tip-text style="user-select: text"></p>
+        </div>
+        <script>
+            fill_text(id='tip-text', url='assets/Text/tips.txt', read='line')
+        </script>
+
+        <div style="height: 20px;" ></div>
+
+        <!-- 链接 -->
+        <div  class="panel modal-panel No-slc" align="center">
+            <p>foraine 宇宙</p>
+            <div style="height: 10px;" ></div>
+            <div style="display: flex; justify-content: center;">
+                <button dialog onclick="fill_text(id='modal-content', url='assets/Text/foraine-description.txt')">简介</button>
+                        |  
+                <button dialog onclick="dialog_setText(url='assets/Text/foraine-change-log.txt')">施工日志</button>
+                        | 
+                <button onclick="window.location.href='Html/Resource.html'">资源</button>
+            </div>
+        </div>
+    </body>
+</html>
