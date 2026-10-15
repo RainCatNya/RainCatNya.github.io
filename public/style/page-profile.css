@@ -1,0 +1,1245 @@
+/* ==================== page-profile.css ==================== */
+/* 个人页专属样式, 只在 /profile.html 加载 (由 split_css.py 从 main.css 拆出, 改这里别改 main.css) */
+
+/* ==================== 个人页 ==================== */
+/* 形制参考 GitHub 的个人页: 左侧一列资料 (无框体, 平铺在背景上) + 右侧选项卡; 细节做了减法, 不照抄它的灰白 */
+.profile-layout {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--sp-10); /* 左右两栏间隔, 20px 时两栏糊成一片 */
+    width: 100%;
+    max-width: 1040px;
+}
+.profile-side {
+    flex: 0 0 260px;
+    min-width: 0;
+}
+/* 右栏文字收一档: 20 → 18; 别用 zoom 实现 —— zoom 不参与父级 flex 计算, 放大后的内容会直接压到另一栏上; 要缩放就按项换算 */
+.profile-main .profile-tab,
+.profile-main .profile-field-body input,
+.profile-main .profile-field-body textarea,
+.profile-main .btn,
+.profile-main .btn-ok,
+.profile-main .btn-outline,
+.profile-main .btn-gh,
+.profile-main .btn-acrylic,
+.profile-main .btn-acrylic-danger,
+.profile-main .btn-danger,
+.profile-main .article-card .article-title {
+    font-size: var(--fs-18);
+}
+.profile-main .profile-field {
+    padding: var(--sp-3) 0;
+}
+/* 头像占满整列并切成圆 (用 aspect-ratio 而不是写死高度, 窄屏也能自适应); 桌面下它是侧栏高度的
+   大头, 直接决定页脚能不能落到折叠线以上 (vh/dvh/媒体查询都不跟着 zoom 除, 只有 --vh-full 可用) */
+.profile-avatar {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 1px solid var(--c-border);
+    background: rgba(255, 255, 255, 0.04);
+}
+/* 头像最大边长的反算式只挂桌面布局: 窄屏是单列铺满, 不该被压小 */
+/* 必须放在上面那条之后: 同特异性 (0,1,0) 时后面的赢, 放前面会被 width: 100% 盖掉; 只在极矮的窗口上才微微压一下 */
+@media (min-width: 901px) {
+    .profile-avatar {
+        width: min(100%, max(220px, calc(var(--vh-full, 100vh) - 420px)));
+        margin-inline: auto;   /* 比列窄时居中, 与下面左对齐的文字不冲突 */
+    }
+}
+.profile-nickname {
+    margin-top: var(--sp-4);
+    font-size: var(--fs-28);
+}
+/* @用户名 · 角色 */
+.profile-meta {
+    margin-top: var(--sp-1);
+    font-size: var(--fs-20);
+    color: var(--c-text-dim);
+}
+.profile-bio {
+    margin-top: var(--sp-3);
+    font-size: var(--fs-20);
+    color: var(--c-text-muted);
+    user-select: text;
+    white-space: pre-wrap; /* 简介允许换行 (编辑框里回车就是换行) */
+}
+/* 「编辑资料」通栏按钮已删 (资料页签里直接就能改), 别再加回 */
+.profile-stat {
+    display: flex;
+    align-items: center;
+    gap: var(--gap-micro);
+    margin-top: var(--sp-4);
+    font-size: var(--fs-14);
+    /* 计数小字 → 纯白 */
+    color: var(--c-text);
+}
+.profile-stat svg {
+    width: 16px;
+    height: 16px;
+    flex: none;
+    opacity: 0.75;
+}
+/* 追随者那行紧跟「N 篇文章」, 不要每行都留 16px */
+.profile-stat + .profile-stat {
+    margin-top: var(--sp-2);
+}
+/* 看别人主页时才出现的动作: 关注 / 私聊 */
+.profile-actions {
+    display: flex;
+    gap: var(--sp-3);
+    flex-wrap: wrap;
+    margin-top: var(--sp-4);
+}
+/* 图标信息列表 (本地时间 / 邮箱 / GitHub / 自定义信息) */
+.profile-info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    margin-top: var(--sp-3);
+}
+.profile-info-row {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--sp-2);
+    font-size: var(--fs-14);
+    color: var(--c-text-muted);
+    user-select: text;
+    word-break: break-word;
+}
+.profile-info-row svg {
+    width: 16px;
+    height: 16px;
+    flex: none;
+    margin-top: 3px; /* 与首行文字的视觉中线对齐 */
+    opacity: 0.7;
+}
+.profile-info-row a {
+    color: var(--c-accent);
+}
+.profile-info-row a:hover {
+    text-decoration: underline;
+}
+
+/* 右侧: 选项卡 + 内容 */
+.profile-main {
+    flex: 1;
+    min-width: 0;
+}
+
+/* 选项卡行: 选中项的紫色横条由 .profile-tab-indicator 滑过去; 页签套一层黑亚克力 (有背景图时字会看不清); 指示条 left: 0 与 JS 的 offsetLeft 都相对 padding box, 加了左右内边距仍对得准 */
+.profile-tabs {
+    position: relative;
+    display: flex;
+    gap: var(--sp-5);
+    padding: 0 var(--sp-4);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-md);
+    background: rgba(0, 0, 0, 0.38);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+.profile-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: var(--sp-3) 0;
+    font-size: var(--fs-20);
+    color: var(--c-text-dim);
+    background: none;
+    border: none;
+    transition: color 0.2s;
+}
+.profile-tab:hover {
+    background: none; /* 覆盖全局 button:hover 的灰底, 页签不要方块反馈 */
+    color: var(--c-text);
+}
+.profile-tab.active {
+    color: var(--c-text);
+}
+/* 滑动的紫色横条: JS 只改 width 与 translateX, 动画交给 transition */
+.profile-tab-indicator {
+    position: absolute;
+    left: 0;
+    bottom: -1px; /* 压在底边线上, 盖住 1px */
+    height: 2px;
+    width: 0;
+    border-radius: 2px;
+    background: var(--c-accent);
+    transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+                width 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+}
+/* 切页签时内容渐入: 往哪边切就从哪边滑进来 */
+@keyframes tab-enter-right {
+    from { opacity: 0; transform: translateX(18px); }
+    to   { opacity: 1; transform: none; }
+}
+@keyframes tab-enter-left {
+    from { opacity: 0; transform: translateX(-18px); }
+    to   { opacity: 1; transform: none; }
+}
+.profile-panel.tab-enter-right { animation: tab-enter-right 0.28s ease both; }
+.profile-panel.tab-enter-left  { animation: tab-enter-left 0.28s ease both; }
+.tab-count {
+    padding: 0 var(--sp-2);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.1);
+    font-size: var(--fs-14);
+    font-weight: normal;
+    color: var(--c-text-muted);
+    line-height: 1.6;
+}
+.profile-panel {
+    padding-top: var(--sp-4);
+}
+
+/* 关掉动画偏好 */
+@media (prefers-reduced-motion: reduce) {
+    .profile-panel.tab-enter-right,
+    .profile-panel.tab-enter-left {
+        animation: none;
+    }
+    .profile-tab-indicator {
+        transition: none;
+    }
+}
+
+/* 设置项: 左标签 + 右内容, 行间一条细线; 用 flex-start 而不是 center —— 标签要恒贴第一行 (center 时两行按钮那栏的文字会掉到正中间), 单行栏靠 .profile-field-label 的 min-height 视觉居中 */
+.profile-field {
+    /* 一行控件的高度 (输入框与按钮都是这个高度), 标签拿它对齐第一行 */
+    --field-row-h: calc(var(--fs-18) * 1.6 + 20px);
+    display: flex;
+    align-items: flex-start;
+    gap: var(--sp-4);
+    padding: var(--sp-4) 0;
+    border-bottom: 1px solid var(--c-border);
+}
+.profile-field:last-of-type {
+    border-bottom: none;
+}
+.profile-field-label {
+    flex: 0 0 108px;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    font-size: var(--fs-14);
+    /* 压在有背景图的页面上要提亮一档, --c-text-dim 看不清 */
+    color: var(--c-text-muted);
+}
+/* 只有「内容以一行控件开头」的行才把标签撑成控件高度 (纯文字行别撑, 会把标签压到文字下面); 必须限定宽屏 —— 窄屏竖排后标签自己就是一行, 它的 :has() 特异性 (0,4,0) 会压过 main-media.css 里的复位 */
+@media (min-width: 901px) {
+  .profile-field:has(.profile-field-body > :is(input, textarea, select, button, .profile-avatar-thumb, .account-row, .ctx-card)) .profile-field-label {
+    min-height: var(--field-row-h);
+  }
+}
+/* 「账号」那行直接子元素是两个 .account-row 包层, 要把它也列进上面的选择器, 否则那行标签比别的行高出一截 */
+/* 图标列: 固定在标签最左侧, 保证所有行的文字左边缘对齐 */
+.profile-field-icon {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--c-text-dim);
+}
+.profile-field-icon svg {
+    width: 20px;
+    height: 20px;
+}
+/* 多行输入框 (简介 / 其他信息) 不用单独写: 上面那套「标签恒贴第一行」对 textarea 也成立 */
+.profile-field-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+}
+/* 单行输入框默认按 size=20 算宽度, 会比撑满的 textarea 短一截 —— 这里让它撑满整列 */
+.profile-field-body input {
+    flex: 1;
+    min-width: 0;
+}
+.profile-field-body textarea {
+    flex: 1;
+    min-height: 0;
+    line-height: 1.6; /* 与单行输入框保持一致, 一行高的时候两行才对齐 */
+    resize: none; /* 高度由 autoGrow() 算, 不让用户手动拖 */
+}
+/* 资料表单的输入框不单独写外观: 全站 input/textarea 就是这套黑亚克力 (见 main.css「表单控件」) */
+
+/* 已验证的邮箱: 框留着但不可编辑 (readonly), 文字压暗一档示意锁定值 */
+.profile-field-body input.is-locked {
+    color: var(--c-text-dim);
+    cursor: default;
+}
+
+/* ---------- 邮箱栏第二行的提示面板 ---------- */
+/* 没绑邮箱 = 红边, 绑了没验证 = 黄边, 都是黑亚克力; 靠 :has 才给这一栏开 wrap, 否则输入框与面板挤在同一行 */
+.profile-field-body:has(.email-notice) {
+    flex-wrap: wrap;
+}
+.email-notice {
+    flex: 1 0 100%;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    padding: var(--sp-3) var(--sp-4);
+    background: rgba(0, 0, 0, 0.42);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 2px solid var(--c-danger-strong);
+    border-radius: var(--radius-md);
+}
+/* 黄边用 --c-warn, 不是 --c-warn-strong (后者压在黑亚克力上偏褐, 不像黄边) */
+.email-notice.is-warn {
+    border-color: var(--c-warn);
+}
+.email-notice .btn-acrylic {
+    flex: none;
+}
+.email-notice-text {
+    margin: 0;
+    font-size: var(--fs-14);
+    line-height: 1.6;
+    color: var(--c-text);
+    white-space: pre-line; /* 文案里的 \n 要真的换行 */
+}
+
+/* ---------- 位置行的「定位」按钮 ---------- */
+/* 与输入框等高: .profile-field-body 是 align-items: center, 要靠 align-self: stretch 撑到那一行最高控件的高度 */
+.profile-locate {
+    flex: none;
+    align-self: stretch;
+    padding: 0 var(--sp-4);
+    font-size: var(--fs-18);
+    white-space: nowrap;
+}
+
+/* ==================== 个性化 (主页背景 / 聊天背景) ==================== */
+/* 原来是资料表单里的一行, 现在搬成「个性化」页签的「背景」栏 (.custom-section) */
+.custom-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+}
+/* 页签内容里的区块小标题 (与 .custom-section-title 同字号), 下面紧跟 .tab-head 那行计数 */
+.tab-section-title {
+    margin: 0 0 var(--sp-2);
+    font-size: var(--fs-22);
+    font-weight: bold;
+    color: var(--c-text);
+}
+/* 同一个页签里的第二块小标题要上间距, 否则直接贴在上一块卡片底下 (第一个不用, 它顶着页签上沿) */
+.tab-section-title:not(:first-child) {
+    margin-top: var(--sp-8);
+}
+.custom-section-title {
+    font-size: var(--fs-22);
+    font-weight: bold;
+    color: var(--c-text);
+    margin: 0;
+}
+.custom-section-hint {
+    margin: 0;
+    padding: var(--sp-3) var(--sp-4);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-md);
+    /* 有背景图时灰字看不见, 这一行套黑亚克力 + 提亮 */
+    background: rgba(0, 0, 0, 0.42);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    font-size: var(--fs-14);
+    color: var(--c-text-muted);
+    line-height: 1.7;
+}
+.profile-custom {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: var(--sp-4);
+    margin-top: var(--sp-2);
+}
+.custom-card {
+    flex: 1 1 200px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+    padding: var(--sp-3);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-md);
+    background: rgba(0, 0, 0, 0.28);
+}
+.custom-card-head {
+    display: flex;
+    align-items: baseline;
+    gap: var(--sp-2);
+}
+.custom-card-title {
+    font-size: var(--fs-18);
+    font-weight: bold;
+    color: var(--c-text);
+}
+.custom-card-hint {
+    font-size: var(--fs-14);
+    color: var(--c-text-faint);
+}
+/* 缩略图: 固定 16:7, 没图就显示「未设置」; 这块不收起 (占位框要留着), 卡片变矮靠下面那条滑条自己收 */
+.custom-thumb {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    aspect-ratio: 16 / 7;
+    overflow: hidden;
+    border: 1px dashed var(--c-border);
+    border-radius: var(--radius-sm);
+    background: #0b0b10;
+}
+.custom-thumb img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+/* 「未设置」占位: 与 .btn-acrylic 同一套黑亚克力; 缩略图底是不透明的, backdrop-filter 滤不出东西, 浮起来靠的是描边与那层更暗的黑 */
+.custom-thumb-empty {
+    padding: var(--sp-1) var(--sp-3);
+    border: 2px solid var(--c-border);
+    border-radius: var(--radius-md);
+    background: rgba(0, 0, 0, 0.42);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    font-size: var(--fs-14);
+    color: var(--c-text-muted);
+}
+.custom-card-actions {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: var(--sp-2);
+}
+.custom-card-actions .btn-acrylic,
+.custom-card-actions .btn-outline {
+    padding: var(--sp-1) var(--sp-3);
+    font-size: var(--fs-14);
+}
+/* 模糊度 + 滑条 (只有设了图才显示): 用 max-height + opacity 过渡而不是 display (后者是瞬变没动画), 收起时要 overflow: hidden + margin-top: 0 否则剩一条空行 */
+.custom-blur {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    font-size: var(--fs-14);
+    color: var(--c-text-dim);
+    max-height: 0;
+    margin-top: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, opacity 0.24s ease, margin-top 0.3s ease;
+}
+.custom-blur.is-on {
+    max-height: 48px;
+    margin-top: 0;   /* 卡片本身有 gap, 这里不再额外加 */
+    opacity: 1;
+}
+.custom-blur-label {
+    flex: none;
+}
+/* 模糊度滑条: 已抵达段紫 / 未抵达段灰 (--fill 由 JS 设), 圆点悬浮变大、摁住再弹一下; 全站 input 那套黑亚克力方块不适用, 整条重画 */
+.custom-blur input[type="range"] {
+    flex: 1;
+    min-width: 0;
+    height: 24px;
+    padding: 0;
+    border: none;
+    background: none;
+    -webkit-appearance: none;
+    appearance: none;
+    cursor: pointer;
+}
+.custom-blur input[type="range"]::-webkit-slider-runnable-track {
+    height: 3px;
+    border-radius: 999px;
+    background: linear-gradient(90deg,
+        var(--c-accent) var(--fill, 0%),
+        rgba(255, 255, 255, 0.16) var(--fill, 0%));
+}
+.custom-blur input[type="range"]::-moz-range-track {
+    height: 3px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.16);
+}
+.custom-blur input[type="range"]::-moz-range-progress {
+    height: 3px;
+    border-radius: 999px;
+    background: var(--c-accent);
+}
+.custom-blur input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    margin-top: -5.5px;            /* (14 - 3) / 2, 让圆点骑在线上 */
+    border: none;
+    border-radius: 50%;
+    background: var(--c-accent);
+    box-shadow: 0 0 0 4px rgba(148, 94, 236, 0.18);
+    transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1),
+                box-shadow 0.16s ease;
+}
+.custom-blur input[type="range"]:hover::-webkit-slider-thumb {
+    transform: scale(1.2);
+    box-shadow: 0 0 0 5px rgba(148, 94, 236, 0.26);
+}
+.custom-blur input[type="range"]:active::-webkit-slider-thumb {
+    transform: scale(1.5);
+    box-shadow: 0 0 0 7px rgba(148, 94, 236, 0.34);
+    animation: thumb-pop 0.22s ease;
+}
+@keyframes thumb-pop {
+    0%   { transform: scale(1); }
+    55%  { transform: scale(1.7); }
+    100% { transform: scale(1.5); }
+}
+.custom-blur input[type="range"]::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border: none;
+    border-radius: 50%;
+    background: var(--c-accent);
+    box-shadow: 0 0 0 4px rgba(148, 94, 236, 0.18);
+    transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1),
+                box-shadow 0.16s ease;
+}
+.custom-blur input[type="range"]:hover::-moz-range-thumb {
+    transform: scale(1.2);
+}
+.custom-blur input[type="range"]:active::-moz-range-thumb {
+    transform: scale(1.5);
+}
+.custom-blur-value {
+    flex: none;
+    width: 2.4em;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ==================== 个性化 › 字体 ==================== */
+/* 三行 (聊天 / 论坛 / 文章), 每行一组单选片, 造型借 .custom-card 那套; 选中的一片走紫底紫边 */
+/* 「背景」与「字体」两块之间留白 (面板本身没有 gap) */
+.custom-section + .custom-section {
+    margin-top: var(--sp-10);
+}
+/* 字体卡片暂时不显示: .custom-card 自带 display: flex 会压过 [hidden], 要自己补一条 */
+#card-font[hidden] {
+    display: none;
+}
+/* 终端 QuoteKey 开关: 没权限时藏起来 (.ctx-card 也是 display: flex, 同样要自己补) */
+#card-term-quotekey[hidden] {
+    display: none;
+}
+/* 它挨在「显示」那两张卡片下面, 补一段间距 */
+#card-term-quotekey {
+    margin-top: var(--sp-4);
+}
+.font-choices {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    margin-top: var(--sp-2);
+}
+.font-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-3);
+    padding: var(--sp-2) var(--sp-3);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-md);
+    background: rgba(0, 0, 0, 0.28);
+}
+/* 左侧那个「聊天 / 论坛 / 文章」标签: 固定宽 → 三行的单选框左边缘对齐 */
+.font-row-label {
+    flex: none;
+    width: 4em;
+    font-size: var(--fs-18);
+    font-weight: bold;
+    color: var(--c-text);
+}
+.font-options {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-2);
+}
+.font-option {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: var(--sp-1) var(--sp-3);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-md);
+    background: rgba(0, 0, 0, 0.28);
+    font-size: var(--fs-18);
+    color: var(--c-text-muted);
+    cursor: pointer;
+    transition: border-color 0.2s, background-color 0.2s, color 0.2s;
+}
+.font-option:hover {
+    border-color: var(--c-accent);
+    color: var(--c-text);
+}
+/* 选中态: 没有 JS 参与 (靠 :has), 所以刷新回来、键盘切换都对 */
+.font-option:has(input:checked) {
+    border-color: var(--c-accent);
+    background: rgba(148, 94, 236, 0.16);
+    color: var(--c-text);
+}
+/* 圆点吃回原生样子: 全站 input 是黑亚克力, 单选框要复位 */
+.font-option input[type="radio"] {
+    flex: none;
+    width: auto;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: none;
+    accent-color: var(--c-accent);
+    cursor: pointer;
+}
+
+/* ---------- 主页背景落地 ---------- */
+/* 设了主页背景就把首屏那层紫色柔光 (body::before) 换成图片; 关键是「画的几何」与「元素高度」分开 —— 元素高 --bg-visible-h 跟着页脚走 (就是裁剪那一下), 渐变与图都用固定画布尺寸 (--bg-fade-h / --bg-img-size), 所以切页签时背景一动不动, 只是下面被裁掉一截 */
+/* 别再往 fixed + clip-path 那版走, 也别给这一层加 transform: scaleX() (会把横向溢出撑出来, 要盖羽化就把渐变画宽); overflow-x: clip 挡不住 root 的横向位移 */
+html.has-bg-image {
+    overflow-x: clip; /* 真溢出已经避免了, 这条只是保险 */
+}
+html.has-bg-image body::before {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: var(--bg-visible-h, 100vh);
+    /* 两层背景: 渐隐遮罩 (固定画布高) + 图 (固定 cover 尺寸), 横向画 104% 补住左右羽化 */
+    /* 渐变从 80% 往下就是纯页面底色, 与 profile.html 的 BG_SOLID_FRACTION = 0.8 对齐; 图层不能在 80% 之前被砍断, 否则那条横边会铺满整屏, 改停点要改两边 */
+    background-image:
+        linear-gradient(to bottom,
+            rgba(11, 11, 16, 0.18) 0%,
+            rgba(11, 11, 16, 0.38) 26%,
+            rgba(11, 11, 16, 0.62) 46%,
+            rgba(11, 11, 16, 0.86) 64%,
+            var(--c-page-bg) 80%,
+            var(--c-page-bg) 100%),
+        var(--bg-img);
+    background-size: 104% var(--bg-fade-h, 100vh), var(--bg-img-size, auto var(--bg-fade-h, 100vh));
+    background-position: center top, center top;
+    background-repeat: no-repeat, no-repeat;
+    /* 图层自己兜一层页面底色: 万一被裁得比底边早一丁点 (zoom 反算取整误差), 露出来的也是同色 */
+    background-color: var(--c-page-bg);
+    opacity: 1;
+    /* 只有真设了模糊才上 filter: blur(0px) 看着像空操作, 却会把图层提成独立纹理, 在 zoom 下边缘被重采样、底边冒出 1px; 默认 none, 由 profile.html 在 bg_blur > 0 时写 --bg-filter */
+    filter: var(--bg-filter, none);
+}
+
+/* 「Pluviophile」(雨声) 那张卡的标题色: 这是具体色值不是令牌, 别拿 --c-accent 代替 */
+.title-pluviophile {
+    color: #985bc4;
+}
+
+/* 「以某权限查看」那排 .role-btn 已删除; 这三个角色色 class 保留 —— 侧栏徽章与连携星点的小圆点还在用 */
+.role-owner {
+    --role-color: var(--c-role-owner);
+}
+.role-admin {
+    --role-color: var(--c-warn);
+}
+.role-member {
+    --role-color: var(--c-text-dim);
+}
+/* 站长昵称也是红的, 角色那一段按身份上色 */
+.profile-side.is-owner .profile-nickname {
+    color: var(--c-role-owner);
+}
+.profile-role {
+    color: var(--role-color, var(--c-text-dim));
+    font-weight: bold;
+}
+
+/* 「保存更改」那一行: 顶上一块留白, 与输入区拉开距离 */
+.profile-field-actions {
+    border-bottom: none;
+    padding-top: var(--sp-5);
+}
+/* 按钮靠右, 「取消」排在它左边; 别把「布局变了」算在这一行头上 —— 那是浏览器缩放到 125% 后视口宽掉到 900px 以下切成竖排 (见 main-media.css) */
+.profile-field-actions .profile-field-body {
+    justify-content: flex-end;
+}
+.profile-field-value {
+    flex: 1;
+    min-width: 0;
+    font-size: var(--fs-20);
+    /* 压在背景图上 --c-text-muted 还是发灰, 直接给正文色 */
+    color: var(--c-text);
+    word-break: break-word;
+    user-select: text;
+}
+/* 「头像」那行的占位说明: 比正文暗一档就够 */
+.profile-field-note {
+    flex: 1;
+    min-width: 0;
+    font-size: var(--fs-18);
+    color: var(--c-text-dim);
+}/* 头像行的说明文字: 与「个性化 › 背景」那句说明同一款黑亚克力框 (共用同一套值), 别改成跟上传按钮等高 */
+.profile-avatar-row .profile-field-note {
+    flex: 1;
+    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    padding: var(--sp-3) var(--sp-4);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-md);
+    background: rgba(0, 0, 0, 0.42);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    font-size: var(--fs-14);
+    line-height: 1.7;
+    color: var(--c-text-muted);
+}
+/* 窄屏会换行, 那时让它自己恢复成一整行高的小条就行 */
+@media (max-width: 640px) {
+    .profile-avatar-row .profile-field-note {
+        align-self: auto;
+        padding: var(--sp-2) var(--sp-3);
+    }
+}
+/* 文章 / 资源卡片: 自适应列数 (还是原来的横向排布), **每块只长到自己内容那么高**——
+   网格默认 align-items: stretch, 会把同一行里矮的那张也拉成最高的那张一样高 (用户 2026-10-01 要去掉这层限制)。
+   用 grid 而不是 flex: 页面的「空状态 / 加载中」靠 `.article-grid > .page-state { grid-column: 1 / -1 }` 撑满整行;
+   卡片一多就换成真瀑布流 (见下面的 .is-columns) */
+.article-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    align-items: start;
+    gap: var(--sp-3);
+    text-align: left;
+    width: 100%;
+}
+/* 卡片瀑布流: JS (layoutCardColumns) 把卡片分进若干列后挂上 .is-columns ——
+   列与列等高, 列内每张各自高度。顺序还是从左到右 (按「当前最矮的那一列」依次放) */
+.article-grid.is-columns {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--sp-3);
+}
+.article-col {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+}
+.article-card {
+    position: relative; /* 「#编号」角标要 relative 垫底 */
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    padding: var(--sp-4);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-md);
+    background: rgba(0, 0, 0, 0.35);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.30);
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+/* 文章卡右上角的编号 (灰字, 跟文章列表页的 #N 同一套写法) */
+.article-card .article-id-badge {
+    position: absolute;
+    top: var(--sp-2);
+    right: var(--sp-3);
+    font-size: var(--fs-14);
+    color: var(--c-text-faint);
+}
+.article-card:hover {
+    border-color: rgba(148, 94, 236, 0.55);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.50);
+}
+.article-card .article-title {
+    font-size: var(--fs-20);
+    font-weight: bold;
+    color: var(--c-text);
+    padding-right: var(--sp-8); /* 给右上角的 #编号 让位 */
+}
+/* 卡片上的简介: 最多两行 (它是「一眼看个主题」, 不是正文) */
+.article-card .article-intro {
+    font-size: var(--fs-14);
+    line-height: 1.6;
+    color: var(--c-text-muted);
+    word-break: break-word;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.article-card .article-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+    font-size: var(--fs-14);
+    color: var(--c-text-dim);
+}
+.article-card .article-status {
+    color: var(--c-accent);
+}
+/* 叙述标记 (与「草稿 / 已发布」排在同一行的小标签): 叙述没有发布状态, 只标这一枚 */
+.article-card .article-narra {
+    padding: 0 8px;
+    border: 1px solid rgba(148, 94, 236, 0.65);
+    border-radius: var(--radius-pill, 999px);
+    color: #b79cf0;
+}
+
+/* 头像行: 小预览 + 上传按钮 + 说明; 预览固定 48px 圆形, 换头像时行高不跳 */
+.profile-avatar-row {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    flex-wrap: wrap;
+}
+.profile-avatar-thumb {
+    flex: none;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--c-border);
+    background: var(--c-surface);
+}
+/* 说明文字的亚克力框写在上面 .profile-field-note 那边 (同文件里后写的同特异性规则会胜出), 这里不再重复 */
+/* ==================== 连携星点 (用户卡片墙) ==================== */
+/* 取消面板的上内边距: 这页下面紧跟计数行, 留着 16px 看着就是空的 (其它页签保持) */
+#tab-members {
+    padding-top: 0;
+}
+.member-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: var(--sp-3);
+    width: 100%;
+    text-align: left;
+}
+.member-card {
+    position: relative; /* 左上角那个「已关注」紫点要 absolute */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-1);
+    padding: var(--sp-5) var(--sp-3) var(--sp-4);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-md);
+    background: rgba(0, 0, 0, 0.35);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.30);
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s, background-color 0.2s;
+}
+.member-card:hover {
+    border-color: rgba(148, 94, 236, 0.55);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.50);
+    transform: translateY(-2px);
+}
+/* 头像容器: 权限小圆要 absolute 地贴到右下角, 所以这里得 relative */
+.member-avatar {
+    position: relative;
+    width: 64px;
+    height: 64px;
+    margin-bottom: var(--sp-2);
+}
+.member-avatar img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--c-border);
+    /* 透明底: 用 --c-surface 会把透明 PNG 头像的空白填成一块死黑 */
+    background: transparent;
+}
+
+/* ==================== 移动端: 「N 篇文章 · N 名追随者」并成一行 ==================== */
+/* 光把两个 <p> 改成 inline-flex 没用 (父级是 flex 列, 它们仍各占一行), HTML 里要先包一层 .profile-stats-row; 中间那个点用「文章」那行的 ::after 画, 它隐藏时点也一起消失 */
+.profile-stats-row {
+    display: block; /* 桌面保持两行 */
+}
+
+@media (max-width: 900px) {
+    .profile-stats-row {
+        display: flex;
+        align-items: baseline;
+        /* 移动端整行居中 (并成一行后靠左会显得贴在边上) */
+        justify-content: center;
+    }
+    .profile-stat:not([hidden]) {
+        margin-top: var(--sp-4); /* 两行同一个上边距 = 同一条基线 */
+    }
+    #profile-stat:not([hidden])::after {
+        content: '·';
+        margin: 0 var(--sp-3);
+        color: var(--c-text-dim);
+    }
+}
+/* 权限小圆: 颜色 = 身份 (站长红 / 管理员黄), 里面的图标再说一遍 */
+.member-role-dot {
+    position: absolute;
+    right: -3px;
+    bottom: -3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid var(--c-page-bg);
+}
+.member-role-dot svg {
+    width: 12px;
+    height: 12px;
+}
+/* 站长徽章: 紫底 + 白四角星; 图标形状在 profile.html 的图标表里 (star 那个 key), 两处要一起改 */
+.member-role-dot.role-owner {
+    background: var(--c-accent);
+    color: #fff;
+}
+.member-role-dot.role-admin {
+    background: var(--c-warn);
+    color: #241703;
+}
+.member-name {
+    font-size: var(--fs-18);
+    font-weight: bold;
+    color: var(--c-text);
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.member-username {
+    font-size: var(--fs-14);
+    color: var(--c-text-dim);
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+/* 卡片右上角的用户编号 (与文章卡片那个 .article-id 同一套写法) */
+.member-idx {
+    position: absolute;
+    top: var(--sp-2);
+    right: var(--sp-3);
+    font-size: var(--fs-14);
+    color: var(--c-text-faint);
+    font-variant-numeric: tabular-nums; /* #1 与 #12 宽度一致 */
+}
+/* 「封禁中」不是文字气泡: 整张卡变红亚克力 + 红描边 */
+.member-card.is-banned {
+    border-color: rgba(255, 107, 107, 0.65);
+    background: rgba(214, 69, 69, 0.16);
+}
+.member-card.is-banned:hover {
+    border-color: var(--c-danger);
+    background: rgba(214, 69, 69, 0.24);
+}
+/* 「已关注」不是文字签: 卡片左上角一个紫点 (title 里写着「已关注」) */
+.member-card.is-following::before {
+    content: '';
+    position: absolute;
+    left: var(--sp-2);
+    top: var(--sp-2);
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--c-accent);
+    box-shadow: 0 0 0 2px rgba(148, 94, 236, 0.22);
+}
+.member-more {
+    display: flex;
+    justify-content: center;
+    margin-top: var(--sp-5);
+}
+
+/* ==================== 私聊 ==================== */
+/* 聊天的 .chat-* 一族已搬去 main.css (桌面弹窗与 /chat/ 共用), 这里只留那两个按钮的排版 */
+
+/* 账号栏: 灰色按钮一行、红色按钮一行 */
+.account-actions {
+    display: flex;
+    flex-direction: column;
+    /* 必须写 stretch: 继承来的 center 会让短的那一行居中, 两行按钮的起点就不在同一条竖线上 */
+    align-items: stretch;
+    gap: var(--sp-3);
+}
+.account-row {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    flex-wrap: wrap;
+}
+
+/* ==================== 页签内容的小表头 ==================== */
+/* 左边一行灰字计数, 右边 (可选) 排按钮; 站内信与连携星点共用 */
+.tab-head {
+    display: flex;
+    /* 底线对齐而不是垂直居中: 只靠 flex-end 不够, 还要把整行高度降到与小字同高 (见 .tab-hint) */
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--sp-3);
+    flex-wrap: wrap;
+    min-height: 46px; /* 与按钮等高: 右侧没按钮时占位也不会抽掉一行 */
+    margin-bottom: var(--sp-3);
+}
+/* 这一行没有按钮时 (文章 / 连携星点只有一行计数小字) 那个 46px 占位只剩副作用 (小字被顶下去 ~40px), 站内信那行有按钮不受影响 */
+.tab-head:not(:has(.tab-head-actions)) {
+    min-height: 0;
+}
+.tab-head-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    flex-wrap: wrap;
+    margin-left: auto; /* 按钮组靠右, 左侧那行字自己占左边 */
+}
+.tab-hint {
+    align-self: flex-end; /* 贴着这一行的底线 */
+    font-size: var(--fs-14);
+    color: var(--c-text); /* 计数小字 → 纯白 */
+}
+.notice-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    width: 100%;
+    text-align: left;
+}
+.notice-item {
+    display: flex;
+    gap: var(--sp-3);
+    padding: var(--sp-4);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-md);
+    background: rgba(0, 0, 0, 0.35);
+    cursor: pointer;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+.notice-item:hover {
+    border-color: rgba(148, 94, 236, 0.55);
+}
+/* 未读: 左侧一道紫条 + 淡淡的紫底 (扫一眼就知道哪些还没看) */
+.notice-item.is-unread {
+    background: rgba(148, 94, 236, 0.10);
+    border-left: 4px solid var(--c-accent);
+}
+.notice-icon {
+    flex: none;
+    color: var(--c-text-dim);
+}
+.notice-icon svg {
+    width: 20px;
+    height: 20px;
+}
+.notice-item.is-unread .notice-icon {
+    color: var(--c-accent);
+}
+.notice-body {
+    flex: 1;
+    min-width: 0;
+}
+.notice-title {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    flex-wrap: wrap;
+    font-size: var(--fs-18);
+    font-weight: bold;
+    color: var(--c-text);
+}
+/* 类型标签 (文章被删除 / 封禁 / 解封): 跟标题同一行的小灰签 */
+.notice-kind {
+    flex: none;
+    padding: 0 var(--sp-2);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.1);
+    font-size: var(--fs-14);
+    font-weight: normal;
+    color: var(--c-text-muted);
+    line-height: 1.6;
+}
+.notice-text {
+    margin-top: var(--sp-2);
+    font-size: var(--fs-18);
+    color: var(--c-text-muted);
+    white-space: pre-line; /* 正文里的 \n 要真的换行 */
+    word-break: break-word;
+    user-select: text;
+}
+/* 超过两行的信只露两行, 点卡片在弹窗里看全文 */
+.notice-item.is-expandable .notice-text {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+/* 全文弹窗 */
+.notice-detail-meta {
+    margin-top: var(--sp-2);
+    font-size: var(--fs-14);
+    color: var(--c-text-dim);
+}
+.notice-detail-body {
+    margin-top: var(--sp-4);
+    max-height: 50vh;
+    overflow-y: auto;
+    font-size: var(--fs-20);
+    line-height: 1.8;
+    color: var(--c-text-muted);
+    white-space: pre-line; /* 空行分段 */
+    word-break: break-word;
+    user-select: text;
+}
+.notice-time {
+    margin-top: var(--sp-2);
+    font-size: var(--fs-14);
+    color: var(--c-text-faint);
+}
+
+/* ---------- 评论提醒: 一行就说完 ---------- */
+/* 只露一行 (头像 + 谁 + 干了什么 + 说了什么), 超长省略号; 点卡片去那篇文章 */
+.notice-item.is-comment {
+    align-items: center;
+    padding: var(--sp-3) var(--sp-4);
+}
+.notice-avatar {
+    flex: none;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--c-border);
+}
+.notice-line {
+    flex: 1;
+    min-width: 0;
+    /* 字号必须用类写: 类选择器 (0,1,0) 才压得住 main.css 全局 p 那条元素选择器 (0,0,1) */
+    font-size: var(--fs-18);
+    color: var(--c-text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.notice-from {
+    color: var(--c-text);
+}
+.notice-article {
+    font-style: normal;
+    color: var(--c-text);
+}
+.notice-snippet {
+    color: var(--c-text-dim);
+}
+
+/* 卡片右边的删除键 (所有站内信都有) */
+.notice-actions {
+    flex: none;
+    align-self: flex-start; /* 多行卡片里停在右上角, 不拉满高度 */
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+}
+.notice-item.is-comment .notice-actions {
+    align-self: center;
+}
+.notice-del {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border-radius: 50%;
+    color: var(--c-text-faint);
+    background: none;
+    transition: color 0.2s, background-color 0.2s;
+}
+.notice-del svg {
+    width: 16px;
+    height: 16px;
+}
+.notice-del:hover {
+    color: var(--c-danger);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* 未读徽章用紫色, 跟「文章数」那个灰徽章区分开 */
+.tab-count-alert {
+    background: rgba(148, 94, 236, 0.28);
+    color: var(--c-text);
+}
+/* 页签上也有未读时, 文字提亮一档 */
+.profile-tab.has-unread {
+    color: var(--c-text);
+}
+
+/* 窄屏: 四个页签挤一行会溢出, 字号与间距各收一档 */
+@media (max-width: 560px) {
+    .profile-tabs {
+        gap: var(--sp-2);
+        /* 排不下时让这一行自己横向滚动, 而不是把页面撑出横向滚动条 */
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+    .profile-tabs::-webkit-scrollbar {
+        display: none; /* 一排页签不该出现轨道 */
+    }
+    /* 四个页签均分整行; min-width 必须 max-content 不能是 0 —— 320px 机器上排不下会盖到隔壁页签 (排得下均分, 排不下横向滚) */
+    .profile-main .profile-tab {
+        flex: 1 1 0;
+        min-width: max-content;
+        justify-content: center;
+        white-space: nowrap;
+        font-size: var(--fs-14);
+    }
+    .member-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    }
+}
+
+/* ---------- 全局接替右键 (个性化最后一栏) ---------- */
+.ctx-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-4);
+    padding: var(--sp-3) var(--sp-4);
+    /* 透明亚克力面板 */
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+}
+.ctx-card-main {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-1);
+    min-width: 0;
+}
+.ctx-note {
+    font-size: var(--fs-14);
+    line-height: 1.6;
+    color: var(--c-text-dim);
+}
+/* 语言栏: 「语言」面板与「字体」面板上下排, 两个面板之间补一段间距 */
+#language-section .custom-card { margin-top: var(--sp-4); }
+#language-section .ctx-card { cursor: default; }
+#language-section select { max-width: 220px; }
+/* 开关本体 (.ctx-switch / .ctx-switch-track) 已挑到 main.css (资源页工作台共用), 这里不再重复定义 */

@@ -1,0 +1,244 @@
+{
+  /* zh.jsonc为翻译文件的蓝本 */
+
+  /* 通用文本 */
+  "hint.loading": "加载中…",
+  "hint.loading.failed": "加载失败",
+  "hint.operation.failed": "操作失败",
+
+  /* 操作文本 */
+  "opt.cancel": "取消",
+  "opt.confirm": "确认",
+  "opt.continue": "继续",
+  "opt.save-changes": "保存更改",
+  "opt.discard-changes": "取消更改",
+  "opt.discarded-changes": "已丢弃未提交的更改",
+  "opt.saved-changes": "已保存",
+  "opt.set": "设置",
+  "opt.NotSet": "未设置",
+  "opt.verify": "验证",
+  "opt.bind": "绑定",
+  "opt.upload": "上传",
+  "opt.uploading": "上传中",
+  "opt.remove": "移除",
+  "opt.download": "下载",
+  "opt.copy": "复制",
+  "opt.review": "审核",
+  "opt.run": "运行",
+  "opt.reflesh": "刷新",
+  "opt.open": "打开",
+  "opt.loadMore": "加载更多",
+  "opt.submit": "提交",
+  "opt.submitting": "提交中…",
+
+  /* 名称 */
+  "name.totp": "动态令牌",
+  "name.email": "邮箱",
+  "name.password": "密码",
+  "name.token": "令牌",
+  "name.account": "账号",
+  "name.advanced.devtools": "开发者工具",
+  "name.terminal.quotekey": "QuoteKey",
+  "name.blur": "模糊度",
+  "name.verificationCode": "验证码",
+  "name.article": "文章",
+  "name.resource": "资源",
+  "name.avatar": "头像",
+  "name.narra": "叙述",
+  "term.max": "最大值",
+  "term.global": "全局",
+  "term.unknown": "未知",
+  "term.none": "无",
+  
+  /* 状态&数值语句 */
+  "target.activated": "{target} 已激活",
+  "target.deactivated": "{target} 已停用",
+  "target.link": "绑定 {target}",
+  "target.linked": "已绑定 {target}",
+  "target.emailSent": "验证邮件已发送到{target}，{value}分钟内有效",
+  "target.filledIn": "已填写：{value}",
+  "value.digit": "{value} 位数字",
+  "value.lines": "{value} 行",
+  "value.theDayJoinFoarine": "加入 Foraine {value} 天",
+  "value.lastLogin": "最后登录于 {value}",
+  "value.articleNumber": "{value} 篇",
+  "value.resourceNumber": "{value} 份",
+  "value.NotYet": "还没有{value}",
+  "value.TooLarge-mb": "文件不能超过 {value} MB",
+
+  /* Meta */
+  "meta.profile": "个人 · Foraine",
+
+  /* 主页 */
+  "home.welcome.title": "欢迎来到 Foraine !",
+  "home.welcome.description": "在这里发挥你的创意",
+
+  /* Profile页面  */
+  "profile.tab.profile": "资料",
+  "profile.tab.custom": "个性化",
+  "profile.tab.works": "作品",
+  "profile.tab.members": "连携星点",
+  "profile.tab.inbox": "站内信",
+  "profile.tab.d1": "数据库",
+  "profile.tab.r2": "资源库",
+  "profile.tab.foraine": "站点",
+  "profile.pf.avatar.btn-upload": "上传头像",
+  "profile.pf.nickname": "昵称",
+  "profile.pf.nickname.input.placeholder": "繁星烁点之名",
+  "profile.pf.bio": "简介",
+  "profile.pf.bio.input.placeholder": "作为无垠星野繁星之一的简要介绍~",
+  "profile.pf.bio.ph": "并无简介",
+  "profile.pf.email.notice.unbound": "由于网站建设的需要，Foraine 需要你立即填写一个邮箱；\n保存后不可修改。",
+  "toast.email.ok-bindingCompleted": "邮箱成功绑定，请尽快完成验证。",
+  "profile.pf.email.notice.unverified": "出于安全考虑，建议你尽早验证邮箱；\n邮箱有误？请联系站点管理员解决。",
+  "profile.pf.location": "位置",
+  "profile.pf.location.input.placeholder": "在 Foraine 宇宙中的坐标",
+  "profile.pf.other": "其他",
+  "profile.pf.other.input.placeholder": "如 “公司：Maybe foraine Inc.”",
+  "profile.pf.connection": "账号绑定",
+  "profile.pf.advanced": "高级",
+  "profile.pf.advanced.devtools.description": "包含一些对数据库、资源库的高级操作；请谨慎启用此功能。",
+  "profile.cst.display": "显示",
+  "profile.cst.display.label": "主页背景可被所有人看见；图片上传、移除或更改模糊度后将会立刻保存",
+  "profile.cst.display.profileBackgound": "个人资料背景",
+  "profile.cst.display.chatBackgound": "聊天背景",
+  "profile.cst.display.quotekey.description": "显示终端文章面板的QuoteKey",
+  "profile.cst.char": "文字",
+  "profile.cst.char.language": "语言",
+  "profile.cst.char.language.description": "切换 Foraine 全站显示的语言",
+  "profile.cst.char.font": "字体",
+  "profile.cst.char.font.notice": "字体选项只会更改你自己的视图",
+  "profile.cst.interact": "交互",
+  "notice.EffectToYourOwnDeviceOnly": "仅改变你自己这台设备上的行为",
+  "profile.cst.sound": "声音",
+  "opt.MarkAll-Read": "全部已读",
+  "opt.sendInbox": "发送站内信",
+
+  /* Toggle功能文本 */
+  "ctrl.cst.sound.pluviophile": "倾盆大雨",
+  "ctrl.cst.sound.pluviophile.description": "在 Foraine 的所有页面播放雨声",
+  "ctrl.cst.interact.rightclick-override": "全局接替右键",
+  "ctrl.cst.interact.rightclick-override.description": "捕获在此站点的所有右键事件，如果没有指定则什么都不触发",
+  
+  /* Foraine 相关 */
+  "foraine.DownstreamTrafficControl": "下行流量控制",
+  "foraine.DownstreamTrafficControl.description": "阶梯式控制下载并发数",
+  "foraine.MaximumResourcesLimit": "最大资源上传量",
+  "foraine.MaximumResourcesLimit.description": "有限量的云盘",
+
+  /* 位置相关 */
+  "opt.locate": "定位",
+  "opt.locate.processing": "定位中…",
+  "locate.error-Unable2Get": "无法获取位置",
+
+  /* 邮件相关 */
+  "email.warn-EmptyAddress": "邮箱地址不能为空",
+  "email.error-NameNotSuitable": "该邮箱格式不正确",
+  "email.error-NoService": "邮箱服务离线",
+  "email.input.placeholder": "your-email@example.com",
+  "toast.email.ok-verifySuccessful": "邮箱验证成功",
+  "toast.email.ok-unboundSuccessful": "邮箱解绑成功",
+  "toast.email.ok-reboundSuccessful": "邮箱换绑成功",
+  "toast.email.warn-VerificationTakenByOther": "这个邮箱已被其他账号验证",
+  "toast.email.error-Failed2SentEmail": "验证邮件发送失败",
+  "toast.email.error-LinkExpired": "验证链接已过期",
+  "toast.email.error-LinkDead4EmailChanged": "邮箱已被更改，验证链接失效",
+  "toast.email.error-LinkInvalid": "无效链接",
+
+  /* 账号相关 */
+  "account.resetPassword": "重置密码",
+  "account.verifyEmail": "验证邮箱",
+  "account.changeEmail": "更换邮箱",
+  "account.logOut": "退出登录",
+  "account.deleteAccount": "删除账户",
+
+  /* 密码相关 */
+  "label.newPassword": "新密码",
+  "label.confirmPassword": "确认密码",
+  "toast.resetPassword.warn-AtLeastChar": "密码至少 {value} 个字符",
+  "toast.resetPassword.error-DoesNotMatch": "两次输入的密码不一致",
+  "toast.resetPassword.success": "密码已重设；其它设备上的登录状态已悉数失效",
+
+  /* Toast */
+  // 注意: 此类的键必须足够通用, 最好是使用情景较多的完整语句
+  "toast.error-WrongCode": "验证码不正确",
+  "toast.error-WrongPassword": "密码不正确",
+
+  /* Foraine-Toast */
+  "foraine-toast.foraineWouldRemember": "Foraine 会记住的..",
+  "foraine-toast.saveProgress": "保存进度..",
+  "foraine-toast.loading": "加载中..",
+  "foraine-toast.processing": "操作进行中...",
+
+  /* OSS相关 */
+  "toast.oss.error-NoService": "对象储存服务离线",
+
+  /* 模态框 */
+  // 警告文本
+  "modal.warning.CannotbeUndone": "此操作不可撤销",
+
+  /* 流程 */
+  // 退出登录
+  "ops.logOut.ctn": "确定要退出登录吗？", // title使用account.LogOut
+  // 重置密码
+  "ops.resetPassword.a-ctn": "确定要重新设定密码吗？",
+  "ops.resetPassword.b-ctn": "请键入你的新密码",
+  // 注销账户
+  "ops.deleteAccount.a-ctn": "你确定要删除账户吗？",
+  "toast.deleteAccount.warn-emailVerificationNeeded": "注销账号需要先验证邮箱",
+  "ops.deleteAccount.b-title": "确定注销..？",
+  "ops.deleteAccount.b-ctn": "确定要离开 Foraine 宇宙？如果你走了，宇宙中从此会少一个星点呢..\n\n在此，最后一次输入你的信息以继续。",
+  "label.MadeMyMind": "我意已决",
+  "label.stay": "留下",
+  "label.goodble": "再见",
+  "ops.deleteAccount.c-ctn": "你的 Foraine 账号已注销。希望你能在更大的宇宙中发现更美好的风景！\n如果对 Foraine 还有留恋，7 天内的任意时刻登录即可取消注销。",
+  "hint.accountAlreadyInDeactivated": "这个账号已经在注销流程中了，如需取消请点击上方的“取消注销”按钮",
+  "toast.deleteAccout.ok-requestSubmitted": "注销申请已提交，账号将在 {value} 天内删除",
+  "notice.deleteAccount.title": "账号已申请注销（{value}天后删除）",
+  "notice.deleteAccount.ctn": "你的账号将于{value}被删除，名称届时可被其他人取用。\n如若想取消注册，点击下方的“取消注销”即可。",
+  // 取消注销账户
+  "label.cancelAccountDeletion": "取消注销",
+  "ops.cancelAccountDeletion.ctn": "账号会恢复正常；7天保留期即刻结束。\n确认取消这次注销申请吗？",
+  "toast.cancelAccountDeletion.ok-confirmed": "已取消注销申请",
+  "hint.accountDeletionRequestOverflow": "取消注销后{value}天内不能再次申请",
+  // 换绑邮箱
+  "ops.changeEmail": "更改邮箱",
+  "ops.changeEmail.a-ctn": "确定要换绑邮箱吗？",
+  "ops.changeEmail.b-ctn": "Foraine向你的邮箱发送了一封验证邮件以验证你的身份。\n请键入邮件中提示的 {value} 位数字以继续",
+  "ops.changeEmail.c-ctn": "旧邮箱已完成验证，Foraine在验证你的新邮箱后即可完成绑定\n请键入你的新邮箱名",
+  // 验证身份
+  "ops.verifyIdentity.title": "你正在执行一个敏感操作，Foraine 需要验证你的身份。\n请选择一种方式以继续", // title使用opt.verify
+  "hint.2FANotEnabled": "你的账号没有启用动态令牌验证",
+  "hint.emailNotVerified": "你账号的所属邮箱还没有验证",
+  "toast.verifyIdentity.warn-MethodNotAvailable": "该方式目前不可用",
+  "ops.verifyIdentity.token.ctn": "请打开验证器，填入其当前显示的 {value} 位数字",
+  "ops.verifyIdentity.password.ctn": "在此键入你的密码以继续",
+  "ops.verifyIdentity.email.ctn": "填入邮件显示的 {value} 位数字",
+
+  /* 终端相关 */
+  "terminal.title": "终端",
+  "terminal.home": "返回首页",
+  "terminal.system": "Narralethe Terminal",
+  "terminal.denied": "Access Denied. Terminal AccessKey Required.",
+  "terminal.quest": "解锁 Iota 访问权限",
+  "terminal.needKey": "需要秘钥",
+  "terminal.submit": "确认",
+  "terminal.permission.unlocked": "终端权限已解密",
+  "narra.button": "叙述",
+  "narra.key": "文章引用键名",
+  "narra.hint": "引用键名会登记这篇叙述，之后不可更改。",
+  "narra.create": "创建",
+  "terminal.article.error": "终端查询错误",
+  "terminal.article.empty": "尚未登记文章",
+
+  /* 导航栏相关 */
+  // tooltip
+  "nav.home": "Foraine 首页",
+  "nav.resource": "资源",
+  "nav.articles": "文章",
+  "nav.chat": "私信",
+  "nav.top": "回到顶部",
+  "nav.back": "返回",
+  "nav.login": "登录",
+  "nav.profile": "个人主页"
+}

@@ -1,0 +1,9 @@
+.git
+.vscode
+.wrangler
+*.md
+.gitignore
+.dev.vars
+wrangler.jsonc
+worker.js
+node_modules

@@ -1,0 +1,1206 @@
+/* ==================== page-article.css ==================== */
+/* 文章详情页专属样式, 只在 /article/ 加载 (由 split_css.py 从 main.css 拆出, 改这里别改 main.css) */
+/* 文章详情 */
+.article-view {
+  text-align: left;
+  width: 100%;
+}
+.article-view .article-title {
+  font-size: var(--fs-36);
+}
+/* 「最后更新」已搬进 meta 行当最后一项, 原来独占一行那套上下 margin 要收掉 (否则在 flex 行里会撑歪) */
+.article-view .article-updated {
+  font-size: var(--fs-14);
+  color: var(--c-text-dim);
+  font-variant-numeric: tabular-nums;
+}
+.article-meta .article-updated {
+  margin: 0; /* 清掉独占一行时那套上下 margin */
+}
+/* 简介: 标题下面一行小灰斜体 + 双引号 (形制照橘橘), 内容就是列表卡片上那句作者手写的话 */
+.article-view .article-intro {
+  margin-top: var(--sp-2);
+  font-size: var(--fs-18);
+  font-style: italic;
+  color: var(--c-text-dim);
+}
+.article-body {
+  /* 块级代码的行高, 挂在 .article-body 上给 .md-code 那一族继承; 用 rem/px 而不是 em —— var() 里的 em 按使用处字号算, 语言标签会算歪 */
+  --code-lh: 1.6rem;
+  margin-top: var(--sp-4);
+  /* 正文用思源黑体, 编辑栏 (textarea) 也同一套, 两边同源不串字 */
+  font-family: var(--font-sans);
+  font-size: var(--fs-20);
+  line-height: 1.9; /* 更宽行距, 长文更透气 */
+  max-width: 36em; /* 舒适阅读宽度 (约 36 字/行) */
+  color: var(--c-text-muted);
+  user-select: text;
+  word-break: break-word;
+}
+.article-body p {
+  margin: var(--sp-3) 0;
+}
+/* 列表: 全局把 ul/ol 的 list-style 重置掉了, 正文里要显式恢复 */
+.article-body .md-list {
+  margin: var(--sp-3) 0;
+  padding-left: var(--sp-6);
+  list-style: disc;
+}
+.article-body ol.md-list {
+  list-style: decimal;
+}
+.article-body .md-list li {
+  margin: var(--sp-1) 0;
+}
+/* 下划线用正文自己的颜色 (主题紫留给正文链接) */
+.article-body u {
+  text-decoration: underline;
+  text-decoration-color: currentColor;
+  text-underline-offset: 3px;
+}
+.article-body .md-empty {
+  height: var(--sp-2);
+  margin: 0;
+}
+.article-body strong {
+  color: var(--c-text);
+}
+.article-body .md-quote {
+  position: relative;
+  overflow: hidden;
+  margin: var(--sp-4) 0;
+  padding: var(--sp-3) var(--sp-6);
+  border: 1px solid var(--c-border);
+  border-radius: calc(var(--radius-md) * 1.5);
+  /* 黑亚克力底 (与按钮/输入框同一套: 半透黑 + 高斯模糊) */
+  background: rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 5px 0 rgba(255, 255, 255, 0.04); /* 厚底影 */
+}
+
+/* ==================== 代码块 ==================== */
+/* 结构 (markdown.js 产出): .md-code > 语言标签 (悬停让位给复制键) + 复制键 + <pre><code><span.md-line> */
+/* 行号: .md-line::before 是 sticky 的计数器, code::before 是同色挡板, 横向滚动时代码不从行号下面穿出来 */
+.article-body .md-code {
+  position: relative;
+  margin: var(--sp-4) 0;
+  border-radius: var(--radius-md);
+  background: #191921;
+  /* 5 行及以下没有 .md-code-scroll 那层, 圆角靠这里裁 —— 否则左边那条方形挡板会把两个圆角盖成直角 */
+  overflow: hidden;
+}
+/* 裁剪层: 圆角与 overflow 都归它; 展开按钮要挂在它外面, 否则被 overflow: hidden 一起切掉 */
+.article-body .md-code-scroll {
+  position: relative;
+  border-radius: inherit;
+  overflow: hidden;
+}
+/* 折叠态: 只露 5 行 (高度 = pre 的上内边距 + 5 × --code-lh, 不写死 px) */
+.article-body .md-code.is-collapsed .md-code-scroll {
+  max-height: calc(0.85rem + var(--code-lh) * 5);
+}
+.article-body .md-code.is-collapsible .md-code-scroll {
+  transition: max-height 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+/* 折叠时垫在最底下的渐隐, 只压暗第 5 行下沿 (太高会把整行糊掉) */
+.article-body .md-code-fade {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 1.75rem;
+  pointer-events: none;
+  background: linear-gradient(to bottom, rgba(25, 25, 33, 0), #191921 92%);
+  transition: opacity 0.3s;
+}
+.article-body .md-code.is-expanded .md-code-fade {
+  opacity: 0;
+}
+/* 右下角的圆形展开/收起键 */
+.article-body .md-code-expand {
+  position: absolute;
+  right: 0.7rem;
+  bottom: 0.7rem;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: none; /* 展开键不要描边, 纯深色圆 */
+  border-radius: 50%;
+  background: #2b2b34;
+  color: var(--c-text-dim);
+  cursor: pointer;
+  transition: color 0.2s, background-color 0.2s;
+}
+.article-body .md-code-expand:hover {
+  color: var(--c-text);
+  background: #3a3a45;
+}
+/* 两个箭头叠在同一位置: 一个缩小淡出、另一个放大淡入 (延迟错开, 不会互相透叠) */
+.article-body .md-code-arrow {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.26s ease, scale 0.26s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.article-body .md-code-arrow svg {
+  width: 21px;
+  height: 21px;
+}
+.article-body .md-code-arrow-down {
+  opacity: 1;
+  scale: 1;
+  transition-delay: 0.16s; /* 收起时: 上箭头先走, 下箭头再回来 */
+}
+.article-body .md-code-arrow-up {
+  opacity: 0;
+  scale: 0.4;
+}
+.article-body .md-code.is-expanded .md-code-arrow-down {
+  opacity: 0;
+  scale: 0.4;
+  transition-delay: 0s;
+}
+.article-body .md-code.is-expanded .md-code-arrow-up {
+  opacity: 1;
+  scale: 1;
+  transition-delay: 0.16s;
+}
+/* 「按下去再弹起来」的动画, 由 JS 每次点按重挂一次 */
+@keyframes md-expand-press {
+  0%   { translate: 0 0; scale: 1; opacity: 1; }
+  30%  { translate: 0 6px; scale: 0.82; opacity: 0.45; }
+  62%  { translate: 0 -2.5px; scale: 1.06; opacity: 1; }
+  100% { translate: 0 0; scale: 1; opacity: 1; }
+}
+.article-body .md-code-expand.is-press {
+  animation: md-expand-press 0.46s cubic-bezier(0.34, 1.2, 0.5, 1);
+}
+.article-body .md-code pre {
+  margin: 0;
+  padding: 0.85rem 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+  overflow-x: auto;
+}
+.article-body .md-code code {
+  display: block;
+  width: fit-content;
+  min-width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: var(--font-mono);
+  /* 代码字号固定 1rem, 不跟正文的 em —— 窄屏正文缩到 18px 时会把折叠高度算歪 (--code-lh 不跟字号变) */
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--c-text);
+  white-space: pre; /* 行首缩进要原样保留 */
+  counter-reset: md-line;
+  counter-increment: md-line 0;
+}
+.article-body .md-code code::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 0;
+  top: 0;
+  bottom: 0;
+  width: 2.75rem;
+  background: #191921; /* 与代码块同色 = 挡住滚过来的代码 */
+  z-index: 1;
+  pointer-events: none;
+}
+.article-body .md-code .md-line {
+  display: block;
+  padding-right: 3rem;
+}
+.article-body .md-code .md-line::before {
+  content: counter(md-line);
+  counter-increment: md-line;
+  position: sticky;
+  inset-inline-start: 0;
+  display: inline-block;
+  width: 2rem;
+  padding-right: 0.75rem;
+  box-sizing: content-box;
+  text-align: right;
+  color: rgba(255, 255, 255, 0.28);
+  background: #191921;
+  z-index: 2;
+}
+/* 末尾那个空行 (代码以换行结尾时会产生) 不占位 */
+.article-body .md-code .md-line:last-child:empty {
+  display: none;
+}
+/* 语言标签 (右上角): 不在块上深灰 / 在块上浅灰 / 靠到右上角让位给复制键; 高度用 --code-lh 才与代码第一行对齐 */
+.article-body .md-code-lang {
+  position: absolute;
+  top: 0.85rem;
+  right: 0.7rem;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  height: var(--code-lh); /* = code 的行高, 所以标签与代码第一行严格对齐 */
+  padding: 0 var(--sp-1);
+  background: #191921;
+  color: var(--c-text-faint); /* 默认深灰 */
+  font-size: var(--fs-14);
+  font-weight: bold;
+  transition: opacity 0.3s, color 0.2s;
+}
+/* 鼠标进代码块 → 浅灰 */
+.article-body .md-code:hover .md-code-lang {
+  color: var(--c-text-dim);
+}
+/* 复制键 */
+.article-body .md-code-copy {
+  position: absolute;
+  /* 与语言标签同一个框 (28×28), 鼠标靠近时两者原地互换 */
+  top: 0.85rem;
+  right: 0.7rem;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  background: #2b2b34;
+  color: var(--c-text-dim);
+  opacity: 0;
+  transition: opacity 0.3s, color 0.2s, background-color 0.2s;
+}
+/* 里面的 svg 包了一层 .md-code-ready: 不压掉它的行高, 按钮会被撑成 28×39 的长方形 */
+.article-body .md-code-copy .md-code-ready {
+  display: flex;
+}
+.article-body .md-code-copy svg {
+  width: 18px;
+  height: 18px;
+}
+.article-body .md-code-copy:hover {
+  color: var(--c-text);
+  background: #3a3a45;
+}
+.article-body .md-code-copy .md-code-copied {
+  position: absolute;
+  right: 100%;
+  top: 0;
+  bottom: 0;
+  display: none;
+  align-items: center;
+  margin-right: var(--sp-2);
+  padding: 0 var(--sp-2);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  background: #2b2b34;
+  color: var(--c-text-dim);
+  font-size: var(--fs-14);
+  white-space: nowrap;
+}
+.article-body .md-code-copy.is-copied .md-code-copied {
+  display: flex;
+}
+.article-body .md-code-copy.is-copied {
+  color: var(--c-ok);
+}
+/* 靠近右上角才亮出复制键, 同时把语言标签淡掉 (共用一个框) */
+.article-body .md-code-copy:hover,
+.article-body .md-code-copy:focus-visible {
+  opacity: 1;
+}
+.article-body .md-code:has(.md-code-copy:hover) .md-code-lang,
+.article-body .md-code:has(.md-code-copy:focus-visible) .md-code-lang {
+  opacity: 0;
+}
+
+/* 语法着色: 取 Shiki github-dark 那套色 (橘橘用的就是这个主题) */
+.article-body .md-code .tk-c { color: #8b949e; }  /* 注释 */
+.article-body .md-code .tk-k { color: #ff7b72; }  /* 关键字 */
+.article-body .md-code .tk-b { color: #79c0ff; }  /* 常量 / 内置类型 / 类名 */
+.article-body .md-code .tk-s { color: #a5d6ff; }  /* 字符串 */
+.article-body .md-code .tk-n { color: #79c0ff; }  /* 数字 / css 属性名 */
+.article-body .md-code .tk-f { color: #d2a8ff; }  /* 函数 / 选择器 */
+.article-body .md-code .tk-v { color: #ffa657; }  /* 属性 / 变量 */
+.article-body .md-code .tk-t { color: #7ee787; }  /* html 标签 */
+.article-body .md-code .tk-a { color: #79c0ff; }  /* html/json/yaml 的键 */
+.article-body .md-code .tk-o { color: #ff7b72; }  /* 运算符 */
+
+/* 行内代码: 描边 + 圆角 + 深底小色块 (形制照橘橘) */
+.article-body code {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  padding: 0.3em 0.5em;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  background: #1f1f27;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+/* 正文链接: 亮度用最高那档, 靠下划线区分 (不再吃主题紫) */
+.article-body a {
+  color: var(--c-text);
+  text-decoration: underline;
+  font-weight: 500;
+  word-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+/* @提及: setupMentions() 给站内存在的用户打 .is-user → 紫色粗体 + 紫色下划线; 查无此人就保持普通链接 */
+.article-body a.md-mention.is-user,
+.article-title a.md-mention.is-user,
+.article-intro a.md-mention.is-user,
+.article-summary a.md-mention.is-user {
+  color: var(--c-accent);
+  font-weight: bold;
+  text-decoration-color: var(--c-accent);
+}
+.article-body a.md-mention.is-user:hover,
+.article-title a.md-mention.is-user:hover,
+.article-intro a.md-mention.is-user:hover,
+.article-summary a.md-mention.is-user:hover {
+  color: var(--c-accent-hover);
+  text-decoration-color: var(--c-accent-hover);
+}
+/* 正文配图: 形制照橘橘 (圆角 + 居中), 点一下放大 */
+.article-body img.md-img {
+  display: block;
+  margin: var(--sp-4) auto;
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-md);
+  cursor: zoom-in;
+}
+/* 表情包 (alt 写成「表情」): 16×16 的行内小图跟着文字排, 不圆角不居中不放大 */
+.article-body img.md-img.md-emoji {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin: 0 2px;
+  vertical-align: -3px;
+  border-radius: 0;
+  cursor: default;
+  object-fit: contain;
+}
+/* 灯箱样式已整块搬到 main.css (聊天气泡里的图也要能点开, 而 /chat/ 不加载本文件), 别再往这里加回来 */
+
+/* ==================== 文章的自定义行内标记 (markdown.js) ==================== */
+/* 行内标记的作用域: 正文 + **标题 / 简介**（用户 2026-10-01: 标题与简介也能用自定 DOM）。
+   ⚠️ 这里不用 :is() 把三处合起来 —— 老内核不认 :is(), 整个选择器列表会一起失效（正文也会跟着丢样式）。
+   图片那两个（.md-img / .md-emoji）故意只给正文: 标题里不需要块级图片那一套 */
+/* 审查条: 一个字符一个方块, 颜色跟着所处文本走 (currentColor); 方块 = 字符格大小, 没有间隙也没有圆角,
+   所以连着写的一串会拼成一整块。
+   ⚠️ 方块宽度跟着字符走: 中日韩 / 全角 = 1em, 半角 (英文数字) = 0.5em (用户 2026-09-29 要求) */
+.article-body .md-censored i,
+.article-title .md-censored i,
+.article-intro .md-censored i,
+.article-summary .md-censored i {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin: 0;
+  border-radius: 0;
+  background-color: currentColor;
+  vertical-align: -0.15em;
+}
+.article-body .md-censored i.is-narrow,
+.article-title .md-censored i.is-narrow,
+.article-intro .md-censored i.is-narrow,
+.article-summary .md-censored i.is-narrow {
+  width: 0.5em;
+}
+/* 渐变文字: 起止色挂在 style 上的两个变量里, 缺的一端写 currentColor (= 所处文本的颜色) */
+.article-body .md-gradient,
+.article-title .md-gradient,
+.article-intro .md-gradient,
+.article-summary .md-gradient {
+  background-image: linear-gradient(90deg, var(--md-grad-from, currentColor), var(--md-grad-to, currentColor));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+/* 剧透: 亚克力遮罩盖在原文上, 点一下渐隐 (is-open)。
+   ⚠️ 面板就是元素自己的背景, 不是伪元素覆盖层 —— 内联元素换行后, 绝对定位的伪元素只能取
+   「首片段 + 末片段」的并集矩形, 会把整段的行宽都盖住 (短句子也会变成一整条)。
+   写成 background + box-decoration-break: clone 之后, 每一行各出一块圆角面板, 宽高都紧贴内容。
+   ⚠️ 这里**不能用 backdrop-filter**: 内联元素的背景滤镜作用在「并集矩形」上, 会把左右两侧的
+   普通文字一起糊掉 (实测跨行时旁边那几个字全变模糊)。原文靠 color: transparent 藏起来,
+   里面的图靠 opacity 藏 —— 面板只需要一层半透紫 + 一条高光就够了, 不需要真去模糊底下的东西 */
+.article-body .md-spoiler,
+.article-title .md-spoiler,
+.article-intro .md-spoiler,
+.article-summary .md-spoiler {
+  padding: 0.04em 0.24em;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 5px;
+  background-color: rgba(124, 92, 190, 0.42);
+  /* 顶部一条细高光, 当玻璃的反光 (会跟着 box-decoration-break 逐行复制) */
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.02));
+  color: transparent;
+  cursor: pointer;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  transition: color 0.45s ease, background-color 0.45s ease, border-color 0.45s ease;
+}
+.article-body .md-spoiler img {
+  opacity: 0;
+  transition: opacity 0.45s ease;
+}
+/* ⚠️ 正文配图默认是 display: block (见上面 .md-img), 块级孩子会把内联的剧透元素撕成两半 ——
+   面板只剩一道几像素的缝, 图根本没被盖住。放进剧透里的一律改回行内, 让面板连图一起罩住 */
+.article-body .md-spoiler .md-img {
+  display: inline-block;
+  margin: 0;
+  vertical-align: middle;
+}
+/* ⚠️ 内联元素那层背景只画「字盒」那一块, 里面有张比字高得多的图时, 面板还是只有一行字那么矮。
+   带图的剧透整体改成行内块: 面板会缩到「最宽的那个孩子」(图或字) 的大小, 高宽都跟着内容走。
+   纯文字的不受影响 (还是逐行贴着文字的那一串圆角块) */
+.article-body .md-spoiler:has(img) {
+  display: inline-block;
+  vertical-align: middle;
+}
+.article-body .md-spoiler:hover,
+.article-title .md-spoiler:hover,
+.article-intro .md-spoiler:hover,
+.article-summary .md-spoiler:hover {
+  background-color: rgba(124, 92, 190, 0.58);
+}
+.article-body .md-spoiler.is-open,
+.article-title .md-spoiler.is-open,
+.article-intro .md-spoiler.is-open,
+.article-summary .md-spoiler.is-open {
+  color: inherit;
+  background-color: transparent;
+  background-image: none;
+  border-color: transparent;
+  cursor: text;
+}
+.article-body .md-spoiler.is-open img {
+  opacity: 1;
+}
+/* 荧光笔标记: 紫色半透明底 (跨行时每行各自圆角) */
+.article-body .md-notice,
+.article-title .md-notice,
+.article-intro .md-notice,
+.article-summary .md-notice {
+  background-color: rgba(148, 94, 236, 0.30);
+  border-radius: 3px;
+  padding: 0.06em 0.16em;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+/* 右下角大号引号水印 */
+.article-body .md-quote::after {
+  content: '”';
+  position: absolute;
+  top: 1.2rem;
+  right: -1rem;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 8rem;
+  line-height: 1;
+  color: var(--c-text-muted);
+  transform: rotate(-15deg);
+  opacity: 0.1;
+  pointer-events: none;
+}
+/* 旧的 md-code / code / a 规则已按橘橘的形制重写, 别再在这儿另写一套背景/描边 */
+
+/* 编辑器 */
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  text-align: left;
+  width: 100%;
+}
+.editor textarea {
+  min-height: 320px;
+  resize: vertical;
+  width: 100%;
+  line-height: 1.6;
+  /* 编辑栏也用思源黑体: 等宽字体下中文会掉到系统宋体, 与预览对不上 */
+  font-family: var(--font-sans);
+  font-size: var(--fs-20); /* 20px: 太小会渲染得像像素字体 */
+}
+/* 字段标签的底色 = 页面底色, 看着像透明: 它的作用就是切断输入框的描边, 真透明会让描边从文字后面穿过去 (登录页压在卡片上, 保持 --c-surface) */
+.editor .field label {
+  background-color: var(--c-page-bg);
+}
+.editor-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-3);
+}
+/* 按钮分组: 宽屏用 display: contents 让按钮回到同一行, 窄屏才真的分三行 (见 main-media.css) */
+.editor-group {
+  display: contents;
+}
+.editor-row input[type="text"] {
+  flex: 1;
+  min-width: 200px;
+}
+.editor-syntax {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1) var(--sp-4);
+  line-height: 1.6;
+  /* md 文档的字小一档, 否则显得臃肿; 弹窗底部那两行说明走 .md-rules-note, 同一档 */
+  font-size: var(--fs-18);
+}
+.md-rules-note {
+  margin-top: var(--sp-3);
+  font-size: var(--fs-18);
+  line-height: 1.7;
+  color: var(--c-text-dim);
+}
+.md-rules-note b {
+  color: var(--c-text);
+}
+/* 「公式 (LaTeX)」那一小节的小标题 */
+.md-rules-title {
+  margin-top: var(--sp-4);
+  font-size: var(--fs-18);
+  font-weight: bold;
+  color: var(--c-text);
+}
+.editor-syntax b {
+  color: var(--c-accent-hover);
+  font-weight: bold;
+}
+/* 「缩进」下拉框: 挨着「Md 规则」放, 只桌面端可见 (≤900 在 main-media.css 里隐藏) */
+.editor-indent {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  white-space: nowrap;
+  color: var(--c-text-dim);
+  font-size: var(--fs-18);
+}
+.editor-indent select {
+  width: 78px;
+  padding: var(--sp-2) var(--sp-6) var(--sp-2) var(--sp-3);   /* 右边给自绘小三角留位 */
+  font-size: var(--fs-18);
+  text-align: center;
+}
+
+/* 「Md 规则」按钮靠右站 */
+.editor-md-help {
+  margin-left: auto;
+}
+/* 「插入图片」按钮的图标排版 (.editor-image-btn) 与插图弹窗那套已挑到 main.css —— 个人页的「个性化 → 上传图片」要用同一个弹窗 */
+/* 预览里的正文按文章排版走, 但要跟着弹窗宽度伸缩 (不能吃 .article-body 的 36em) */
+.modal-preview-body {
+  max-width: 100%;
+  width: min(60ch, 70vw);
+}
+/* .modal-busy / .busy-spinner 已挑到 main.css (资源页也要用那个转圈, 它不加载本文件) */
+
+/* 文章页骨架: 正文栏 + 右侧目录; 别删这一条 —— 子项的 flex: 1 / flex: none 在没有 flex 父级时全是废的, 桌面端会退化成单列、目录掉到文章下面 (1040px 与个人页 .profile-layout 同宽) */
+.article-layout {
+  width: min(1040px, 100%);
+  display: flex;
+  align-items: flex-start;   /* 不能让目录 stretch: 被拉满整篇高 sticky 就没得粘 */
+  gap: var(--sp-10);
+}
+.article-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+}
+.article-main > .panel {
+  width: 100%;
+  margin: 0;
+}
+
+/* 侧边目录: 桌面 sticky、无卡片, 直接铺在页面上 */
+.article-toc {
+  position: sticky;
+  top: calc(var(--sp-8) + 56px + var(--sp-4)); /* 让开悬浮 Header */
+  flex: none;
+  width: 275px;
+  max-height: calc(100vh - 180px);
+  overflow-y: auto;
+  text-align: left;
+}
+/* 目录头部: 左边标题, 右边关闭键 (关闭键只在窄屏抽屉里出现) */
+.article-toc-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+}
+.article-toc-title {
+  font-size: var(--fs-18);
+  color: var(--c-text); /* 白色 */
+  margin-bottom: 0;
+}
+.article-toc-close {
+  display: none; /* 宽屏是 sticky 侧栏不需要关, 由 main-media.css 在窄屏打开 */
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 50%;
+  color: var(--c-text-dim);
+  background: rgba(255, 255, 255, 0.06);
+  transition: color 0.2s, background-color 0.2s;
+}
+.article-toc-close svg { width: 20px; height: 20px; }
+.article-toc-close:hover { color: var(--c-text); background: rgba(255, 255, 255, 0.16); }
+.article-toc-nav {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 单条目录: 左侧章节进度条 + 标题文字 (借鉴双葉橘) */
+.toc-item {
+  position: relative;
+  display: flex;
+}
+.toc-bar {
+  position: absolute;
+  left: 0;
+  top: 5%;
+  width: 2px;
+  height: 0; /* 由 JS 按阅读进度写入 */
+  border-radius: 2px;
+  background: transparent;
+  transition: background-color 0.3s;
+}
+/* 正在阅读的章节 → 紫; 已读完的章节 → 灰 */
+.toc-item.in-view .toc-bar { background: var(--c-accent); }
+.toc-item.is-read .toc-bar { background: var(--c-border); }
+
+.toc-link {
+  flex: 1;
+  min-width: 0;
+  margin-left: var(--sp-2);
+  padding: var(--sp-1) var(--sp-2);
+  text-align: left;
+  font-size: var(--fs-18);
+  font-weight: normal; /* 靠加粗区分当前章节, 不能被全站 button 粗体盖掉 */
+  line-height: 1.4;
+  color: var(--c-text-dim);
+  cursor: pointer;
+  transition: color 0.2s, background-color 0.2s;
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* 长标题最多两行 */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.toc-link:hover { color: var(--c-text); }
+/* 视野内的章节: 紫字加粗 + 淡底 (连续多节时拼成一整块圆角) */
+.toc-item.in-view .toc-link {
+  color: var(--c-accent-hover);
+  font-weight: bold;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+.toc-item.pill-start .toc-link {
+  border-top-left-radius: var(--radius-sm);
+  border-top-right-radius: var(--radius-sm);
+}
+.toc-item.pill-end .toc-link {
+  border-bottom-left-radius: var(--radius-sm);
+  border-bottom-right-radius: var(--radius-sm);
+}
+/* 层级缩进: 小标题前面空更多 (横向缩进, 不是垂直间距) */
+.toc-item.level-3 .toc-link { padding-left: var(--sp-6); }
+.toc-item.level-4 .toc-link { padding-left: var(--sp-10); }
+
+/* 右下角悬浮操作组: 目录按钮(窄屏) + 阅读进度球 (.action-buttons / .action-btn 本体在 main.css, 文章列表页共用) */
+.toc-toggle { display: none; } /* 仅窄屏出现 (抽屉入口) */
+
+/* 阅读进度球: 百分比数字 -> 上箭头 互切; 居中用 top/left 50% + translate, 不能用 inset: 0 (svg 有固定宽高, 会被挤到左上角) */
+.scroll-btn { position: relative; }
+.scroll-btn .top-text,
+.scroll-btn .top-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  transition: opacity 0.15s ease;
+}
+.scroll-btn .top-text {
+  display: flex;
+  align-items: baseline;
+  gap: 1px;
+  white-space: nowrap;
+  opacity: 1;
+}
+.scroll-btn .top-text .sign { font-size: 10px; }
+.scroll-btn .top-icon { opacity: 0; }
+.action-buttons.ended .top-text,
+.scroll-btn:hover .top-text { opacity: 0; }
+.action-buttons.ended .top-icon,
+.scroll-btn:hover .top-icon { opacity: 1; }
+
+.toc-shade {
+  position: fixed;
+  inset: 0;
+  z-index: 109;
+  background: rgba(0, 0, 0, 0.55);
+  display: none;
+}
+.toc-shade.show { display: block; }
+
+/* 正文标题 (作为目录锚点) */
+.article-body .md-heading {
+  color: var(--c-text);
+  font-weight: bold;
+  line-height: 1.4;
+  scroll-margin-top: calc(var(--sp-8) + 56px + var(--sp-4)); /* 避开固定 Header */
+}
+/* 字号梯度只比正文大一级, 别跟文章标题抢戏; 上间距加一档让每节明显断开 */
+.article-body h2.md-heading {
+  font-size: var(--fs-28);
+  margin: var(--sp-10) 0 var(--sp-3);
+}
+.article-body h3.md-heading {
+  font-size: var(--fs-20);
+  margin: var(--sp-8) 0 var(--sp-2);
+  padding-left: var(--sp-3);
+  border-left: 3px solid var(--c-accent);
+}
+.article-body h4.md-heading {
+  font-size: var(--fs-14);
+  margin: var(--sp-6) 0 var(--sp-2);
+}
+
+/* 文章头: meta 行 (图标 + 小字灰字) + 分割线 */
+.article-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2) var(--sp-4);
+  font-size: var(--fs-14);
+  color: var(--c-text-dim);
+}
+.article-meta .meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap-micro);
+}
+.article-meta .meta-item svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  opacity: 0.75;
+}
+/* 作者: 头像 + 昵称, 整块可点进作者主页 (.meta-author / .meta-author-avatar 本体在 main.css, 列表卡片共用) */
+/* 编辑 / 删除靠右 */
+.article-meta .meta-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-left: auto;
+}
+/* 「已编辑」与两个按钮用同一套内边距 (原来只有按钮自带 8px, 间距不均); 字号钉在 meta 行的 14px, 否则窄屏 button 那条会把它俩撑大 */
+.article-meta .meta-actions > * {
+  padding-left: var(--sp-2);
+  padding-right: var(--sp-2);
+  font-size: var(--fs-14);
+}
+.article-meta .meta-actions > *:last-child {
+  padding-right: 0;
+}
+/* 无框体: 正文与评论直接铺在页面背景上 (参考双葉橘) */
+.article-section {
+  width: 100%;
+}
+.article-divider {
+  margin: var(--sp-4) 0;
+  width: 40%;
+  border: none;
+  border-top: 1px solid var(--c-border);
+}
+
+/* ==================== LaTeX (轻量渲染, script/latex.js) ==================== */
+/* 配色/尺寸跟正文走, 字体挑「看着像数学」的衬线体; 全部正体 —— 变量斜体在深色底上太碎, 别再往回加那组补丁规则 */
+.md-math {
+  font-family: 'Cambria Math', 'Latin Modern Math', 'Times New Roman', 'Georgia', serif;
+  font-style: normal;
+  font-size: 1.06em;
+  line-height: 1.3;
+  color: var(--c-text);
+  white-space: normal;
+}
+/* 独立公式: 居中 + 上下留白 + 太宽了自己横滚 (别把卡片撑破) */
+.md-math.is-display {
+  display: block;
+  margin: var(--sp-4) 0;
+  padding: 0 var(--sp-2);
+  text-align: center;
+  font-size: 1.2em;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+.md-math-op {
+  padding: 0 0.12em;
+}
+.md-math-bf { font-weight: bold; }
+.md-math-cal { font-family: 'Cambria Math', 'Latin Modern Math', Georgia, serif; }
+.md-math-tt { font-family: var(--font-mono); }
+.md-math-br { display: block; content: ''; }
+.md-math-align { display: inline-block; width: 1.2em; }
+/* 分数: 上下两行 + 中间一条线 (inline-flex 竖着排, 行高自然撑开) */
+.md-math-frac {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  vertical-align: -0.45em;
+  margin: 0 0.12em;
+  font-size: 0.94em;
+}
+.md-math-num { padding: 0 0.25em; }
+.md-math-den {
+  padding: 0 0.25em;
+  border-top: 1px solid currentColor;
+}
+/* 根号: √ + 上面一条横线 (被开方数上边框) */
+.md-math-root {
+  display: inline-flex;
+  align-items: flex-start;
+  margin: 0 0.1em;
+}
+.md-math-rad {
+  transform: scaleY(1.12);
+  transform-origin: bottom;
+}
+.md-math-idx {
+  font-size: 0.62em;
+  margin-right: -0.15em;
+}
+.md-math-radicand {
+  border-top: 1px solid currentColor;
+  padding: 0 0.15em;
+  margin-top: 0.08em;
+}
+/* 上划线 / 下划线 / 帽子 (\\vec \\hat \\bar …) */
+.md-math-overline,
+.md-math-underline,
+.md-math-accent {
+  position: relative;
+  display: inline-block;
+}
+.md-math-overline { border-top: 1px solid currentColor; padding-top: 0.05em; }
+.md-math-underline { border-bottom: 1px solid currentColor; }
+.md-math-mark {
+  position: absolute;
+  left: 50%;
+  top: -0.72em;
+  transform: translateX(-50%);
+  font-size: 0.72em;
+  line-height: 1;
+}
+/* 公式里的上下标比正文小一档, 免得太挤 */
+.md-math sup,
+.md-math sub {
+  font-size: 0.72em;
+}
+/* 评论里的公式比正文再小一点 (评论本来就不是主角) */
+.comment-text .md-math {
+  font-size: 1em;
+}
+
+/* ==================== 评论区 ==================== */
+/* 形制照双葉橘用的 Waline: 头像 + 昵称 + 时间, 两级楼中楼; 整页平铺不套框, 只用一条分割线跟正文分开 */
+/* 评论正文借用了 .article-body 的排版, 下面这些覆盖规则靠顺序压过去 (同为 0,1,0 / 0,1,1) */
+.comment-section {
+  margin-top: var(--sp-10);
+  padding-top: var(--sp-8);
+  border-top: 1px solid var(--c-border);
+}
+.comment-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-5);
+}
+.comment-title {
+  font-size: var(--fs-22);
+  font-weight: bold;
+  color: var(--c-text);
+}
+.comment-total {
+  font-size: var(--fs-14);
+  color: var(--c-text); /* 计数小字 → 纯白 */
+}
+
+/* ---------- 发表框 ---------- */
+.comment-form {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-6);
+}
+.comment-form-main {
+  flex: 1;
+  min-width: 0;
+}
+.comment-form textarea {
+  width: 100%;
+  /* 默认 1 行高, 高度由 autoGrowCommentInput() 按内容写内联值 */
+  min-height: 46px;
+  max-height: 40vh;
+  line-height: 1.7;
+  overflow-y: hidden;
+  /* 必须关掉右下角的拖拽把手 (浏览器默认 resize: both): 高度是 JS 按内容算的, 手动拖过之后会被 autoGrow 按回原样; 编辑器那个大文本框仍 resize: vertical */
+  resize: none;
+}
+.comment-form-foot {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-top: var(--sp-2);
+}
+.comment-form-foot .btn {
+  flex: none;
+  margin-left: auto; /* 按钮靠右下 (Waline 也是这个位置) */
+}
+/* 插入图片: 平时不在布局里, 评论框一聚焦就从左边滑进来 + 淡入 */
+.comment-image-btn {
+  display: none;
+  flex: none;
+  align-self: flex-start;
+  align-items: center;
+  gap: var(--gap-micro);
+  margin-top: 2px;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  font-size: var(--fs-14);
+  font-weight: normal;
+  white-space: nowrap;
+  color: var(--c-text-dim);
+  background: rgba(0, 0, 0, 0.35);
+  transition: color 0.2s, border-color 0.2s;
+}
+.comment-image-btn svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+.comment-image-btn:hover {
+  color: var(--c-accent-hover);
+  border-color: var(--c-accent);
+}
+.comment-form.is-focus .comment-image-btn {
+  display: inline-flex;
+  animation: comment-img-in 0.28s ease both;
+}
+@keyframes comment-img-in {
+  from {
+    opacity: 0;
+    transform: translateX(-14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.comment-guest {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-6);
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px dashed var(--c-border);
+  border-radius: var(--radius-md);
+}
+
+/* ---------- 头像 ---------- */
+.comment-face {
+  flex: none;
+  display: block;
+  width: 44px;
+  height: 44px;
+}
+.comment-avatar {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--c-border);
+}
+
+/* ---------- 一条评论 ---------- */
+.comment-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+}
+.comment-thread {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+.comment-item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+}
+.comment-main {
+  flex: 1;
+  min-width: 0;
+}
+.comment-meta {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-1);
+}
+.comment-name {
+  font-size: var(--fs-18);
+  font-weight: bold;
+  color: var(--c-text);
+}
+a.comment-name:hover {
+  color: var(--c-accent-hover);
+}
+.comment-reply-to {
+  font-size: var(--fs-14);
+  color: var(--c-accent-hover);
+}
+.comment-time {
+  font-size: var(--fs-14);
+  color: var(--c-text-faint);
+}
+/* 评论正文: 把 .article-body 那套阅读态收一收 (评论是配角); 段落那层必须显式写字号 —— 全局 p { font-size } 会压过继承, 只写容器没用 */
+.comment-text,
+.comment-text :is(p, li, dt, dd, th, td, blockquote, figcaption) {
+  font-size: var(--fs-18);
+}
+.comment-text {
+  max-width: none;
+  line-height: 1.75;
+  color: var(--c-text-muted);
+  /* 清掉 .article-body 自带的 margin-top, 只留 .comment-meta 那 4px, 紧凑但不粘 */
+  margin-top: 0;
+}
+.comment-text p {
+  margin: 0 0 var(--sp-2);
+}
+.comment-text > :first-child {
+  margin-top: 0;
+}
+.comment-text > :last-child {
+  margin-bottom: 0;
+}
+/* 「该评论已删除」占位: 用 --c-text-dim 而不是更淡的 --c-text-faint, 得看得清又不抢眼 */
+.comment-deleted {
+  font-size: var(--fs-14);
+  color: var(--c-text-dim);
+}
+
+/* 回复 / 删除: 小图标按钮, 平时淡、指上去才亮 (与文章头 .meta-actions 一个路子) */
+.comment-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-top: var(--sp-2);
+}
+.comment-action {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap-micro);
+  padding: 0;
+  font-size: var(--fs-14);
+  font-weight: normal;
+  color: var(--c-text-faint);
+  background: none;
+  transition: color 0.2s;
+}
+.comment-action svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+.comment-action:hover {
+  color: var(--c-accent-hover);
+}
+.comment-action.is-danger:hover {
+  color: var(--c-danger);
+}
+
+/* ---------- 楼中楼: 缩进 + 左侧一条竖线 ---------- */
+.comment-replies {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  margin-left: 56px; /* = 顶层头像 44 + 间距 12 */
+  padding-left: var(--sp-4);
+  border-left: 2px solid rgba(255, 255, 255, 0.08);
+}
+.comment-item.is-reply .comment-face {
+  width: 34px;
+  height: 34px;
+}
+
+/* ---------- 发表框上那条「正在回复 @xx」 ---------- */
+.comment-reply-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-14);
+  color: var(--c-text-dim);
+}
+.comment-reply-cancel {
+  padding: 0 4px;
+  font-size: var(--fs-14);
+  color: var(--c-text-faint);
+  background: none;
+}
+.comment-reply-cancel:hover {
+  color: var(--c-danger);
+}
+.comment-empty {
+  padding: var(--sp-4) 0;
+  font-size: var(--fs-18);
+  color: var(--c-text-faint);
+}
+
+/* ==================== 叙述模式 (body.page-narra) ==================== */
+/* 去掉首屏那层紫色柔光, 背景交给会呼吸的三角网格 (script/grid-bg.js) */
+body.page-narra::before {
+  display: none;
+}
+.narra-grid {
+  display: none;
+}
+body.page-narra .narra-grid {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: -1;          /* 与 body::before 同一层: 在内容底下, 但看得见 */
+  pointer-events: none;
+}
+/* 叙述没有这几项: 缩进 / Md 规则 (用户 2026-10-01) */
+body.page-narra .editor-indent,
+body.page-narra .editor-md-help {
+  display: none;
+}
+/* 叙述阅读页那一行 QuoteKey 要能选中 (全文是 body 的 user-select: none, 得自己开回来) */
+body.page-narra .article-view .article-intro {
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
+}

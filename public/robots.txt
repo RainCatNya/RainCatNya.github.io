@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /login
+Disallow: /profile
+Disallow: /access-denied.html
+Disallow: /api/
+Disallow: /cdn-cgi/
+Sitemap: https://foraine.xyz/sitemap.xml

@@ -1,0 +1,675 @@
+/* ==================== 资源页 /resource/ ==================== */
+/* 列表布局整套沿用文章列表页 (page-list.css), 这里只补搜索框 / 右栏统计 / 详情 / 上传弹窗 */
+/* 详情与列表在同一个 HTML 里 (带 ?id= 时换上 #detail-view), .resource-detail-* 不跟 .article-* 混 */
+/* 文件类型小标住在 main.css, 个人页的作品页签也用同一套 */
+
+/* 计数行里的搜索框: flex: 1 吃掉计数与排序按钮之间的空档; 窄屏折行时靠 flex-basis 落一行 */
+.resource-search {
+  flex: 1 1 160px;
+  min-width: 0;
+  padding: 6px var(--sp-3);
+  border: 2px solid var(--c-border);
+  border-radius: var(--radius-md);
+  background: rgba(0, 0, 0, 0.42);
+  color: var(--c-text);
+  font-size: var(--fs-14);
+  /* .list-head 挂着 No-slc, 输入框里得能划词, 这里单独放开 */
+  user-select: text;
+}
+.resource-search::placeholder {
+  color: var(--c-text-faint);
+}
+.resource-search:focus {
+  border-color: var(--c-accent);
+  outline: none;
+}
+
+/* 右栏第三块: 存储统计 (三行「键 —— 值」) */
+.resource-stats {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.resource-stat {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  font-size: var(--fs-14);
+  color: var(--c-text-dim);
+}
+.resource-stat-key {
+  flex: none;
+  font-size: var(--fs-14);
+  color: var(--c-text-faint);
+}
+.resource-stat-value {
+  color: var(--c-text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ==================== 详情 ==================== */
+
+.resource-detail {
+  width: min(760px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-6);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  background: rgba(0, 0, 0, 0.35);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.30);
+}
+.resource-detail-title {
+  font-size: var(--fs-28);
+  font-weight: bold;
+  color: var(--c-text);
+  word-break: break-word;
+}
+.resource-detail-meta {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-3);
+  /* 必须在这里自己声明字号与颜色: 本页不加载 page-article.css, 继承 body 的话这一行会变成 20px 亮色 */
+  font-size: var(--fs-14);
+  color: var(--c-text-dim);
+}
+.resource-detail-meta .meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap-micro);
+}
+/* 元信息之间补一个中点: 两个日期挨在一起时光靠间距分不清谁是谁 */
+.resource-detail-meta > * + *::before {
+  content: '·';
+  margin-right: var(--sp-2);
+  color: var(--c-text-faint);
+}
+/* 简介用正文字号: 它是这一页的正文, 不是卡片上那句摘要 */
+.resource-detail-desc {
+  font-size: var(--fs-20);
+  color: var(--c-text-muted);
+  white-space: pre-line; /* 简介里换行就换行 */
+  word-break: break-word;
+}
+/* 「文件名」那一行: 标题是手写的, 下载下来叫什么得看清楚 */
+.resource-detail-file,
+.resource-detail-hash {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  font-size: var(--fs-14);
+}
+.resource-file-name,
+.resource-hash {
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: var(--fs-14);
+  color: var(--c-text-muted);
+  word-break: break-all;
+}
+/* 校验值的标签是个按钮: 两个校验值都存着, 点一下换另一个看 (值本身仍然是点一下即复制) */
+.resource-hash-key {
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.resource-hash-key:hover:not(:disabled) {
+  color: var(--c-accent-hover);
+}
+.resource-hash-key:disabled {
+  cursor: default;
+}
+
+.resource-hash {
+  padding: 1px var(--sp-1);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+.resource-hash:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--c-accent-hover);
+}
+.resource-detail-actions {
+  margin-top: var(--sp-3);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+}
+
+/* 图片 / 文本预览 */
+.resource-preview {
+  width: min(760px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+.resource-preview-title {
+  font-size: var(--fs-18);
+  font-weight: bold;
+  color: var(--c-text);
+}
+.resource-preview-img {
+  max-width: 100%;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--c-border);
+  background: rgba(0, 0, 0, 0.35);
+}
+/* 文本预览: 只给前 20000 字 (前端截的), 超了在这里滚 */
+.resource-preview-text {
+  max-height: 60vh;
+  overflow: auto;
+  margin: 0;
+  padding: var(--sp-4);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  background: rgba(0, 0, 0, 0.42);
+  color: var(--c-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--fs-14);
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* 复制失败时的退路: 把内容放进一个看不见的输入框里选中 (要能 select, 不能用 display: none) */
+.resource-copy-helper {
+  position: fixed;
+  left: -9999px;
+  top: 0;
+}
+
+/* ==================== 上传弹窗 ==================== */
+/* 借 .confirm-dialog / .confirm-input / .confirm-actions 那套排版, 只补拖选框与有效期那一行 */
+/* 工作台那两栏与队列卡片见文件末尾的「上传工作台」段 */
+
+.resource-drop {
+  margin-top: var(--sp-4);
+}
+/* 有效期那一行: 左边小字 + 右边下拉框 (下拉框由 core/ui 那套换皮) */
+.resource-expire-row {
+  margin-top: var(--sp-4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+
+/* ==================== 详情里的文件面板 ==================== */
+/* 一个组可能有多个文件, 每个文件自己一块 (标题 / 简介 / 文件名·大小·校验值 / 下载 / 预览) */
+/* 与组头 .resource-detail 同宽同圆角, 底色更淡一档, 一眼看出「这是组里的一个」 */
+.resource-file {
+  width: min(760px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-5);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  background: rgba(0, 0, 0, 0.26);
+}
+.resource-file-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+}
+.resource-file-title {
+  margin: 0;
+  font-size: var(--fs-22);
+  font-weight: bold;
+  color: var(--c-text);
+  word-break: break-word;
+}
+.resource-file-desc {
+  font-size: var(--fs-18);
+  color: var(--c-text-muted);
+  white-space: pre-line;
+  word-break: break-word;
+}
+/* 「键 —— 值」那几行 (文件名 / 大小 / 校验值) 挨着排, 别各自留一大截 */
+.resource-file-lines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+/* ==================== 详情两栏 + 防盗面板 ==================== */
+/* 左 = 文件面板, 右 = 防盗开关, 组头横跨两栏 (相当于这一页的大标题) */
+/* 源码次序是「组头 -> 防盗 -> 文件」: 窄屏塌成一栏时防盗那块正好落在文件面板上面 */
+.resource-detail-wrap {
+  align-self: center;
+  width: min(1060px, 100%);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  gap: var(--sp-5);
+  align-items: start;
+}
+.resource-detail-head { grid-column: 1 / -1; }
+.resource-detail-col,
+.resource-side { min-width: 0; }
+.resource-detail-col {
+  grid-column: 1;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+.resource-side {
+  grid-column: 2;
+  grid-row: 2;
+  /* 右栏不止一块卡 (防盗 + 公开编辑), 竖着排开 */
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+/* 这几类卡自己带 min(760px) 宽, 进了栅格就吃满自己那一栏 */
+.resource-detail-wrap .resource-detail,
+.resource-detail-wrap .resource-file,
+.resource-detail-wrap .resource-preview { width: 100%; }
+
+/* 防盗卡 (外壳照右栏那几块, 不另立一套) */
+.resource-guard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  background: rgba(0, 0, 0, 0.35);
+}
+.resource-guard-hint {
+  font-size: var(--fs-14);
+  line-height: 1.7;
+  color: var(--c-text-dim);
+}
+.resource-guard-target {
+  font-size: var(--fs-14);
+  color: var(--c-text-faint);
+}
+.resource-guard-target.is-on { color: var(--c-accent-hover); }
+.resource-guard-btn { width: 100%; }
+
+/* 「公开编辑」卡: 外壳与防盗卡同一套, 压在它下面 */
+/* 差在底部那行: 防盗是一个按钮, 这里是一个开关 (.ctx-switch) + 状态字 */
+.resource-allow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  background: rgba(0, 0, 0, 0.35);
+}
+.resource-allow-hint {
+  font-size: var(--fs-14);
+  line-height: 1.7;
+  color: var(--c-text-dim);
+}
+.resource-allow-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  cursor: pointer;
+}
+.resource-allow-state {
+  font-size: var(--fs-14);
+  color: var(--c-text-faint);
+  transition: color 0.2s;
+}
+.resource-allow-state.is-on { color: var(--c-accent-hover); }
+
+/* 被选中的文件面板 (防盗按钮的目标); 点面板空白处选中, 边框得给个明确反馈 */.resource-file.is-picked { border-color: var(--c-accent); }
+.resource-file-pick {
+  margin-left: auto;
+  padding: 2px var(--sp-2);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--c-text-faint);
+  font-size: var(--fs-14);
+  cursor: pointer;
+}
+.resource-file-pick:hover { color: var(--c-text); }
+.resource-file.is-picked .resource-file-pick {
+  border-color: var(--c-accent);
+  color: var(--c-accent-hover);
+}
+/* 已防盗的小标 (面板标题那头一枚) */
+.resource-guard-chip {
+  padding: 2px var(--sp-2);
+  border: 1px solid var(--c-accent);
+  border-radius: var(--radius-sm);
+  color: var(--c-accent-hover);
+  font-size: var(--fs-14);
+  white-space: nowrap;
+}
+/* 文件的上传者: 每个文件都要标出是谁传的 */
+/* 与「已启用防盗链」那枚不同, 它是信息不是状态, 所以素一点、不吃强调色 */
+.resource-file-owner,
+.rw-item-owner {
+  margin-left: auto;
+  padding: 2px var(--sp-2);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--c-text-faint);
+  font-size: var(--fs-14);
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap-micro);
+}
+/* 详情页文件卡片的底部动作行: 两枚标识压在最右端 */
+/* 只给第一枚 auto: 两枚都写 auto 会平分空白, 第二枚悬在中间 */
+.resource-detail-actions .resource-guard-chip { margin-left: auto; }
+.resource-detail-actions .resource-guard-chip + .resource-file-owner { margin-left: 0; }
+/* 队列里别人的文件: 不给改名也不给删, 压暗一档让人一眼看出动不了 */
+.rw-item-owner { margin-left: auto; }
+.rw-item.is-locked { opacity: 0.72; }
+
+/* ==================== 上传工作台 ==================== */
+/* 左栏 = 文件队列 (可拖动排序), 右栏 = 拖选框 + 组与文件的标题简介 + 有效期 */
+/* 一次上传 = 一组文件, 队列次序就是组内 seq 的次序 */
+/* 二次确认走「按钮点两次」(.btn.is-armed), 工作台里不放任何弹窗 */
+.resource-workbench {
+  width: min(880px, 92vw);
+  /* 不给定高: 超出屏幕时由 .modal-panel (80vh + overflow: auto) 统一滚 */
+  /* 千万别在列里再开一层滚动容器, 那就是「两个滚动条 + 一块空区」的来源 */
+}
+.rw-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--sp-4);
+  /* 两栏一样高: 右栏通常更高, 左栏拉满队列才会铺到按钮行上面 (start 时左下会空一块) */
+  align-items: stretch;
+}
+.rw-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  min-width: 0;
+  min-height: 0;
+}
+/* 按钮行: 横跨面板底部 (取消 / 确认上传 / 有效期在一行) */
+/* 不能塞进左栏: 左栏只有面板一半宽, 五个控件挤不下一行 */
+/* 要覆盖 .confirm-actions 默认的 flex-end, 才是「偏左」 */
+.rw-actions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-top: var(--sp-4);
+}
+/* 有效期那一格贴在按钮行的右端 */
+.rw-expire-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+/* 「有效期」下拉框要和旁边那两个按钮一样高 */
+/* .ui-select-btn 全站的 line-height 写死了 1.28, 而这一行的按钮走字体自己的行盒 (差 3.5px) */
+/* 只改工作台里这一格, 别动全站那份 */
+.resource-workbench .rw-expire-row .ui-select-btn {
+  line-height: normal;
+}
+
+/* 桌面端: 列表空的时候不要那句「上传列表为空」; 有效期不要文字标签 */
+@media (min-width: 901px) {
+  .rw-empty,
+  .rw-expire-row .resource-stat-key {
+    display: none;
+  }
+  /* 左栏那个滑动框要固定大小, 不然队列越长模态框越高 */
+  /* 光给 .rw-queue 写 max-height / height 治不了: grid 行高取两栏固有高度的最大值, 队列再长也算进去 */
+  /* 解法: 套一层绝对定位的容器, 固有高度那一路只剩 0, 行高完全由右栏决定 */
+  /* 只在桌面两栏生效: 窄屏是一栏两行, 绝对定位会把高度算成 0 */
+  .rw-queue-col {
+    position: relative;
+  }
+  .rw-queue-fill {
+    position: absolute;
+    inset: 0;
+  }
+}
+/* 左栏里那一摞 (标签 + 队列 + 空状态): 队列吃掉剩下的高度, 其余两块不缩 */
+.rw-queue-fill {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  min-height: 0;
+}
+.rw-queue-fill > .rw-label,
+.rw-queue-fill > .rw-empty {
+  flex: none;
+}
+/* 两栏都是 flex 列: 这些孩子不写 flex: none 会被 flex-shrink 压扁 (autoGrow 算 98px 却渲染 17px) */
+.rw-form-col > *,
+.rw-item {
+  flex: none;
+}
+.rw-label {
+  font-size: var(--fs-14);
+  color: var(--c-text-faint);
+}
+.rw-sum {
+  color: var(--c-text-muted);
+}
+.rw-empty {
+  padding: var(--sp-4);
+  border: 1px dashed var(--c-border);
+  border-radius: var(--radius-md);
+  color: var(--c-text-faint);
+  font-size: var(--fs-14);
+  text-align: center;
+}
+/* 队列本体: 高度由 .rw-queue-fill 的剩余高度决定 (桌面端 = 右栏的高度), 太长就自己滚 */
+/* 不参与网格行的固有高度, 所以撑不高模态框; 不封顶 (封顶的话最后一张卡会被截断) */
+.rw-queue {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.rw-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  background: rgba(0, 0, 0, 0.30);
+  cursor: pointer;
+}
+.rw-item.is-picked { border-color: var(--c-accent); }
+.rw-item.is-over { border-color: var(--c-accent-hover); }
+.rw-item.is-done { border-color: var(--c-border); opacity: 0.75; }
+.rw-item.is-failed { border-color: var(--c-danger); }
+/* 「编辑组」里标了删除的那些: 点一下只是标记, 提交时才真删 */
+/* 名字划线 + 校验值那行变暗; 按钮不跟着变淡, 不然「撤销」不好找 */
+.rw-item.is-removed { border-color: var(--c-danger); background: rgba(0, 0, 0, 0.16); }
+.rw-item.is-removed .rw-item-name {
+  text-decoration: line-through;
+  color: var(--c-text-faint);
+}
+.rw-item.is-removed .rw-item-meta { color: var(--c-danger); }
+.rw-item-head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+.rw-item-index {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.45);
+  color: var(--c-text-faint);
+  font-size: var(--fs-14);
+  text-align: center;
+  line-height: 20px;
+}
+.rw-item-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-14);
+  color: var(--c-text);
+}
+.rw-item-remove,
+.rw-item-preview-btn {
+  flex: none;
+  padding: 2px var(--sp-2);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--c-text-faint);
+  font-size: var(--fs-14);
+  cursor: pointer;
+}
+.rw-item-remove:hover,
+.rw-item-preview-btn:hover { color: var(--c-accent-hover); }
+
+/* 图片 / 文本的队列内预览: 卡片上先给个「预览」, 点了才展开 */
+.rw-item-preview {
+  max-height: 220px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.35);
+}
+.rw-item-preview img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  /* 图片原生可拖, 在面板里拖会拖出一个图片阴影, 看着像整个面板被拖走了 */
+  -webkit-user-drag: none;
+  user-select: none;
+}
+.rw-item-preview pre {
+  margin: 0;
+  padding: var(--sp-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs-14);
+  color: var(--c-text-muted);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.rw-item-meta,
+.rw-item-state {
+  font-size: var(--fs-14);
+  color: var(--c-text-faint);
+  word-break: break-all;
+}
+.rw-item-state.is-bad { color: var(--c-danger); }
+.rw-item-bar {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+.rw-item-fill {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--c-accent);
+  transition: width 0.2s linear;
+}
+/* 那一对标题简介框: 目标在「组」与「选中的文件」之间切, 靠上面那行字说明白对象是谁 */
+.rw-meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  background: rgba(0, 0, 0, 0.26);
+}
+.rw-meta-which {
+  font-size: var(--fs-14);
+  color: var(--c-text-muted);
+  word-break: break-all;
+}
+/* 上传/保存期间顶掉拖选框的那块: 标题 + 总进度条 + 一行读数 */
+/* margin-top 跟 .resource-drop 对齐, 换脸的时候两块的起始线不能跳 */
+.rw-progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin-top: var(--sp-4);
+  padding: var(--sp-4);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  background: rgba(0, 0, 0, 0.26);
+}
+/* 它自己有 display: flex, 不写这条 [hidden] 压不住 */
+.rw-progress[hidden] {
+  display: none;
+}
+.rw-progress-title {
+  font-size: var(--fs-20);
+  color: var(--c-text);
+}
+.rw-progress-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+.rw-progress-fill {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--c-accent);
+  transition: width 0.3s linear;
+}
+.rw-progress-text {
+  font-size: var(--fs-14);
+  color: var(--c-text-dim);
+}
+/* 上传/保存期间那三个控件要「变灰」 */
+/* main.css 的 disabled 是故意保持文字亮色的, 这里显式盖回来, 只作用于工作台 */
+.resource-workbench .confirm-input:disabled,
+.resource-workbench #rw-expire:disabled {
+  color: var(--c-text-faint);
+  -webkit-text-fill-color: var(--c-text-faint);
+}
+/* .confirm-input 自带 margin-top: 16px (那是给弹窗里竖排输入框用的), 进这个盒子就成了多余的缝 */
+/* 统一交给 .rw-meta 自己的 gap 管 */
+.rw-meta .confirm-input {
+  margin-top: 0;
+}
+/* 只把输入框自己的划词能力放回来 (面板挂了 No-slc, 拖过面板不该变成选中文字) */
+.rw-meta input,
+.rw-meta textarea,
+.rw-item-preview pre {
+  user-select: text;
+  -webkit-user-select: text;
+}
+/* 简介那个多行框: 基础一行, 最多三行 */
+/* 要盖掉 main.css 给 textarea.confirm-input 的 min-height: 90px */
+.resource-workbench textarea.confirm-input {
+  min-height: 0;
+  overflow-y: auto;
+}
+/* 那一对标题 / 简介框必须一样高 */
+/* 真因不在外边距: input 走字体自己的 normal 行盒 (29.1px), textarea 被定了 line-height 1.6 (32px) */
+/* 两张都钉到 1.28 而不是把 textarea 改成 normal: autoGrowLines 拿到 NaN 会退到 fontSize x 1.5 */
+.resource-workbench .rw-meta .confirm-input {
+  line-height: 1.28;
+}
+/* 工作台里需要确认的地方都用 armTwoStep (.btn.is-armed), 别再往里塞弹窗 (会把工作台内容换掉) */

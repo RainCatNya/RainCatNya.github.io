@@ -1,0 +1,68 @@
+/* ==================== 「Foraine」页签 (个人页里的站点方案总闸, 仅站长) ==================== */
+/* 一个 Toggle + 「全局」小标 + 一行说明, 两块并排 */
+/* 样式只用令牌, 外壳与个人页其它面板一致; 逻辑在 script/site-flags.js */
+
+.site-flags {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: var(--sp-4);
+}
+
+.site-flag {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+    padding: var(--sp-4);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-lg);
+    background: rgba(0, 0, 0, 0.35);
+    transition: border-color 0.2s, opacity 0.2s;
+}
+
+/* 停用时不藏起来也不禁用点击, 只压暗一点, 一眼看出它现在是关的 */
+.site-flag.is-off {
+    border-color: rgba(255, 255, 255, 0.08);
+    opacity: 0.72;
+}
+
+.site-flag-head {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+}
+
+.site-flag-title {
+    font-size: var(--fs-20);
+    color: var(--c-text);
+}
+
+.site-flag-scope {
+    padding: 2px var(--sp-2);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-sm);
+    color: var(--c-text-dim);
+    font-size: var(--fs-14);
+}
+
+.site-flag-toggle {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    cursor: pointer;
+}
+
+.site-flag-state {
+    font-size: var(--fs-14);
+    color: var(--c-text-faint);
+    transition: color 0.2s;
+}
+
+.site-flag-state.is-on {
+    color: var(--c-accent-hover);
+}
+
+.site-flag-hint {
+    font-size: var(--fs-14);
+    line-height: 1.7;
+    color: var(--c-text-dim);
+}

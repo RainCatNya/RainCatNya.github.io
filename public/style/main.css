@@ -1,0 +1,3215 @@
+/* 使用自定字体 */
+@font-face {
+  font-family: 'XNSFengTangHaiYanWei';
+  src: url('/assets/Web-Font/XNSFengTangHaiYanWei.woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+/* 同一支字体的大子集: 只给「个性化 › 字体」里把手写体换到聊天/论坛/文章的人用 */
+/* 必须与上面那支分开成两个家族: 装饰用的小子集全站都在下, 这份 1.4MB 只有开了手写体的人才请求, 混在一起等于全站多下 1MB */
+@font-face {
+  font-family: 'XNSFengTangHaiYanWeiText';
+  src: url('/assets/Web-Font/XNSFengTangHaiYanWeiText.woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* 定义变量 */
+:root {
+  /* 颜色令牌 */
+  --c-surface: #000000;
+  --c-border: #444444;
+  --c-border-soft: #555555;
+  --c-divider: rgba(255, 255, 255, 0.4);
+  --c-text: #ffffff;
+  --c-text-dim: #999999;
+  --c-text-faint: #555555;
+  --c-text-muted: #cccccc;
+  --c-accent: #945EEC;
+  --c-accent-2: #985bc4;
+  --c-accent-hover: #b086f7;
+  --c-page-bg: #0b0b10; /* 全站底色 = 首屏柔光渐变层的末端, 同色才不会有接缝 */
+  --c-danger: #ff6b6b;
+  --c-danger-strong: #d64545; /* 危险按钮的底色 (--c-danger 太亮, 白字压不住) */
+  --c-ok: #8ee08e;
+  --c-ok-strong: #2e9e4f; /* 成功按钮的底色 (同上, --c-ok 太亮压不住白字) */
+  --c-warn: #f5b544; /* 警告 (Toast 的「警告」「注意」语气用, 唯一一处暖色) */
+  --c-warn-strong: #b57b1c; /* 警告描边/底色 (同 --c-danger-strong 的思路) */
+  --c-role-owner: #ff4d4d; /* 站长徽章: 鲜艳的红 (比 --c-danger 更饱和) */
+  --c-glass: rgba(255, 255, 255, 0.12);
+  --c-glass-strong: rgba(234, 228, 234, 0.2);
+
+  /* 圆角令牌 */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;  /* 只有移动端弹窗在用 */
+
+  /* 按钮尺寸: 全站唯一一处规定, 要改所有按钮的大小就改这里 */
+  --btn-py: var(--sp-2);
+  --btn-px: var(--sp-6);
+  --btn-fs: var(--fs-20); /* 个人页右栏会整体收到 18px */
+
+  /* 间距令牌 (4px 基准刻度) */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+  --gap-micro: 5px; /* 微呼吸: 底部切换行等精确值 */
+
+  /* 页面顶部留白 (为悬浮 Header 预留): 保持定值, 别改成 clamp —— 顶部一缩, 所有页面的首屏内容整体上移, 影响比页脚那点收益大得多 */
+  --page-top: 128px;
+
+  /* Z层级 */
+  --zlayer-top: 2147; /* 覆盖所有元素 (转场遮罩) */
+  --zlayer-toast: 1050; /* 轻提示: 压过弹窗(999), 但被转场遮罩盖住 */
+  --zlayer-tuf: -2; /* 被所有元素覆盖 */
+
+  /* 字号梯度: 命名 = 像素值, 一眼就知道多大; 用 var 而不是 scale, 免得子元素被连带缩放, 也别再加中间档 */
+  --fs-14: 14px; /* 元信息 / 标签计数 / 注释这类“陪衬文字” */
+  --fs-18: 18px; /* 小号说明 / 侧边目录条目 */
+  --fs-20: 20px; /* 正文基准 (body) */
+  --fs-22: 22px; /* 菜单项 / 次级强调 / 弹窗正文 */
+  --fs-28: 28px; /* 区块标题 h2 / 首页主标题 */
+  --fs-36: 36px; /* 页面主标题 h1 */
+  --fs-48: 48px; /* 数字 / 强调 */
+
+  /* 字体: 全站文字一律思源黑体 (Source Han Sans / Noto Sans SC), 没装的依次回退苹方 / 微软雅黑 */
+  --font-sans: '思源黑体 CN', 'Source Han Sans CN', 'Source Han Sans SC',
+    'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  /* 等宽字体 (代码块): 中文回退要显式写在 monospace 之前, 否则代码块里的中文会掉到系统宋体 */
+  --font-mono: 'Cascadia Code', 'Consolas', 'Courier New', '思源黑体 CN',
+    'Source Han Sans CN', 'PingFang SC', 'Microsoft YaHei', monospace;
+  /* 装饰手写体「想念是枫糖海盐味」(已子集化): 必须带 --font-sans 兜底, 缺字不然会掉成豆腐块 */
+  --font-hand: 'XNSFengTangHaiYanWei', var(--font-sans);
+  /* 同一支字体的大子集: 给用户自己选的手写体正文用 (缺字少得多, 但只有开了的人才下) */
+  --font-hand-body: 'XNSFengTangHaiYanWeiText', var(--font-sans);
+}
+
+*, *::before, *::after {
+  /* 全局重置: 只做 margin/padding/box-sizing, 颜色与字号交给 body 继承 (否则全站被压成同一个大小同一个颜色) */
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box; /* 使用 border-box 计算宽高 */
+}
+
+[hidden] {
+  /* 覆盖 flex/grid 的 display, 确保 hidden 属性一定能隐藏元素 */
+  display: none !important;
+}
+
+body {
+  /* 全站文字基准: 字体 / 字号 / 行高 / 颜色都从这里继承 */
+  font-family: var(--font-sans);
+  font-size: var(--fs-20); /* 正文 20px */
+  line-height: 1.6;
+  color: var(--c-text);
+  /* 全站统一底色: 深海紫; 首屏只留一层柔光 (见下面 body::before), 往下滚就是纯色 */
+  background-color: var(--c-page-bg);
+  /* 纵向 flex: 内容不满一屏时由 .spacer-flex 把页脚压到视口底部 */
+  display: flex;
+  flex-direction: column;
+  /* dvh 而非 vh: 移动端地址栏收起/展开时高度跟着变, 不会把页脚截掉 */
+  min-height: 100vh;
+  min-height: 100dvh;
+  min-height: var(--vh-full);
+  user-select: none /* 防止在视图的最左侧出现光标什么的 */
+}
+
+/* 「桌面端默认放大 125%」已整体删除 (带来的问题比收益多), 下面那段只作历史记录, 别照它把 zoom 加回来 */
+
+/* ==================== 桌面端默认放大 125% (已删, 仅存历史) ==================== */
+/* 别再照它把 zoom 加回来: vh / dvh / @media 都不跟着 CSS zoom 缩, 而浏览器自带的缩放是真的改视口, 两者几何不等价 */
+:root {
+  /* 「一屏高」的统一写法 (支持 dvh 的浏览器用 100dvh): 全站二十多处在用, 别因为「没差别」就删了, 将来真要改就改这里 */
+  --vh-full: 100vh;
+}
+/* ⚠️ 不能写成「--vh-full: 100vh; 再 --vh-full: 100dvh」那种 fallback: 不认 dvh 的浏览器里,
+   var() 会让整条 height 声明「无效即未设」(直接变 auto), 把前面的 fallback 一起吃掉 */
+@supports (height: 100dvh) {
+  :root { --vh-full: 100dvh; }
+}
+
+/* 「默认缩放」已删 (原来是一条 min-width: 1200px 里的 zoom: 1.25): vh / dvh / @media 都不会跟着 CSS zoom 缩, 而浏览器自带的缩放是真的改视口 —— 两者几何不等价, 那堆怪问题就是这么来的 */
+
+/* 「页脚落不到底」的另一半解法: 放大 125% 等于砍掉 20% 可用高度, 所以那条 @media 额外要求 min-height: 1080px; 媒体查询看的是未缩放的视口高度, 这里只加不减 (html.ui-zoom-off 优先) */
+
+/* 首屏柔光: 主题色 → 页面底色的竖向渐变 (末端与 background-color 同色, 过渡到底无缝) */
+body::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: var(--vh-full);
+  z-index: -1;
+  pointer-events: none;
+  background-image: linear-gradient(to bottom, var(--c-accent), var(--c-page-bg));
+  opacity: 0.25; /* 主题色 25% 浓度, 全程无硬边 */
+}
+
+/* ==================== 雨幕 canvas (首页 / 私聊页共用) ==================== */
+/* 铺满视口、不吃鼠标事件; z-index 2 = 在内容之上、页头 (100) 与弹窗 (999) 之下 */
+.rain-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+/* 两处雨幕页面: 关掉全站的紫色首屏柔光 + 页脚压在雨幕上面 (否则字会被雨线划花) */
+body.page-home::before,
+body.page-chat::before,
+body.page-denied::before {
+  display: none;
+}
+/* 登录页: 左栏是图像、卡片自带层次, 再叠一层全站柔光就只剩紫雾 */
+body.page-auth::before {
+  display: none;
+}
+/* 桌面端: 私聊面板要压过雨幕 —— 雨只落在页面缝里, 不划花三栏里的字; 窄屏不动 (手机上雨仍是全局氛围) */
+@media (min-width: 901px) {
+  body.page-chat .chat-app {
+    position: relative;
+    z-index: 3;
+  }
+}
+body.page-home .site-footer,
+body.page-chat .site-footer {
+  position: relative;
+  z-index: 4;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+}
+
+a {
+  text-decoration: none;
+}
+
+/* ==================== 基础排版层级 ==================== */
+/* 全站的 h1/h2 与段落字号由这里统一给 (与文章页已有的字号保持一致) */
+h1 { font-size: var(--fs-36); }   /* 页面主标题 */
+h2 { font-size: var(--fs-28); } /* 区块标题 */
+h3 { font-size: var(--fs-20); }   /* 小节标题 */
+h4, h5, h6 { font-size: var(--fs-14); }
+/* 首页那句「欢迎来到 foraine !」只降一档就够了 —— 它下面紧跟菜单, 用满 36px 会把下方全部压小 */
+.hero-title { font-size: var(--fs-28); }
+p {
+  font-size: var(--fs-20);
+  color: var(--c-text-muted); /* 段落默认是“正文”这一档灰, 不再是一片纯白 */
+}
+li, dt, dd, th, td, blockquote, figcaption {
+  font-size: var(--fs-20);
+}
+/* 紧跟主标题的那行说明 (副标题) 再降一档 */
+h1 + p {
+  color: var(--c-text-dim);
+}
+strong, b {
+  font-weight: bold;
+  color: var(--c-text);
+}
+small { font-size: var(--fs-14); }
+a { color: inherit; } /* 清掉浏览器默认的蓝色链接 */
+ul, ol { list-style: none; } /* 配合 * 的 padding:0, 避免出现悬在外面的列表符号 */
+hr { border: none; }
+/* 分隔线 --- : 上面的 hr 重置把边框抹了, 这里给它一条主题色细线 */
+.md-hr {
+  border: none;
+  height: 1px;
+  margin: var(--sp-6) 0;
+  background: linear-gradient(90deg, transparent, var(--c-border) 12%, var(--c-border) 88%, transparent);
+}
+
+/* 中文排版: 分隔点 · (U+00B7) 在西文字体里只有半个字宽, 用它包一层才能占满一个汉字; 用法 <span class="sep-dot">·</span>, 新写的别再用裸的 · */
+.sep-dot {
+  display: inline-block;
+  width: 1em;          /* 一个汉字的位置 */
+  text-align: center;
+}
+
+/* 表单控件跟随页面文字 (否则 button 会落到浏览器默认的 Arial / 13.33px) */
+button, input, select, textarea {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+footer {
+  /* 页脚 | Copyright声明 */
+  position: absolute;
+  bottom: 0;
+}
+
+/* 站点页脚: 顶部一条细线, 左边版权、右边社交图标; 这里把它拉回正常文档流 (全局 footer 的 absolute 会把它顶到首屏底部) */
+.site-footer {
+  position: static;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  /* 比正文列 (860px) 再宽一档, 横条才铺得开; 别再减 --sp-10, 减了反而比正文列窄 */
+  width: min(1040px, 100%);
+  /* 顶部间距交给前面的 .spacer-flex, 这里只管「离页面底部恒定 --sp-6」; 用下内边距而不是下外边距 —— 那 24px 会让文档比视口高出一截, 短页面滚到底时页脚下面会多一条空带 */
+  margin: 0 auto;
+  padding-top: var(--sp-5);
+  padding-bottom: var(--sp-6);
+  border-top: 1px solid var(--c-border);
+  font-size: var(--fs-14);
+  color: var(--c-text-dim);
+  user-select: none;
+}
+/* 版权那一行 (右边是 .site-footer-links, 所以这里只有一个 span) */
+.site-footer > span {
+  font-weight: bold;
+  color: #707070; /* 比 --c-text-muted(#ccc) 暗两档, 不再跟正文抢眼球 */
+}
+/* 版权那行可点 (打开站内简介) —— 只加手型光标, 字体那些一律不动 */
+.site-footer-copy {
+  cursor: pointer;
+}
+/* 首页没有 .page-layout (body 直接就是弹性列), 得单独给页脚留出左右留白, 否则横条会贴到屏幕两边 */
+body > .site-footer {
+  width: min(1040px, calc(100% - var(--sp-8)));
+}
+.site-footer-links {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+}
+.site-footer a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap-micro);
+  color: var(--c-text-faint);
+  transition: color 0.2s;
+}
+.site-footer a:hover {
+  color: var(--c-text);
+}
+.site-footer svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* 「敏感内容防截图」整套已撤销 (.guard-sensitive / @media print / ui.js 的 armScreenshotGuard 都删了), 别再加回来 */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(6px);
+  visibility: hidden;
+  opacity: 0;
+  transition: 0.2s;
+}
+
+.modal-overlay.show {
+  visibility: visible;
+  opacity: 1;
+}
+
+.modal-panel {
+  position: relative;
+  background: var(--c-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-8);
+  max-width: 80vw;
+  max-height: 80vh;
+  overflow: auto;
+  /* 弹窗里的文字 (简介 / 协议等 txt 正文) 比页面正文再放一档; 这些文本是纯文本 + span, 只吃继承, 所以必须在这层把字号抬起来 */
+  font-size: var(--fs-22);
+  line-height: 1.8;
+}
+
+/* 弹窗里的长文档 (用户协议): 比弹窗正文小一档, 长文更好读 */
+.modal-doc {
+  font-size: var(--fs-20);
+  line-height: 1.8;
+}
+
+/* 弹窗进场: 面板从下方上浮 + 淡入; 全站只有一个弹窗宿主 (layout.js 注入的 #modal-overlay > .modal-panel), 所以写在面板这一层就覆盖了所有弹窗 (showMessage / confirmAction / showBusyModal 与各页面塞进来的工作台、私信框) */
+/* 用 transition 而不是 animation: 关弹窗时反向播一遍自己归位, 不用 animationend 收拾, 也不会把面板自己的 transform 钉住 */
+/* 位移用独立的 translate, 别写成 transform; 时长要 ≤ .modal-overlay 那条 0.2s —— 遮罩的 visibility 一落回 hidden, 面板就看不见了 */
+.modal-panel {
+  opacity: 0;
+  translate: 0 18px;
+  transition: opacity 0.2s ease, translate 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.modal-overlay.show .modal-panel {
+  opacity: 1;
+  translate: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .modal-panel {
+    transition: none;
+  }
+}
+
+/* 弹窗里的输入框: 弹窗底是纯黑 (--c-surface), 黑亚克力叠上去会糊成一片, 这里换一块比面板略亮的深底, 描边也加粗到 3px */
+.modal-panel input,
+.modal-panel textarea,
+.modal-panel select,
+.modal-panel input:focus,
+.modal-panel textarea:focus,
+.modal-panel select:focus {
+    background-color: #101010;
+}
+.modal-panel input,
+.modal-panel textarea,
+.modal-panel select {
+    border-width: 3px;
+}
+
+.panel {
+    /* 通用面板: 纯黑底 + 细描边 + 圆角 + 柔和阴影, 悬停时阴影加深 */
+    background-color: var(--c-surface);
+    width: fit-content;
+    margin: 0 auto;
+    padding: var(--sp-5);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.panel:hover {
+    border-color: rgba(148, 94, 236, 0.55);
+    box-shadow: 0 0 0 1px rgba(148, 94, 236, 0.12), 0 12px 30px rgba(0, 0, 0, 0.50);
+}
+/* 含品牌图标的 Hero 面板: 图标与标题直接铺在背景上 (一个框都不要) */
+.panel-bare,
+.panel-bare:hover {
+    background-color: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+}
+/* 面板里单独成行的链接 (如星历页的"查看预览版"): 不给颜色就完全看不出可点 */
+.panel > a {
+    color: var(--c-accent-hover);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+
+input, textarea, select {
+    /* 全站输入框 = 个人资料页那套「黑亚克力块」(弹窗里的也是同一个样子): 半透黑底 + 高斯模糊 + 2px 描边 + 圆角, 聚焦时描边转紫 */
+    font-size: var(--fs-20);
+    text-align: left;
+    background-color: rgba(0, 0, 0, 0.42);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 2px solid var(--c-border);
+    border-radius: var(--radius-md);
+    outline: none;
+    padding: var(--sp-2) var(--sp-4);
+    transition: border-color 0.2s, background-color 0.2s;
+}
+input:focus, textarea:focus, select:focus {
+    border-color: var(--c-accent);
+    background-color: rgba(0, 0, 0, 0.6);
+}
+/* 锁定的输入框: 外观与正常态完全一样 (底色不变灰、聚焦也不变深), 文字还能选中;
+      锁 input/textarea 一律用 readOnly (disabled 的控件浏览器不让选字), select 不认 readOnly 只能 disabled */
+input:disabled, textarea:disabled, select:disabled {
+    color: var(--c-text);
+    -webkit-text-fill-color: var(--c-text);   /* 浏览器默认会把 disabled 文字压灰, 得显式盖掉 */
+}
+input:disabled, textarea:disabled, select:disabled,
+input[readonly], textarea[readonly], input.is-locked {
+    background-color: rgba(0, 0, 0, 0.42);
+    border-color: var(--c-border);
+    cursor: default;
+    user-select: text;
+    -webkit-user-select: text;
+}
+input:disabled:focus, textarea:disabled:focus,
+input[readonly]:focus, textarea[readonly]:focus, input.is-locked:focus {
+    background-color: rgba(0, 0, 0, 0.42);
+    border-color: var(--c-border);
+}
+/* 下拉框: 与输入框同一套底/描边/圆角; 系统箭头删掉, 换成右侧一个自绘的小三角 */
+select {
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    padding-right: var(--sp-10); /* 给箭头留位置 */
+    background-image: linear-gradient(45deg, transparent 50%, var(--c-text-dim) 50%),
+                      linear-gradient(135deg, var(--c-text-dim) 50%, transparent 50%);
+    background-position: calc(100% - 22px) calc(50% + 1px), calc(100% - 17px) calc(50% + 1px);
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+}
+select:hover {
+    border-color: var(--c-text-dim);
+}
+/* 展开后的选项列表也跟主题一致 (Chromium/Firefox 桌面版吃这条) */
+select option {
+    background-color: #101010;
+    color: var(--c-text);
+}
+select option:disabled {
+    color: var(--c-text-faint);
+}
+/* 勾选框不是「长条输入框」, 不该套那套块状外观 (登录页的「同意协议」) */
+input[type="checkbox"],
+input[type="radio"] {
+    width: auto;
+    padding: 0;
+    background: none;
+    border: none;
+    border-radius: 0;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+/* ==================== 开关 (.ctx-switch) ==================== */
+/* 一个圆角轨道 + 一枚滑块 (原生 checkbox 藏起来但要能聚焦); 个性化页签与资源详情右栏的「公开编辑」共用同一个 */
+.ctx-switch {
+    position: relative;
+    flex: none;
+    width: 44px;
+    height: 24px;
+}
+.ctx-switch input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+.ctx-switch-track {
+    position: absolute;
+    inset: 0;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid var(--c-border);
+    transition: background-color 0.2s, border-color 0.2s;
+    pointer-events: none;
+}
+.ctx-switch-track::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--c-text-muted);
+    transition: transform 0.2s, background-color 0.2s;
+}
+.ctx-switch input:checked + .ctx-switch-track {
+    background: var(--c-accent);
+    border-color: var(--c-accent);
+}
+.ctx-switch input:checked + .ctx-switch-track::after {
+    transform: translateX(20px);
+    background: #ffffff;
+}
+.ctx-switch input:focus-visible + .ctx-switch-track {
+    outline: 2px solid var(--c-accent-hover);
+    outline-offset: 2px;
+}
+
+button {
+    /* 隐藏式按钮: 默认无边框; 全站按钮统一粗体 */
+    padding: 0 var(--sp-2);
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+}
+button:hover {
+    background-color: var(--c-glass-strong);
+}
+
+.btn {
+    /* 主要按钮: 主题色填充, 触发时更亮; 补一圈 2px 透明描边 —— 黑亚克力那族带 2px 边框, 不然实心按钮会比旁边矮 4px */
+    background-color: var(--c-accent);
+    border: 2px solid transparent;
+    border-radius: var(--radius-md);
+    padding: var(--btn-py) var(--btn-px);
+    font-size: var(--btn-fs);
+    transition: background-color 0.2s;
+}
+.btn:hover {
+    background-color: var(--c-accent-hover);
+}
+
+.btn-outline {
+    /* 「默认动作按钮」= 与 .btn-acrylic 同一套黑亚克力 (原来是一圈白描边; 名字保留, 弹窗/分页都在用) */
+    background: rgba(0, 0, 0, 0.42);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 2px solid var(--c-border);
+    border-radius: var(--radius-md);
+    padding: var(--btn-py) var(--btn-px);
+    font-size: var(--btn-fs);
+    color: var(--c-text);
+    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+}
+.btn-outline:hover {
+    background: rgba(0, 0, 0, 0.6);
+    border-color: var(--c-accent);
+    color: var(--c-accent-hover);
+}
+
+/* 不可逆操作 (注销账号 / 删除文章): 平时是那张黑亚克力红脸, 悬浮时才变实心红 (相当于把「按下去会怎样」提前演一遍) */
+/* .btn-acrylic-danger 是危险但不彻底的那档: hover 只给淡红底 */
+.btn-danger {
+    background: rgba(0, 0, 0, 0.42);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 2px solid var(--c-danger-strong);
+    border-radius: var(--radius-md);
+    padding: var(--btn-py) var(--btn-px);
+    font-size: var(--btn-fs);
+    color: var(--c-text);
+    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+}
+.btn-danger:hover {
+    background-color: var(--c-danger-strong);
+    border-color: var(--c-danger-strong);
+    color: #ffffff;
+}
+.btn-danger[disabled] {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+.btn-danger[disabled]:hover {
+    background: rgba(0, 0, 0, 0.42);
+    border-color: var(--c-danger-strong);
+    color: var(--c-text);
+}
+
+/* 成功按钮: 绿底白字 —— 与危险按钮成对 (「保存更改」用) */
+.btn-ok {
+    background-color: var(--c-ok-strong);
+    border: 2px solid transparent; /* 同 .btn: 与黑亚克力按钮等高 */
+    border-radius: var(--radius-md);
+    padding: var(--btn-py) var(--btn-px);
+    font-size: var(--btn-fs);
+    color: #ffffff;
+    transition: background-color 0.2s;
+}
+.btn-ok:hover {
+    background-color: #268a44;
+}
+.btn-ok[disabled] {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+.btn-ok[disabled]:hover {
+    background-color: var(--c-ok-strong); /* 禁用时 hover 不变色 */
+}
+/* 「已保存」态: 存完短暂变成灰底「已保存」(下次一有改动就变回去) */
+.btn-ok.is-saved {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--gap-micro);
+    background-color: rgba(255, 255, 255, 0.12);
+    color: var(--c-text-dim);
+}
+.btn-ok.is-saved[disabled] {
+    opacity: 1; /* 不要套用禁用的 0.45 透明, 这看着像“不可用”而不是“已完成” */
+    cursor: default;
+}
+.btn-ok.is-saved svg {
+    width: 17px;
+    height: 17px;
+}
+
+/* ==================== 黑亚克力按钮 ==================== */
+/* 半透黑底 + 高斯模糊 + 2px 描边; 全站的「非主操作」都走这一套: .btn-acrylic = 创建 / 保存草稿 / 取消这类 */
+/* .btn-acrylic-danger = 登出、注销这类离开/危险操作; 与「实心紫」主操作、「白底黑字 .btn-gh」第三方形成三级层次 */
+.btn-acrylic {
+    background: rgba(0, 0, 0, 0.42);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 2px solid var(--c-border);
+    border-radius: var(--radius-md);
+    padding: var(--btn-py) var(--btn-px);
+    font-size: var(--btn-fs);
+    color: var(--c-text);
+    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+}
+.btn-acrylic:hover {
+    background: rgba(0, 0, 0, 0.6);
+    border-color: var(--c-accent);
+    color: var(--c-accent-hover);
+}
+.btn-acrylic-danger {
+    background: rgba(0, 0, 0, 0.42);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 2px solid var(--c-danger-strong);
+    border-radius: var(--radius-md);
+    padding: var(--btn-py) var(--btn-px);
+    font-size: var(--btn-fs);
+    color: var(--c-text);
+    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+}
+.btn-acrylic-danger:hover {
+    background: rgba(214, 69, 69, 0.18);
+    border-color: var(--c-danger);
+    color: #ffffff;
+}
+
+/* ==================== 下拉框换皮 ==================== */
+/* 原生 select 的展开层是系统画的, 跟本站完全不搭 —— 换成「黑亚克力按钮 + 右键菜单那套展开层」(JS 在 ui.js 的 enhanceSelect) */
+/* 原生 select 仍留在 DOM 里 (老代码读 .value / 听 change 一个字不用改), 用 .is-enhanced 压成 1px 隐形元素 —— 不要 display: none, 有些浏览器会因此不派发 change */
+select.is-enhanced {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    opacity: 0;
+    pointer-events: none;
+}
+.ui-select {
+    display: inline-flex;
+    min-width: 0;
+    vertical-align: middle;
+}
+.ui-select-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: var(--btn-py) var(--btn-px);
+    background: rgba(0, 0, 0, 0.42);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 2px solid var(--c-border);
+    border-radius: var(--radius-md);
+    color: var(--c-text);
+    /* 文本比标准按钮小一号 (下拉框那串字显大); 行盒仍按标准按钮那档钉死 (-‑btn-fs × 1.28), 高度不变 */
+    font-size: var(--fs-18);
+    font-family: inherit;
+    line-height: calc(var(--btn-fs) * 1.28);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+}
+.ui-select-btn:hover,
+.ui-select-btn:focus-visible {
+    background: rgba(0, 0, 0, 0.6);
+    border-color: var(--c-accent);
+    color: var(--c-accent-hover);
+}
+.ui-select-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.ui-select-arrow {
+    display: inline-flex;
+    flex: none;
+    opacity: 0.7;
+    transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.ui-select-arrow svg {
+    width: 16px;
+    height: 16px;
+}
+/* 点开的那一下箭头翻个身 (类由 JS 短暂挂上, 见 enhanceSelect) */
+.ui-select.is-open .ui-select-arrow {
+    transform: rotate(180deg);
+}
+.ui-select.is-disabled {
+    opacity: 0.45;
+    pointer-events: none;
+}
+.ui-select.is-empty .ui-select-label {
+    color: var(--c-text-dim);
+}
+
+/* 全站的多行输入框不让拖大小: 右下角那个小箭头与 autoGrow 算出来的高度天然打架, 高度统一交给 autoGrowLines */
+textarea {
+    resize: none;
+}
+
+/* ==================== 按钮禁用手感 ==================== */
+/* 统一所有按钮的 [disabled]: 变暗 + 不给 hover 反馈 (以前只有 .btn-danger / .btn-ok 写了, .btn 与黑亚克力族禁用后看着一模一样) */
+.btn:disabled,
+.btn-outline:disabled,
+.btn-acrylic:disabled,
+.btn-acrylic-danger:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+/* hover 反馈逐类抵消 (禁用时不该亮边/变色) */
+.btn:disabled:hover {
+    background-color: var(--c-accent);
+}
+.btn-outline:disabled:hover,
+.btn-acrylic:disabled:hover {
+    background: rgba(0, 0, 0, 0.42);
+    border-color: var(--c-border);
+    color: var(--c-text);
+}
+.btn-acrylic-danger:disabled:hover {
+    background: rgba(0, 0, 0, 0.42);
+    border-color: var(--c-danger-strong);
+    color: var(--c-text);
+}
+
+/* ==================== 排序切换按钮 (全站通用) ==================== */
+/* 小节头里「切换排序 / 切换形式」的小按钮都用这个类 (原来只写在 page-list.css, 个人页的连携星点用了同一个类却拿不到样式) */
+.sort-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--gap-micro);
+    margin-left: auto;          /* 靠到所在那一行的右边 */
+    padding: 2px var(--sp-2);
+    border-radius: 999px;
+    font-size: var(--fs-14);
+    font-weight: normal;
+    color: var(--c-text-dim);
+    background: none;
+    transition: color 0.2s, background-color 0.2s;
+}
+.sort-toggle svg {
+    width: 15px;
+    height: 15px;
+    flex: none;
+    opacity: 0.85;
+}
+.sort-toggle:hover {
+    color: var(--c-accent-hover);
+    background: rgba(148, 94, 236, 0.14);
+}
+
+/* ==================== 文件类型小标 (资源中心 / 个人页的作品页签共用) ==================== */
+/* 按大类分五档, 全用现成令牌不新增颜色; 描边跟着 currentColor 走, 一处改动同时管边框与文字 */
+.resource-tag {
+    align-self: center;
+    padding: 2px var(--sp-2);
+    border: 2px solid currentColor;
+    border-radius: var(--radius-md);
+    color: var(--c-text-dim);
+    font-size: var(--fs-14);
+    letter-spacing: 0.04em;
+}
+.resource-tag.is-archive { color: var(--c-accent); }      /* 压缩包 */
+.resource-tag.is-document { color: var(--c-accent-2); }   /* 文档 */
+.resource-tag.is-image { color: var(--c-ok); }            /* 图片 */
+.resource-tag.is-audio,
+.resource-tag.is-video { color: var(--c-warn); }          /* 音视频: 全站唯一的暖色, 正好当「媒体」 */
+.resource-tag.is-program { color: var(--c-danger); }      /* 程序 */
+
+/* 文件大小: 与日期、作者同一档存在感 */
+.resource-size {
+    color: var(--c-text-dim);
+}
+
+/* ==================== 确认弹窗 ==================== */
+.confirm-dialog {
+    min-width: min(380px, 70vw);
+    text-align: left;
+}
+.confirm-title {
+    font-size: var(--fs-28);
+    font-weight: bold;
+    color: var(--c-text);
+}
+.confirm-message {
+    margin-top: var(--sp-3);
+    font-size: var(--fs-20);
+    color: var(--c-text-muted);
+    white-space: pre-line; /* 提示文本里写 \n 就能换行 */
+}
+.confirm-warning {
+    margin-top: var(--sp-2);
+    font-size: var(--fs-14);
+    color: var(--c-danger);
+}
+/* 弹窗里的错误一律走 Toast (见 ui.js 的 confirmAction), 这里不再留内联错误行 */
+/* liveCheck 那行小字 (正在验证 / 通过 / 不对): 没验过时确认键一直是灰的, 这行是唯一能看到的反馈 */
+.confirm-hint {
+    margin-top: var(--sp-2);
+    font-size: var(--fs-14);
+    color: var(--c-text-dim);
+}
+.confirm-hint.is-ok { color: var(--c-ok); }
+.confirm-hint.is-bad { color: var(--c-danger); }
+/* danger 弹窗默认补的那句「此操作不可撤销」: 用正文字号 (跟 .confirm-message 一样大) */
+.confirm-warning {
+    margin-top: var(--sp-2);
+    font-size: var(--fs-20);
+    color: var(--c-danger);
+}
+/* 动态令牌弹窗里的那一块: messageHtml 是塞进 <p> 的, 必须用 <span> + display: block, <div> 会被拆开 */
+.totp-note, .totp-qr, .totp-manual, .totp-warn { display: block; }
+.totp-qr {
+    margin: var(--sp-4) auto;
+    width: fit-content;
+    padding: var(--sp-2);
+    background: #ffffff;
+    border-radius: var(--radius-sm);
+}
+.totp-qr-svg { display: block; }
+.totp-manual {
+    margin-top: var(--sp-2);
+    font-size: var(--fs-14);
+    color: var(--c-text-dim);
+    word-break: break-all;
+}
+.totp-manual code {
+    font-family: var(--font-mono);
+    color: var(--c-text);
+}
+.totp-warn {
+    margin-top: var(--sp-3);
+    font-size: var(--fs-14);
+    color: var(--c-danger);
+}
+/* 弹窗里那种「只有标题、正文是 HTML」的场景 (showMessage 拼的弹窗) */
+.modal-title-lg {
+    font-size: var(--fs-28);
+    font-weight: bold;
+    color: var(--c-text);
+}
+/* 需要「打字确认」的输入框 (类似 GitHub 删仓库) / 多字段表单的每一项 */
+.confirm-input {
+    margin-top: var(--sp-4);
+    width: 100%;
+    /* 稍微宽一点, 但窄屏别把弹窗撑破 */
+    min-width: min(260px, 100%);
+}
+/* .confirm-field-label (弹窗输入框左上角那颗标签) 已整体移除: 标签文字改走 input 的 placeholder (见 ui.js), 别再把它加回来 */
+.confirm-field {
+    position: relative;
+}
+/* 多行输入 (删文理由这类): 基础两行, 写多少行长多少行; 不给拖大小 (右下角那个小箭头与 autoGrow 算的高度天然打架), 高度与行长都由 ui.js 的 autoGrowLines 负责 */
+textarea.confirm-input {
+    min-height: 90px; /* 至少两行 (20px 字 × 1.6 行高 × 2 + 内边距) */
+    resize: none;
+    font-family: inherit;
+    line-height: 1.6;
+}
+.confirm-actions {
+    margin-top: var(--sp-6);
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--sp-3);
+}
+/* 走流程的弹窗 (注销的验证框这类): 取消按钮放左下 —— 它是那一屏唯一的出口, 挤到右边会和确认键堆一起 */
+.confirm-actions .confirm-cancel-left {
+    margin-right: auto;
+}
+
+/* ==================== 不可关闭的「处理中」弹窗 ==================== */
+/* 资源页不加载 page-article.css, 所以这套转圈必须住在 main.css; .is-plain = 只要一个转圈 (等接口那一下用, 不带框不带字) */
+.modal-busy {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-4);
+    min-width: min(280px, 60vw);
+    text-align: center;
+}
+.modal-busy.is-plain {
+    min-width: 0;
+    gap: 0;
+}
+.busy-spinner {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 3px solid var(--c-border);
+    border-top-color: var(--c-accent);
+    animation: busy-spin 0.8s linear infinite;
+}
+
+/* 锚点按钮 (下载那种 <a class="btn-acrylic">) 要和真按钮长得一模一样: <a> 是 inline 且继承正文行高, 会高出一截、字也看着更大 */
+a.btn,
+a.btn-outline,
+a.btn-acrylic,
+a.btn-acrylic-danger,
+a.btn-danger,
+a.btn-ok {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: normal;
+    white-space: nowrap;
+}
+
+/* 「点两次」确认的中间态: 按钮自己变色, 让人一眼看出「现在是待确认的那一下」 */
+.btn.is-armed,
+.btn-outline.is-armed,
+.btn-acrylic.is-armed,
+.btn-danger.is-armed {
+    background-color: var(--c-warn-strong);
+    border-color: var(--c-warn);
+    color: #ffffff;
+}
+
+/* ==================== 私聊 (弹窗 + 私信页共用) ==================== */
+/* 头部是对方、中间消息列表可滚、底部一行输入; 桌面宿主是 profile.html 的 .chat-modal, 手机宿主是 /chat/ */
+/* 这里不写死高度: 弹窗里由 .modal-panel 给固定高, 页面里撑满面板 */
+.modal-panel:has(.chat-modal) {
+    /* 弹窗宽度由面板那一层定 —— 不能让 .chat-modal 自己写 78vw:
+          面板是 80vw 上限 + 20px 内边距, 窄屏上聊天框会比可用宽度还宽, 右边连发送键都被切掉 */
+    width: min(600px, 80vw);
+    padding: var(--sp-5);
+}
+.modal-panel:has(.chat-modal) .chat-body {
+    height: min(46vh, 380px);
+}
+.chat-modal {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+    width: 100%;
+    text-align: left;
+}
+.chat-head {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    padding-bottom: var(--sp-3);
+    border-bottom: 1px solid var(--c-border);
+}
+.chat-avatar {
+    flex: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid var(--c-border);
+    background: rgba(255, 255, 255, 0.04);
+}
+.chat-who {
+    flex: 1;
+    min-width: 0;
+}
+.chat-name {
+    font-size: var(--fs-20);
+    font-weight: bold;
+    color: var(--c-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.chat-username {
+    font-size: var(--fs-14);
+    color: var(--c-text-dim);
+}
+.chat-close {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border-radius: 50%;
+    color: var(--c-text-dim);
+    background: rgba(255, 255, 255, 0.06);
+    transition: color 0.2s, background-color 0.2s;
+}
+.chat-close svg { width: 18px; height: 18px; }
+.chat-close:hover { color: var(--c-text); background: rgba(255, 255, 255, 0.16); }
+/* 消息列表: 内部滚动 (两种宿主都给高度, 见上) */
+.chat-body {
+    display: flex;
+    flex-direction: column;
+    /* 相邻消息也至少相距 25px: 除了呼吸感, 还给「悬浮时那行时间」留位置 */
+    /* 令牌里没有 25 这一档, 所以写死 */
+    gap: 25px;
+    /* 单行气泡的高度 = 行高 + 上下内边距; 头像比它小 4px —— 两个值都从它算, 改内边距时会一起跟上 */
+    --chat-bubble-line: calc(var(--fs-18) * 1.4 + 20px);
+    --chat-avatar-size: calc(var(--chat-bubble-line) - 4px);
+    /* 必须藏掉横向滚动条: 新消息入场是 translateX(±32px), 那一瞬间比容器宽就会摆出一条横条 (纵向仍 auto) */
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding-right: var(--sp-2);
+}
+/* 聊天背景 (私密, 只有自己看得到): 铺在不滚动的那一层 (.chat-thread-pane / .chat-modal) */
+/* 不能挂在 .chat-body 上 —— 它自己就是滚动容器, inset: 0 的伪元素会跟着内容滚走; 模糊只能给伪元素, 直接 filter 到容器上会把字一起糊掉 */
+html.has-chat-bg :is(.chat-thread-pane, .chat-modal) {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden; /* 把模糊往外羽化的那一圈裁掉, 也顺便保住圆角 */
+}
+html.has-chat-bg :is(.chat-thread-pane, .chat-modal)::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image:
+        linear-gradient(rgba(11, 11, 16, 0.55), rgba(11, 11, 16, 0.72)),
+        var(--chat-img);
+    background-size: auto, cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    filter: blur(var(--chat-blur, 0px));
+}
+.chat-empty {
+    margin: auto;
+    font-size: var(--fs-18);
+    color: var(--c-text-faint);
+}
+/* 一条消息 = 头像 + (气泡 + 时间); 自己的整体靠右、头像也翻到右边 */
+.chat-msg {
+    display: flex;
+    align-items: flex-start;
+    /* 气泡离头像 12px: 去掉尾巴之后要稍微松一点 */
+    gap: var(--sp-3);
+    max-width: 86%;
+}
+.chat-msg.is-mine {
+    align-self: flex-end;
+    flex-direction: row-reverse;
+}
+.chat-msg-avatar {
+    flex: none;
+    /* 比单行气泡高度小一点点 (变量在 .chat-body 上, 见上) */
+    width: var(--chat-avatar-size, 40px);
+    height: var(--chat-avatar-size, 40px);
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid var(--c-border);
+    background: rgba(255, 255, 255, 0.04);
+}
+.chat-msg-main {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--sp-1);
+    min-width: 0;
+}
+.chat-msg.is-mine .chat-msg-main {
+    align-items: flex-end;
+}
+.chat-bubble {
+    /* QQ 那种内间距 (10/16 + 行高 1.4); 改了要同步 .chat-body 上的 --chat-bubble-line (它决定最小尺寸与头像直径) */
+    padding: 10px var(--sp-4);
+    /* 四角一样圆、圆角比较大 (贴头像那一角收小 + 三角尾巴那套已整块删掉) */
+    border-radius: var(--radius-lg);
+    /* 实心气泡: 半透明叠在渐变背景上会发灰、两边看着一样, 这里给死颜色 */
+    background: #35353c;
+    font-size: var(--fs-18);
+    color: var(--c-text);
+    line-height: 1.4;   /* 与内边距一起, 同步给 --chat-bubble-line */
+    white-space: pre-wrap; /* 空行 / 换行原样保留 */
+    word-break: break-word;
+    user-select: text;
+}
+/* 触屏长按会被浏览器拿去选字、又会弹我们的右键菜单, 所以气泡默认不给选, 只有从菜单里点了「选择」的那个临时放开; 两个宿主都盖, 并把 .chat-msg 一起写上 (引用块、文件卡片继承也吃得到) */
+@media (pointer: coarse) {
+    .chat-bubble,
+    .chat-msg {
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
+    }
+    .chat-bubble.is-selecting {
+        -webkit-user-select: text;
+        user-select: text;
+        -webkit-touch-callout: default;
+    }
+}
+
+/* ==================== 文件卡片: 长文件名截断 ==================== */
+/* 文件名是用户给的, 可以很长: 以前卡片会被名字撑出屏幕 (桌面同样会溢出), 所以不放进媒体查询 */
+/* 这一串全是 flex 盒子, 每一层都要 min-width: 0, 否则中间的文本根本不缩 */
+/* 特异性刻意比原有的 .chat-file-card 高一级 (0,2,1 > 0,2,0), 这样不用管谁先谁后 */
+body .chat-bubble.is-media {
+    max-width: 100%;
+    min-width: 0;
+}
+body .chat-file-card {
+    max-width: 100%;
+    min-width: 0;
+}
+/* 文件名过长就省略: 阈值取屏幕宽度的 2/3 (用 vw 量, 横竖屏都跟着算), 而不是「装不下才截」 */
+body .chat-file-card .chat-attach-name {
+    min-width: 0;
+    max-width: min(100%, 66.667vw);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+/* 雨幕按钮关着的时候暗一格 (chat/index.html 的左栏 + 主页导航栏那颗) */
+.chat-rail-btn.is-off,
+.site-rain-btn.is-off {
+    opacity: 0.45;
+}
+
+/* 时间胶囊 (对话里那条「09-13 23:44」): 去掉框体, 文字直接铺在背景上 */
+body.page-chat .chat-app .chat-day,
+body.page-chat .chat-day,
+.chat-day {
+    background: none;
+    border: 0;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+/* 列表 -> 对话 的左右过渡; 用 translate 而不是 transform, 这样不会撞掉元素自己的位移 */
+@keyframes pane-in-right {
+    from { translate: 28px 0; opacity: 0; }
+    to { translate: none; opacity: 1; }
+}
+@keyframes pane-in-left {
+    from { translate: -28px 0; opacity: 0; }
+    to { translate: none; opacity: 1; }
+}
+@media (max-width: 900px) {
+    body.page-chat .pane-in-right {
+        animation: pane-in-right 0.22s cubic-bezier(0.4, 0, 0.2, 1) both;
+    }
+    body.page-chat .pane-in-left {
+        animation: pane-in-left 0.22s cubic-bezier(0.4, 0, 0.2, 1) both;
+    }
+    @media (prefers-reduced-motion: reduce) {
+        body.page-chat .pane-in-right,
+        body.page-chat .pane-in-left {
+            animation: none;
+        }
+    }
+}
+
+/* ==================== 移动端私聊 ==================== */
+/* 14px 正文 + QQ 那种紧的气泡间距 + 消息贴底 + 顶部变矮 (小头像 + 昵称挤一行) */
+/* 选择器统一写 body.page-chat .chat-app … (比 page-chat.css 高一级): 只写 body.page-chat .chat-bubble 与它同特异性, 而后加载的 page-chat.css 会被盖掉 */
+@media (max-width: 900px) {
+  /* 气泡 = 桌面版整套尺寸 × 0.8: 字号 18 → 14, 内边距 10×16 → 8×13, 头像 40 → 32 */
+  body.page-chat .chat-app .chat-bubble {
+    font-size: 14px;
+    line-height: 1.4;
+    border-radius: 13px;
+  }
+  body.page-chat .chat-app .chat-bubble:not(.is-media) {
+    padding: 8px 13px;
+  }
+  body.page-chat .chat-app .chat-msg {
+    gap: var(--sp-2);
+    max-width: 92%;
+  }
+  body.page-chat .chat-app .chat-body {
+    /* 气泡的 min-width/min-height 来自 --chat-bubble-line, 默认是按 18px 字号算的 —— 这里必须按 14px 重算, 否则单行气泡也被撑成两行高 */
+    --chat-bubble-line: calc(14px * 1.4 + 16px);
+    --chat-avatar-size: 32px;
+    gap: 20px;
+    padding: var(--sp-2) var(--sp-3);
+  }
+  /* 消息从顶部开始排, 不要贴底 */
+
+  body.page-chat .chat-app .chat-msg-avatar {
+    width: 32px;
+    height: 32px;
+  }
+  /* 底部那一块也缩一档; 发送键不能只改字号 —— 高度是由按钮本体 (内边距 + min-height) 定的, 要一起写小 */
+  body.page-chat .chat-app .chat-send-box textarea {
+    font-size: 14px;
+    padding: 7px var(--sp-3);
+  }
+  body.page-chat .chat-app .chat-send-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: auto;
+    min-height: 0;
+    padding: 6px 14px;
+    font-size: 14px;
+    line-height: 1.2;
+  }
+  body.page-chat .chat-tool {
+    width: 32px;
+    height: 32px;
+  }
+  body.page-chat .chat-tool svg {
+    width: 18px;
+    height: 18px;
+  }
+  /* 移动端不要「长按看详细时间」那一套 */
+  body.page-chat .chat-app .chat-msg .chat-time {
+    display: none;
+  }
+  /* 组件缩一档 (输入框 / 发送键 / 工具行不动) */
+  body.page-chat .chat-app .chat-day {
+    font-size: 12px;
+    padding: 4px 10px;
+  }
+  /* 文件气泡里的文字用小字, 尺寸行再矮一级 */
+  body.page-chat .chat-app .chat-file-card {
+    font-size: inherit;
+    padding: 7px var(--sp-3);
+    border-radius: var(--radius-md);
+  }
+  body.page-chat .chat-app .chat-file-meta,
+  body.page-chat .chat-app .chat-attach-size,
+  body.page-chat .chat-app .chat-file-state {
+    font-size: 11px;
+  }
+  body.page-chat .chat-app .chat-quote {
+    font-size: 12px;
+    padding: 4px var(--sp-2);
+  }
+  body.page-chat .chat-app .chat-quote-said {
+    font-size: var(--fs-14);
+  }
+  /* 失效图那行字跟正文同大: 气泡自己已经给了内边距, 这里不要再加 */
+  body.page-chat .chat-app .chat-media-failed {
+    font-size: inherit;
+    padding: 0;
+  }
+  body.page-chat .chat-app .chat-msg .chat-bubble.is-media img.chat-attach-in-bubble {
+    max-height: 260px;   /* 图也别占掉整屏 */
+  }
+  /* 会话列表也跟着缩 */
+  body.page-chat .chat-item-avatar {
+    width: 34px;
+    height: 34px;
+  }
+  body.page-chat .chat-item { padding: var(--sp-2) var(--sp-3); }
+  body.page-chat .chat-item-name { font-size: var(--fs-14); }
+  body.page-chat .chat-item-last,
+  body.page-chat .chat-item-time { font-size: 12px; }
+  /* 头部变矮 (小头像 + 昵称挤一行) */
+  body.page-chat .chat-thread-head {
+    padding: var(--sp-1) var(--sp-2);
+    gap: var(--sp-2);
+  }
+  body.page-chat .chat-back {
+    width: 30px;
+    height: 30px;
+  }
+  body.page-chat .chat-back svg {
+    width: 17px;
+    height: 17px;
+  }
+  body.page-chat .chat-avatar {
+    width: 30px;
+    height: 30px;
+  }
+  body.page-chat .chat-who {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+    min-width: 0;
+  }
+  body.page-chat .chat-name,
+  body.page-chat .chat-username {
+    margin: 0;
+    font-size: var(--fs-14);
+    line-height: 1.3;
+  }
+}
+.chat-msg.is-mine .chat-bubble {
+    background: #7d4fd6;
+}
+/* 气泡的小尾巴已删 (四角都是圆形 + 圆角更大), 不要再加回来 */
+/* 乐观发送: 还没拿到服务端确认的那一条淡一点 (内容先上屏, 网络随后) */
+.chat-msg.is-pending .chat-bubble {
+    opacity: 0.55;
+}
+.chat-msg.is-pending .chat-time {
+    font-style: italic;
+}
+.chat-time {
+    font-size: var(--fs-14);
+    color: var(--c-text-faint);
+}
+.chat-send {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--sp-3);
+    padding-top: var(--sp-3);
+    border-top: 1px solid var(--c-border);
+}
+.chat-send textarea {
+    flex: 1;
+    min-width: 0;
+    min-height: 52px;
+    max-height: 120px;
+    font-size: var(--fs-18);
+    line-height: 1.5;
+    resize: none;
+}
+.chat-send .btn {
+    flex: none;
+}
+
+/* ==================== 私聊输入盒 + 附件 (个人页弹窗 / 私信页共用) ==================== */
+/* .chat-send-box 输入框那块圆角盒子 (附件层挂在它上沿, 所以要 position: relative)、.chat-attach* 附件预览、.chat-file-card 气泡里的附件、.chat-msg.is-new 新消息动画 */
+/* 面板色一律写 var(--chat-*, 兜底值): 私信页给 .chat-app 定义了这套变量, 个人页弹窗没有 */
+.chat-send-box {
+    position: relative;
+    /* 描边宽度抽成变量: 附件预览层算「离输入框多远」时要把它加回去 (bottom 量的是 padding box, 看得见的那条边是 border box) */
+    --chat-send-border: 1px;
+    display: flex;
+    align-items: flex-end;
+    gap: var(--sp-2);
+    padding: var(--sp-2);
+    padding-left: var(--sp-3);
+    border: var(--chat-send-border) solid var(--chat-panel-border, var(--c-border));
+    border-radius: var(--radius-sm);
+    background: var(--chat-inner-bg, rgba(0, 0, 0, 0.35));
+}
+.chat-send-box textarea {
+    flex: 1;
+    min-width: 0;
+    min-height: 34px;
+    max-height: 120px;
+    padding: var(--sp-1) 0;
+    border: none;
+    border-radius: 0;
+    background: none;
+    font-size: var(--fs-18);
+    line-height: 1.5;
+    resize: none;
+}
+.chat-send-box textarea:focus {
+    background: none;
+}
+.chat-send-box .btn {
+    flex: none;
+    /* 输入区是紧凑的, 按钮也跟着收一档 (上下一小块, 不是那套 46px 的大按钮) */
+    padding: var(--sp-1) var(--sp-4);
+    font-size: var(--fs-18);
+}
+
+/* ---------- 附件预览层 ---------- */
+/* 图片: 128×128 的预览块贴在输入框左上角; 文件: 与输入框等宽的横幅, 浮在它上空 4px */
+/* 用 bottom: calc(100% + …) 而不是 top: -Npx (高度由内容定, 4px 才是真缝隙); 还要 + --chat-send-border —— bottom 量的是 padding box, 不补就少 1px */
+.chat-attach {
+    position: absolute;
+    left: 0;
+    bottom: calc(100% + 4px + var(--chat-send-border, 1px));
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+}
+.chat-attach.is-file {
+    width: 100%;
+}
+/* 文件这种把 ✕ 放进横幅里 (否则横幅就比输入框窄了一个 ✕ 的宽度) */
+.chat-attach.is-file .chat-attach-x {
+    position: absolute;
+    right: var(--sp-1);
+    top: 50%;
+    transform: translateY(-50%);
+}
+.chat-attach.is-file .chat-attach-file {
+    padding-right: 26px;
+}
+.chat-attach-img {
+    display: block;
+    /* 128×128 的预览块, 全程不描边, 只留圆角与底色 */
+    width: 128px;
+    height: 128px;
+    border-radius: var(--radius-sm);
+    object-fit: cover;
+    background: #0b0b10;
+}
+.chat-attach-file {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3);
+    flex: 1;
+    min-width: 0;
+    padding: var(--sp-1) var(--sp-3);
+    border: 1px solid var(--chat-panel-border, var(--c-border));
+    border-radius: var(--radius-sm);
+    background: var(--chat-inner-bg, rgba(0, 0, 0, 0.35));
+    font-size: var(--fs-14);
+    color: var(--c-text);
+}
+.chat-attach-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.chat-attach-size {
+    flex: none;
+    color: var(--c-text-dim);
+    font-variant-numeric: tabular-nums;
+}
+.chat-attach-x {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--c-text-dim);
+    cursor: pointer;
+}
+.chat-attach-x:hover {
+    color: var(--c-text);
+    background: rgba(255, 255, 255, 0.12);
+}
+
+/* 输入区里那颗「上传」附件按钮 (在输入框内、发送键左边) */
+.chat-attach-btn {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--c-text-dim);
+    cursor: pointer;
+    transition: color 0.2s, background-color 0.2s;
+}
+.chat-attach-btn svg {
+    width: 18px;
+    height: 18px;
+}
+.chat-attach-btn:hover {
+    color: var(--c-text);
+    background: rgba(255, 255, 255, 0.12);
+}
+
+/* 「上传」模态框里的两个虚线框 (左 文件 / 右 图片); 框体本身借的是 .img-drop 那套 2px 虚线 */
+.attach-kinds {
+    display: flex;
+    gap: var(--sp-3);
+    margin-top: var(--sp-3);
+}
+.attach-kind {
+    flex: 1;
+    min-width: 0;
+    margin-top: 0; /* .img-drop 自带 margin-top, 这里由父级管间距 */
+    gap: var(--sp-1);
+    padding: var(--sp-5) var(--sp-3);
+}
+.attach-kind-title {
+    font-size: var(--fs-18);
+    color: var(--c-text);
+}
+.attach-kind-hint {
+    font-size: var(--fs-14);
+}
+
+/* 气泡里的附件: 图片 → 气泡不要框 (.is-media 把底色/内边距/描边/最小尺寸全撤掉); 文件 → 紫边 + 黑亚克力的按钮样小卡片 */
+/* 选择器必须带 .chat-msg (0,3,0): 光写 .chat-bubble.is-media 只有 (0,2,0), 压不过 .chat-msg.is-mine .chat-bubble 的紫色底 */
+.chat-msg .chat-bubble.is-media {
+    padding: 0;
+    min-width: 0;
+    min-height: 0;
+    border-radius: 0;
+    background: none;
+}
+.chat-attach-in-bubble {
+    display: block;
+    max-width: 100%;
+    max-height: 320px;
+    border-radius: var(--radius-sm);
+    cursor: zoom-out; /* 可点开看大图 (见 ui.js 的灯箱) */
+}
+/* 长截图 (手机截图那种 9:19.5): max-height 与 max-width 一起夹会把它缩成一条几十像素的缝, 所以改成「按气泡宽铺满 + 只露上半截」(看全图点灯箱); .is-tall 由 fillChatBubble() 加 */
+.chat-attach-in-bubble.is-tall {
+    width: 100%;
+    max-width: 240px;
+    object-fit: cover;
+    object-position: top;
+}
+/* 图裂了 / 资源过期了: fillChatBubble 会撤掉 .is-media, 这里拿到的是有底色的普通气泡 —— 去掉小方框图标, 文字与正文同大, 只留灰色 */
+.chat-media-failed {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    font-size: inherit;
+    color: var(--c-text-dim);
+}
+.chat-media-failed::before {
+    content: none;
+    display: none;
+}
+/* 「图片还在上传」的占位方块: 灰边框 + 黑亚克力, 正方形 Emoji 大小, 光在移动 */
+.chat-img-pending {
+    display: block;
+    width: 160px;
+    height: 160px;
+    border: 2px solid var(--c-border);
+    border-radius: var(--radius-md);
+    background-color: rgba(0, 0, 0, .42);
+    background-image: linear-gradient(100deg, transparent 32%, rgba(255, 255, 255, .12) 50%, transparent 68%);
+    background-repeat: no-repeat;
+    background-size: 220% 100%;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    animation: chat-img-shimmer 1.15s linear infinite;
+}
+@keyframes chat-img-shimmer {
+    from { background-position: 140% 0; }
+    to   { background-position: -60% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .chat-img-pending { animation: none; }
+}
+.chat-file-card {
+    /* QQ 那种文件卡片: 竖着排 (第一行文件名, 第二行左下角大小); 描边加粗到 2px + 真亚克力 */
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    max-width: 100%;
+    padding: var(--sp-3) var(--sp-4);
+    border: 2px solid var(--c-accent);
+    border-radius: var(--radius-sm);
+    background: rgba(0, 0, 0, 0.42);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    font-size: var(--fs-18);
+    color: var(--c-text);
+    cursor: pointer;
+    transition: border-color 0.2s, background-color 0.2s;
+    /* 上传中的「水位层」要裁在圆角里, 所以卡片自己得是定位父级 + 能裁 */
+    position: relative;
+    overflow: hidden;
+}
+a.chat-file-card:hover {
+    border-color: var(--c-accent-hover);
+    background: rgba(148, 94, 236, 0.16);
+}
+.chat-file-card .chat-attach-name {
+    /* 标题 (文件名) 与文字气泡正文同大 */
+    font-size: inherit;
+    /* 名字已由 ui.js 的 fitFileName 按字符宽度真截断过 (切掉 + 省略号), 所以这里是单行 —— 单行才看得出「截断」而不是「被藏起来」 */
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+/* 第二行左下角那行大小: 灰色 + 粗体 */
+.chat-file-card .chat-attach-size {
+    font-size: var(--fs-14);
+    font-weight: bold;
+    color: var(--c-text-dim);
+}
+/* 第二行: 大小在左、状态在右 (截图里就是「196.1 MB 上传中」这样) */
+.chat-file-meta {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--sp-3);
+    width: 100%;
+    /* 水会漫过这一行 → 给自己一小圈阴影, 不管水深水浅都读得清 */
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75);
+}
+
+/* ---------- 上传中的文件卡片 ---------- */
+/* 卡片有两张脸: 上传中 = 灰边 3px + 水位波浪 (悬浮才变紫); 上传完成 = 紫边亚克力卡片 (悬浮更亮) */
+.chat-file-card.is-uploading {
+    border-width: 3px;
+    border-color: var(--c-border);
+}
+.chat-file-card.is-uploading:hover {
+    border-color: var(--c-accent);
+}
+.chat-file-state {
+    flex: none;
+    font-weight: bold;
+    color: var(--c-accent-hover);
+}
+.chat-file-card.is-upload-error .chat-file-state {
+    color: var(--c-danger-strong);
+}
+/* 水位层: 高度就是进度 (JS 写 --chat-file-fill), 底下给 5px 底水好让波浪看得见 */
+.chat-file-fill {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 0;
+    height: max(7px, var(--chat-file-fill, 0%));
+    overflow: hidden;
+    /* 水体上浅下深: 底部那行「大小 / 上传中」坐的是深色, 反而更好认 */
+    background: linear-gradient(180deg, rgba(126, 78, 214, 0.58), rgba(74, 40, 130, 0.32));
+    /* 进度是一跳一跳来的 (每个 progress 事件跳一次), 这里拉长成线性, 看着就是水在连续、慢慢往上溢 */
+    transition: height 0.5s linear;
+    pointer-events: none;
+}
+/* 水面: 一条无缝循环的 SVG 波浪平铺 + background-position 横移, 要的是「浅浅的浪 + 一直在慢慢淌」 */
+/* data URI 里的 < > # 必须写成 %3C %3E %23, 少一个整条背景就没了; 波长要长 (一个浪头 160px), 两层波长不同所以漂移距离取 480px 公倍数, 否则循环点会跳帧 */
+.chat-file-fill::before,
+.chat-file-fill::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 11px;
+    background-repeat: repeat-x;
+    background-size: 170px 11px;
+    background-position: 0 0;
+    /* 浪尖用亮紫 (比水面亮): 这条亮边才是「看得出是水」的关键 */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='170' height='11' viewBox='0 0 170 11'%3E%3Cpath d='M0 5.5 C 28 0.6, 57 0.6, 85 5.5 S 142 10.4, 170 5.5 V11 H0 Z' fill='%23b086f7' fill-opacity='0.8'/%3E%3C/svg%3E");
+    /* 横移 (浪在淌) + 上下轻呼吸 (水位上升那点晃动); 两条动画各管各的属性, 不打架 */
+    animation:
+        chat-file-drift 18s linear infinite,
+        chat-file-bob 3.4s ease-in-out infinite;
+}
+/* 后面那层: 波长 1.5 倍、往下错开 4px、淡一大截、反着漂且更慢 —— 亮度拉开才有水的深度, 两条一样亮只会像重影 */
+.chat-file-fill::after {
+    top: 4px;
+    background-size: 255px 11px;
+    opacity: 0.38;
+    animation-duration: 26s, 4.1s;
+    animation-direction: reverse, normal;
+}
+@keyframes chat-file-drift {
+    from { background-position: 0 0; }
+    to   { background-position: -510px 0; }
+}
+@keyframes chat-file-bob {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(1.5px); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .chat-file-fill::before,
+    .chat-file-fill::after { animation: none; }
+}
+/* 卡片里的字要压在水位上面 */
+.chat-file-card .chat-attach-name,
+.chat-file-card .chat-file-meta {
+    position: relative;
+    z-index: 1;
+}
+/* 文件卡片本身就是一个框, 所以它的气泡也走 `.is-media` (见上面的规则) —— 不再单独写 :has() */
+
+/* ---------- 引用 ---------- 气泡里的引用条: 左侧一条竖线 + 灰字, 最多 3 行; 引用是快照 —— 原消息撤回/删掉了这里也不变 */
+.chat-quote {
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
+    max-width: 100%;
+    margin-bottom: var(--sp-2);
+    padding-left: var(--sp-3);
+    border-left: 3px solid rgba(255, 255, 255, 0.35);
+    font-size: var(--fs-14);
+    color: rgba(255, 255, 255, 0.72);
+}
+.chat-quote-name {
+    flex: none;
+    font-weight: bold;
+}
+.chat-quote-text {
+    flex: 1;
+    min-width: 0;
+    display: -webkit-box;
+    line-clamp: 3;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-word;
+}
+/* 输入盒上沿那一小条「正在引用谁」 */
+.chat-quote-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    /* 自己一行: 输入盒是 flex-wrap 的, 100% 就把它顶到输入框上面 */
+    flex-basis: 100%;
+    margin-bottom: 2px;
+    padding: var(--sp-1) var(--sp-3);
+    border-left: 3px solid var(--c-accent);
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.06);
+    font-size: var(--fs-14);
+    color: var(--c-text-dim);
+}
+.chat-quote-bar-name {
+    flex: none;
+    font-weight: bold;
+    color: var(--c-accent-hover);
+}
+.chat-quote-bar-text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.chat-quote-bar-x {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--c-text-dim);
+    cursor: pointer;
+}
+.chat-quote-bar-x:hover {
+    color: var(--c-text);
+    background: rgba(255, 255, 255, 0.12);
+}
+
+/* ---------- 表情包 ---------- */
+/* 挂在 .chat-tools (position: relative) 上, bottom: calc(100% + 5px) 正好盖住输入框那一行; 高度 auto 只封顶, 到顶表格自己滚 */
+.chat-sticker-panel {
+    position: absolute;
+    left: 0;
+    bottom: calc(100% + 5px);
+    z-index: 4;
+    /* 宽高都跟着内容走: 列数由 JS 算好写进 --chat-sticker-cols (一行最多 6 格, ＋ 也占一格) */
+    width: fit-content;
+    max-width: min(380px, 100%);
+    height: fit-content;
+    max-height: min(380px, 55vh);
+    display: flex;
+    flex-direction: column;
+    padding: var(--sp-2);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-md);
+    /* 透明黑亚克力, 与站内按钮那套同值 */
+    background: rgba(0, 0, 0, 0.42);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+    animation: chat-sticker-in 0.14s ease-out both;
+}
+@keyframes chat-sticker-in {
+    from { opacity: 0; transform: translateY(6px) scale(0.98); }
+    to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .chat-sticker-panel { animation: none; }
+}
+.chat-sticker-hint {
+    margin: 0;
+    padding: var(--sp-2) var(--sp-3);
+    /* 限一下宽, 否则「还没有表情…」那句会把 fit-content 的面板撞得很宽 */
+    max-width: 260px;
+    font-size: var(--fs-14);
+    color: var(--c-text-dim);
+    line-height: 1.7;
+}
+.chat-sticker-grid {
+    /* 高度跟着张数走: 张数少就是矮矮一条, 多了到 max-height 后自己滚 */
+    flex: 0 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    display: grid;
+    /* 固定 56px 一格: 面板宽度才能是「列数 × 56」的 fit-content */
+    grid-template-columns: repeat(var(--chat-sticker-cols, 6), 56px);
+    grid-auto-rows: 56px;
+    justify-content: start;
+    gap: 2px; /* 与站内「面板之间 2px 的缝」同一套语汇 */
+}
+.chat-sticker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1 / 1;
+    padding: 2px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    background: none;
+    cursor: pointer;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+.chat-sticker:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+.chat-sticker img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+/* 第一格: 虚线 ＋ (加本地图片) */
+.chat-sticker.is-add {
+    border: 1px dashed var(--c-border);
+    color: var(--c-text-dim);
+}
+.chat-sticker.is-add svg {
+    width: 22px;
+    height: 22px;
+}
+.chat-sticker.is-add:hover {
+    border-color: var(--c-accent);
+    color: var(--c-text);
+}
+/* 表情消息本身画小一点 (普通图还是按气泡宽走) */
+.chat-attach-in-bubble.is-emoji {
+    max-width: 160px;
+    max-height: 160px;
+}
+
+/* 新消息的入场动画: 从边缘向中心缓动 + 透明度渐变 */
+@keyframes chat-in-mate {
+    from { opacity: 0; transform: translateX(-32px); }
+    to   { opacity: 1; transform: none; }
+}
+@keyframes chat-in-mine {
+    from { opacity: 0; transform: translateX(32px); }
+    to   { opacity: 1; transform: none; }
+}
+.chat-msg.is-new {
+    animation: chat-in-mate 0.3s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+.chat-msg.is-new.is-mine {
+    animation-name: chat-in-mine;
+}
+@media (prefers-reduced-motion: reduce) {
+    .chat-msg.is-new { animation: none; }
+}
+/* 发送失败: 气泡压暗 + 时间那行换成红字 (后台同步失败时才出现) */
+.chat-msg.is-failed .chat-bubble {
+    background: #4a2a2a;
+}
+.chat-msg.is-failed .chat-time {
+    display: block;
+    color: var(--c-danger);
+}
+
+/* ==================== 右下角悬浮按钮组 (共用) ==================== */
+/* 文章页的目录抽屉入口 + 阅读进度球, 文章列表页的标签抽屉入口都用它; z-index 要比抽屉 (110) 高 —— 抽屉展开后正好压在右下角 */
+.action-buttons {
+    position: fixed;
+    right: var(--sp-4);
+    bottom: var(--sp-4);
+    z-index: 120;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-3);
+    transform: translateY(4rem); /* 未滚动时藏在屏幕外 (窄屏由 main-media 改成常驻) */
+    transition: transform 0.3s ease;
+}
+.action-buttons.show {
+    transform: translateY(0);
+}
+.action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    color: var(--c-text);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+    transition: color 0.25s, border-color 0.25s;
+}
+.action-btn:hover {
+    color: var(--c-accent-hover);
+    border-color: var(--c-accent);
+}
+.action-btn svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* ==================== 轻提示 Toast ==================== */
+/* 操作结果不占页面位置 (以前是页面里的一条 .notice 状态行): 飘在底部居中、自动消失, 同时多发就往上叠 */
+/* 避让的位移交给 transform 而不是 bottom: transform 是合成动画 (不触发布局),
+   而且两份规则 (窄屏居中 / 桌面右下角) 都能用同一个变量 */
+.toast-stack {
+    position: fixed;
+    left: 50%;
+    bottom: var(--sp-8);
+    transform: translateX(-50%) translateY(calc(-1 * var(--foraine-toast-h, 0px)));
+    z-index: var(--zlayer-toast);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-2);
+    pointer-events: none;
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.toast {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    max-width: min(520px, calc(100vw - var(--sp-10)));
+    padding: var(--sp-2) var(--sp-4);
+    background: rgba(0, 0, 0, 0.72);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 2px solid var(--c-border);
+    border-radius: var(--radius-md);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+    font-size: var(--fs-18);
+    color: var(--c-text-muted);
+    animation: toast-in 0.28s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+.toast-icon {
+    flex: none;
+    display: flex;
+    align-items: center;
+    color: var(--c-text-dim);
+}
+.toast-icon svg {
+    width: 20px;
+    height: 20px;
+}
+/* 四种语气: 描边与图标跟着变色 (图标继承 currentColor) */
+.toast.is-ok {
+    border-color: var(--c-ok-strong);
+    color: var(--c-text);
+}
+.toast.is-ok .toast-icon { color: var(--c-ok); }
+.toast.is-error {
+    border-color: var(--c-danger-strong);
+    color: #ffd2d2;
+}
+.toast.is-error .toast-icon { color: var(--c-danger); }
+.toast.is-warn {
+    border-color: var(--c-warn-strong);
+    color: #ffe6c9;
+}
+.toast.is-warn .toast-icon { color: var(--c-warn); }
+.toast.is-info .toast-icon { color: var(--c-accent-hover); }
+.toast.is-out {
+    animation: toast-out 0.24s ease both;
+}
+@keyframes toast-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: none; }
+}
+@keyframes toast-out {
+    from { opacity: 1; transform: none; }
+    to   { opacity: 0; transform: translateY(6px); }
+}
+
+/* ==================== 桌面端: 从右下角往左弹 ==================== */
+/* 位置: 底部居中 → 右下角, 叠放方向跟着靠右; 入场: 从右边 64px 外飞进来 (过冲 → 回弹 → 归位), 整段 0.42s */
+/* 窄屏那份 (底部居中、往上叠) 一字不改; 用独立的 translate 而不是 transform, keyframes 写在 @media 里 (窄屏不匹配就不生效) */
+@media (min-width: 901px) {
+    .toast-stack {
+        left: auto;
+        right: var(--sp-6);
+        transform: translateY(calc(-1 * var(--foraine-toast-h, 0px)));
+        align-items: flex-end;
+    }
+    .toast {
+        animation: toast-in-right 0.42s ease-out both;
+    }
+    .toast.is-out {
+        animation: toast-out-right 0.2s ease both;
+    }
+    @keyframes toast-in-right {
+        0%   { opacity: 0; translate: 64px 0; }
+        55%  { opacity: 1; translate: -7px 0; }
+        76%  { translate: 3px 0; }
+        90%  { translate: -1px 0; }
+        100% { opacity: 1; translate: 0 0; }
+    }
+    @keyframes toast-out-right {
+        from { opacity: 1; translate: 0 0; }
+        to   { opacity: 0; translate: 10px 0; }
+    }
+}
+
+/* GitHub 按钮: 白底黑字 —— 全站深色基调里唯一一块亮色, 一眼就能认出是第三方入口而不是站点自己的主按钮 */
+.btn-gh {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-2);
+    padding: var(--btn-py) var(--btn-px);
+    border-radius: var(--radius-md);
+    border: 2px solid transparent; /* 同 .btn: 与黑亚克力按钮等高 */
+    background-color: #ffffff;
+    color: #000000;
+    font-size: var(--btn-fs);
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+.btn-gh:hover,
+.btn-gh:focus-visible {
+    background-color: #d5d5d5; /* 覆盖全局 button:hover 的半透明白 */
+    color: #000000;
+}
+.btn-gh svg {
+    flex: none;
+    width: 20px;   /* 与全站其它按钮图标同尺寸 */
+    height: 20px;
+}
+
+/* 登录页 / 个人页里的第三方登录入口 */
+.auth-oauth {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+}
+.auth-oauth .btn-gh {
+    width: 100%; /* 与输入框同宽 */
+}
+
+/* 第三方账号绑定区 (个人页): 靠左站 —— 以前居中, 放在资料表的行里会显得忽左忽右 */
+.profile-oauth {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: center;
+    gap: var(--sp-3);
+}
+.profile-oauth .oauth-bound {
+    font-size: var(--fs-14);
+    color: var(--c-text-dim);
+}
+/* 已绑定的第三方按钮: 留着位置但变灰写「已绑定」 */
+.profile-oauth .btn-gh.is-bound {
+    filter: grayscale(1);
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+/* 注销账号: 和上面的日常操作隔开一段, 免得手滑 */
+.profile-danger {
+    margin-top: var(--sp-6);
+    padding-top: var(--sp-4);
+    border-top: 1px solid var(--c-border);
+    display: flex;
+    justify-content: center;
+}
+
+.field {
+  /* 输入框容器: 用于左上角悬浮名称 */
+  position: relative;
+}
+.field input,
+.field textarea {
+  /* 字段内的输入框默认撑满容器宽度 */
+  width: 100%;
+}
+.field label {
+  position: absolute;
+  top: -10px;              /* 悬浮标签: 一半压在输入框边框上 */
+  left: var(--sp-3);
+  padding: 0 var(--sp-2);
+  background-color: var(--c-surface);
+  color: var(--c-text-dim);
+  font-size: var(--fs-14);
+  transition: color 0.2s;
+}
+.field input:focus + label {
+  color: var(--c-accent);
+}
+
+.No-slc{
+    /* 禁止用户选中元素 */
+    user-select: none
+}
+
+.center-of-all {
+    justify-content: center; /* 水平居中 */
+    align-items: center; /* 垂直居中 */
+}
+
+.gradient-text {
+    /* 使指定文字拥有渐变 */
+    background: linear-gradient(to right, var(--gradtext-left), var(--gradtext-right));
+    background-clip: text;
+    -webkit-background-clip: text; /* Safari适配 */
+    -webkit-text-fill-color: transparent; /* 文字颜色设置为透明 */
+
+    /* 默认值 */
+    --gradtext-left: #ff6a00;
+    --gradtext-right: #ee0979;
+}
+
+.divider-v {
+  /* 面板之间的白色竖线 */
+  width: 1px;
+  align-self: stretch;
+  background: var(--c-divider);
+  margin: 0 var(--sp-5);
+}
+
+.transition-mask {
+  /* 圆形转场遮罩: 触发时从中心扩大盖住屏幕, 加载完成时缩小 */
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 200vmax;
+  height: 200vmax;
+  border-radius: 50%;
+  z-index: var(--zlayer-top);
+  background-color: #000000;
+  transform: translate(-50%, -50%) scale(1);
+  transition: transform 0.4s cubic-bezier(0.55, 0, 0.85, 0.35);
+}
+.transition-mask.shrink {
+  /* 缩小成一点 (触发前 / 加载完成时) */
+  transform: translate(-50%, -50%) scale(0);
+}
+
+/* 完成提示层: 独立于遮罩, 不随遮罩缩放, 用透明度动画 */
+.transition-hint {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: calc(var(--zlayer-top) + 1);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
+.transition-hint.show {
+  /* 淡入: 遮罩出现 0.1s 后开始, 0.3s 完全出现 */
+  opacity: 1;
+  transition: opacity 0.2s ease 0.1s;
+}
+.transition-icon {
+  /* 图标悬浮浮动 */
+  position: relative;
+  height: 288px;
+  animation: mask_float 2.5s ease-in-out infinite;
+}
+@keyframes mask_float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-14px); }
+}
+
+/* ==================== 终端页: 启动层 + 启动画面 ==================== */
+/* 首页那颗终端图标点下去那趟三段式过场 (逻辑在 script/terminal.js 的 openingTerminal):
+   铺满视口的 canvas 画等边三角形网格 —— 黑面板铺满 → 转深紫 → 紫涟漪带沉黑 */
+.term-opening {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--zlayer-top) + 2);
+  overflow: hidden;
+  /* 动画期间别让人点到下面的页面 */
+  cursor: default;
+}
+.term-opening canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+/* 终端页的启动层: 盖满屏幕的一层空壳 (图标 + 系统名 + 进度条 + 闸门)
+   ⚠️ 它**不能带底色**: 背后的三角网格是 .term-world-grid (世界那一层) 在画, 盖黑就看不到背景了 */
+.term-boot-layer {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--zlayer-top) + 2);
+  transition: opacity 0.5s ease;
+}
+.term-boot-layer.is-out {
+  opacity: 0;
+}
+/* 启动画面: 白边图标 + 系统名 + 加载条 (藏在那层黑底里面)
+   ⚠️ 不用 flex 排版: 图标 / 文字 / 进度条 / 闸门是四块独立定位的东西, 绝对定位 + translate 才好各自摆
+   纵向排布 (用户 2026-10-01 最终版): **图标与系统名之间那道缝的中点**在画面正中 —— 那道缝 15px, 一半 7.5px;
+   系统名的盒子顶边原本落在中心上方 11px, 所以要整体下沉 11 + 7.5 = 18.5px (改动只需动 --boot-shift);
+   系统名下面 5px 是进度条; 拒绝访问时进度条让位, 那块地方换成红字 + 输入框 ——
+   ⚠️ 系统名全程都在 (用户：「标题保持不消失，并且保持在页面中间，图标在其之上」) */
+.term-boot {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  --boot-shift: 18.5px;                   /* 整体下沉: 让图标与系统名之间那道缝的中点在画面正中 */
+  --boot-logo-half: min(66px, 17vw);      /* 图标半个高 (图标是 min(132px, 34vw)) */
+  --boot-name-y: calc(-11px + var(--boot-shift));   /* 系统名: 行高 22, 顶边放在中心上方 11px 再下沉 */
+  --boot-bar-y: calc(16px + var(--boot-shift));     /* 进度条: 系统名底边下面再 5px */
+  --boot-gate-y: calc(16px + var(--boot-shift));    /* 闸门: 接管进度条那块 (红字 + 输入框) */
+  /* 图标: 它的底边要在系统名顶边上方 15px → 中心再往上半个图标高 */
+  --boot-logo-y: calc(-26px - var(--boot-logo-half) + var(--boot-shift));
+}
+.term-boot.is-in {
+  opacity: 1;
+}
+/* 图标 / 系统名 / 进度条 / 闸门 (它们之间的间距全程不变) */
+.term-boot-logo {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(132px, 34vw);
+  height: min(132px, 34vw);
+  translate: -50% calc(-50% + var(--boot-logo-y));
+}
+/* 图标本体: 浅白色斜条纹 + 星形遮罩 (条纹之间的缝是**透明**的, 直接透出底下的网格)
+   ⚠️ 用户要的就只是「一块条纹图, 范围是星星」: 不要灰底, 也**不要实心描边** */
+.term-boot-logo > i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(135deg, #eef1fb 0 3px, transparent 3px 9px);
+  -webkit-mask: url('/assets/Icon/foraine-icon-v2.png') center / contain no-repeat;
+  mask: url('/assets/Icon/foraine-icon-v2.png') center / contain no-repeat;
+}
+.term-boot-name {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  margin: 0;
+  translate: 0 var(--boot-name-y);
+  text-align: center;
+  font-family: var(--font-mono);   /* 代码样式 */
+  font-size: var(--fs-18);
+  line-height: 22px;               /* 定死行高: 进度条的位置就是靠它算出来的 (logo-h + 15 + 22 + 5) */
+  letter-spacing: 0.18em;
+  color: #ffffff;
+  transition: opacity 0.3s ease;
+}
+/* 收尾: 只剩图标与系统名 (进度条让位) —— ⚠️ 系统名不能提前淡出,
+   它要和图标**一起**闪掉 (用户：「让标题和图标再最后一起消失」) */
+.term-boot-bar {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% var(--boot-bar-y);
+  width: min(320px, 62vw);
+  height: 3px;
+  background: none;   /* 纯一根白条: 不要槽底色 (会被看成边框), 不要圆角 */
+}
+/* 拒绝访问那一阶段: 进度条让位, 那块地方换给红字 + 输入框 (系统名不动) */
+.term-boot.is-gate .term-boot-bar,
+.term-boot.is-solo .term-boot-bar {
+  display: none;
+}
+.term-boot-bar > i {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: #ffffff;
+}
+/* 从起始端扫过来的黑幕: 进度条爬满时把它推到 100% (0.7s easeInOutCubic, 见 terminal.js 的 darkenBar) */
+.term-boot-bar > b {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 100%;
+  background: #000000;
+}
+
+/* WinkToDisapper: 闪 --wink-count 次 (半周期亮、半周期灭) */
+@keyframes WinkToDisapper {
+  0%, 49%   { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+.term-boot-bar.is-winking,
+.term-boot-logo.is-winking,
+.term-boot.is-winking,
+.term-gate-field.is-winking {
+  animation: WinkToDisapper var(--wink-ms, 180ms) linear var(--wink-count, 5);
+}
+
+/* 密钥闸门: 红字 + 一个左右各一个向外三角的纯白输入框 (合起来是个横着的六边形)。
+   位置: 直接接管进度条那一块 (图标不动, 系统名也不动) */
+.term-gate {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% var(--boot-gate-y);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-4);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.term-gate.is-in {
+  opacity: 1;
+}
+.term-gate-msg {
+  margin: 0;
+  font-family: var(--font-mono);   /* 代码样式 */
+  font-size: var(--fs-14);
+  letter-spacing: 0.06em;
+  color: #ff5b5b;
+  text-align: center;
+}
+.term-gate-field {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  padding: 0 15px;      /* 给左右两个斜尖留位置 */
+  background: #ffffff;
+  /* 一个**完整**的六边形: 左右两个尖是切出来的, 不是拼上去的两块三角 ——
+     拼接的白块在移动端会因小数像素在接缝处各留半格, 看着就是一条黑缝 */
+  clip-path: polygon(15px 0, calc(100% - 15px) 0, 100% 50%, calc(100% - 15px) 100%, 15px 100%, 0 50%);
+  cursor: text;
+}
+/* ⚠️ `input:focus` (0,1,1) 与 `input:disabled` (0,1,1) 都比单写 .term-gate-input (0,1,0) 高,
+   两个都得点名盖掉 —— 漏一个就是「点进去中心变黑」或「等接口时整块变黑」
+   ⚠️ 白底交给外面那个六边形, 输入框自己必须透明; 也别给 box-shadow (那圈会凸在接缝上) */
+.term-gate-input,
+.term-gate-input:focus,
+.term-gate-input:disabled,
+.term-gate-input[readonly] {
+  width: min(320px, 56vw);
+  height: 100%;
+  padding: 0 var(--sp-1);
+  border: 0;
+  border-radius: 0;      /* 没有圆角 */
+  background-color: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+  opacity: 1;
+  color: #000000;        /* 输入内容黑色 */
+  -webkit-text-fill-color: #000000;
+  caret-color: #000000;
+  font-family: var(--font-mono);   /* 代码样式 */
+  font-size: var(--fs-18);
+  line-height: 1.6;
+  outline: none;
+  user-select: text;
+}
+/* 验证中: 整个六边形立刻变灰 + 锁住输入 (结果出来再解锁) */
+.term-gate.is-checking .term-gate-field {
+  background: #a8adba;
+}
+.term-gate.is-checking .term-gate-input {
+  cursor: default;
+  caret-color: transparent;   /* 灰底上别再闪个黑光标 */
+}
+/* 敲错: **整条** (六边形 + 里面的字) 立刻变红, 再用 0.6s 渐回白 (不整块闪, 闪是「对」那一次的事) */
+@keyframes term-gate-deny {
+  0%, 12% { background-color: #ff3b3b; }
+  100%    { background-color: #ffffff; }
+}
+@keyframes term-gate-deny-text {
+  0%, 12% { color: #ffffff; -webkit-text-fill-color: #ffffff; caret-color: #ffffff; }
+  100%    { color: #000000; -webkit-text-fill-color: #000000; caret-color: #000000; }
+}
+/* ⚠️ transition: none 是必须的: 全站 input 带 `transition: background-color 0.2s`,
+   不掐掉的话「立刻变红」这一下会被过渡拉成渐变 */
+.term-gate.is-wrong .term-gate-field {
+  transition: none;
+  animation: term-gate-deny 0.6s ease-in-out;
+}
+.term-gate.is-wrong .term-gate-input {
+  transition: none;
+  animation: term-gate-deny-text 0.6s ease-in-out;
+}
+/* ⚠️ 这里原来还有一条 term-gate-shake (敲错左右晃一下) —— 用户 2026-10-01 要求全面取消晃动, 已删, 别再加回来。
+   敲错的反馈只剩「整条变红一下再渐回白」 */
+
+/* ⚠️ 老内核不认 `translate` 这个独立属性 (Chromium < 104): 上面那套居中全靠它,
+   不认的话图标/系统名/输入框会一起偏到右下、互相压住 (用户报的验证页错乱)。
+   这一块用 transform / margin 重写一遍 —— 闸门与进度条特意用 margin 而不是 transform,
+   免得以后有什么动 transform 的动效把居中顶掉 */
+@supports not (translate: none) {
+  .term-boot-logo {
+    transform: translate(-50%, calc(-50% + var(--boot-logo-y)));
+  }
+  .term-boot-name {
+    margin-top: var(--boot-name-y);
+  }
+  .term-boot-bar {
+    left: 0;
+    right: 0;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: var(--boot-bar-y);
+  }
+  .term-gate {
+    left: 0;
+    right: 0;   /* 撑满一行, 里面的东西靠 align-items: center 居中 */
+    margin-top: var(--boot-gate-y);
+  }
+}
+
+/* ==================== 组件进场动画 ==================== */
+/* 往上飘一点 + 淡入: 给块级组件加 data-anim 即可 (transition.js 自动编号, 逐个错开 55ms) */
+/* 必须等转场遮罩开始收缩、页面露出来的那一刻才播 (一加载就播会被遮罩盖住); 隐藏态挂在 data-anim-armed 上, 禁 JS 时内容照常可见 */
+/* 用 translate 而不是 transform 做这一飘 (两个独立属性): 否则入场动画会把元素自己的 transform 钉住 —— 窄屏的文章目录抽屉就是这么关不掉的 */
+@keyframes fade-in-up {
+    from { translate: 0 18px; opacity: 0; }
+    to   { translate: none; opacity: 1; }
+}
+html[data-anim-armed] [data-anim] {
+    opacity: 0;
+}
+html[data-anim-armed] [data-anim].anim-in {
+    animation: fade-in-up 0.42s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+/* 条目级重播 (core.js 的 replayItems): 列表/卡片墙里单个条目也能飘一下, 不必把整个外壳连页签一起重播 */
+/* 这条不加 html[data-anim-armed] 前缀 —— 类由 JS 事后挂上、播完就被摘掉, 不需要「脚本没跑时保持可见」那层保护 */
+.anim-item {
+    animation: fade-in-up 0.42s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+    html[data-anim-armed] [data-anim] {
+        opacity: 1;
+    }
+    html[data-anim-armed] [data-anim].anim-in {
+        animation: none;
+    }
+    .anim-item {
+        animation: none;
+    }
+}
+
+/* ==================== 文章系统 ==================== */
+
+/* 通用页面骨架: 取代占位 div, 提供顶部留白与纵向节奏 */
+.page-layout {
+  /* 底部不再留 padding: 页脚由 .spacer-flex 顶到底, 离底间距统一由 .site-footer 控制 */
+  min-height: 100vh;
+  min-height: 100dvh;
+  min-height: var(--vh-full);   /* 一屏高 */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-5);
+  padding: var(--page-top) var(--sp-6) 0;
+}
+.page-layout > .panel {
+  margin: 0; /* 由 flex 居中, 不再用 auto */
+}
+.text-center {
+  text-align: center;
+}
+.page-subtitle {
+  font-family: 'XNSFengTangHaiYanWei';
+  font-size: var(--fs-20);
+  color: var(--c-text-dim);
+}
+
+/* 较宽的面板 (文章列表 / 详情) */
+.panel-wide {
+  width: min(860px, calc(100% - var(--sp-10)));
+}
+
+
+/* 右键菜单 */
+.context-menu {
+  position: fixed;
+  z-index: 3000;
+  /* 黑色透明亚克力 —— 原来是死黑 #000, 现在能看到底下的东西 */
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid #444444;
+  border-radius: 10px;
+  padding: 6px;
+  /* 菜单本身就是滚动容器 (哪怕内容没溢出): 这样滚轮悬在菜单上时不会把滚动链给底下的页面; 少了这两行, 页面一滚就把菜单收起来了 */
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* 宽度 fit-content: 谁最长就按谁的宽 */
+  transform-origin: top left;
+  animation: context-menu-in 0.12s ease-out both;
+}
+@keyframes context-menu-in {
+  from { opacity: 0; transform: scale(0.94); }
+  to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .context-menu { animation: none; }
+}
+.context-menu button {
+  display: grid;
+  /* 图标 | 标签 | 快捷键 | 箭头 —— 用栅格而不是靠右浮动, 各行的列才会真的对齐 */
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 6px 12px;
+  font-size: var(--fs-14);
+  border-radius: 6px;
+}
+.context-menu .ctx-icon,
+.context-menu .ctx-hint,
+.context-menu .ctx-arrow {
+  display: none;
+}
+/* 图标列: 整份菜单里有任何一项带图标, 才给所有行留出来 (不然白白缩进一截) */
+.context-menu.has-icons button {
+  grid-template-columns: 16px minmax(0, 1fr);
+}
+.context-menu.has-icons .ctx-icon {
+  display: block;
+  width: 16px;
+  height: 16px;
+  line-height: 1;
+  color: var(--c-text-muted);
+}
+.context-menu.has-icons .ctx-icon svg {
+  width: 16px;
+  height: 16px;
+}
+.context-menu.has-hints button {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+.context-menu.has-hints .ctx-hint {
+  display: block;
+  color: var(--c-text-faint);
+  font-size: var(--fs-14);
+  white-space: nowrap;
+}
+/* 按键提示 (⌘C 这种) 要跟前面的文本拉开一点 —— 普通提示保持原来的间距 */
+.context-menu .ctx-hint.is-key {
+  margin-left: 10px;
+}
+.context-menu.has-icons.has-hints button {
+  grid-template-columns: 16px minmax(0, 1fr) auto;
+}
+.context-menu.has-icons.has-arrows button {
+  grid-template-columns: 16px minmax(0, 1fr) 10px;
+}
+.context-menu.has-hints.has-arrows button {
+  grid-template-columns: minmax(0, 1fr) auto 10px;
+}
+.context-menu.has-icons.has-hints.has-arrows button {
+  grid-template-columns: 16px minmax(0, 1fr) auto 10px;
+}
+.context-menu.has-arrows .ctx-arrow {
+  display: block;
+  color: var(--c-text-faint);
+}
+.context-menu .ctx-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.context-menu button:hover {
+  background-color: rgba(255, 255, 255, 0.12);
+}
+.context-menu button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background-color: transparent;
+}
+/* 危险项 (封禁 / 删号): 平时红字, 悬停才给红底 */
+.context-menu button.is-danger {
+  color: var(--c-danger);
+}
+.context-menu button.is-danger:hover {
+  background-color: rgba(214, 69, 69, 0.18);
+  color: #ffffff;
+}
+/* 分隔线: 把「看」和「管」两组动作分开 */
+.context-menu-sep {
+  height: 1px;
+  margin: 6px 4px;
+  background: var(--c-border);
+}
+
+/* ============ 通用: 弹窗内容与提示文字 ============ */
+#modal-content {
+  user-select: text;
+}
+
+/* ==================== 封禁提示条 (个人页 / 文章编辑器共用) ==================== */
+/* 被封禁的人还能看, 但发不了文章 —— 这条横幅负责把这件事说清楚 */
+.ban-banner {
+    margin-bottom: var(--sp-5);
+    padding: var(--sp-4);
+    border: 1px solid rgba(255, 107, 107, 0.55);
+    border-left: 4px solid var(--c-danger);
+    border-radius: var(--radius-md);
+    background: rgba(214, 69, 69, 0.12);
+}
+.ban-banner-title {
+    font-size: var(--fs-20);
+    font-weight: bold;
+    color: var(--c-danger);
+}
+.ban-banner-text {
+    margin-top: var(--sp-2);
+    font-size: var(--fs-18);
+    color: var(--c-text-muted);
+    word-break: break-word;
+}
+
+/* ==================== 注销申请横幅 (个人页) ==================== */
+/* 账号已申请注销、还在 7 天保留期里; 形制同封禁提示条, 只是换成告警橙 (不是错误, 还能取消) + 一颗「取消注销」按钮 */
+.pending-banner {
+    margin-bottom: var(--sp-5);
+    padding: var(--sp-4);
+    border: 1px solid rgba(255, 190, 92, 0.5);
+    border-left: 4px solid #ffbe5c;
+    border-radius: var(--radius-md);
+    background: rgba(255, 190, 92, 0.10);
+}
+.pending-banner-title {
+    font-size: var(--fs-20);
+    font-weight: bold;
+    color: #ffbe5c;
+}
+.pending-banner-text {
+    margin-top: var(--sp-2);
+    font-size: var(--fs-18);
+    line-height: 1.7;
+    color: var(--c-text-muted);
+    word-break: break-word;
+    white-space: pre-line; /* 文案里的 \n 要真的换行 */
+}
+.pending-banner-actions {
+    display: flex;
+    gap: var(--sp-3);
+    margin-top: var(--sp-3);
+}
+
+/* ==================== 上传图片 (文章编辑器 / 个人页「个性化」共用) ==================== */
+/* 原本住在 page-article.css —— 个人页的「上传图片」也要弹同一个框, 所以挑到 main.css 来 */
+.editor-image-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+}
+.editor-image-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+.img-drop {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-2);
+    margin-top: var(--sp-4);
+    padding: var(--sp-6) var(--sp-4);
+    border: 2px dashed var(--c-border);
+    border-radius: var(--radius-md);
+    background: rgba(0, 0, 0, 0.38);
+    color: var(--c-text-dim);
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background-color 0.2s, color 0.2s;
+}
+.img-drop svg {
+    width: 34px;
+    height: 34px;
+}
+.img-drop:hover,
+.img-drop.is-over {
+    border-color: var(--c-accent);
+    background: rgba(148, 94, 236, 0.14);
+    color: var(--c-text);
+}
+.img-drop-title {
+    font-size: var(--fs-18);
+    color: var(--c-text);
+}
+.img-drop-hint {
+    font-size: var(--fs-14);
+}
+.img-picked {
+    margin-top: var(--sp-4);
+    text-align: center;
+}
+.img-picked img {
+    max-width: 100%;
+    max-height: 40vh;
+    border-radius: var(--radius-md);
+}
+.img-picked-meta {
+    margin-top: var(--sp-2);
+    font-size: var(--fs-14);
+    color: var(--c-text-dim);
+    word-break: break-all;
+}
+/* 「图片 / 表情包」二选一 (评论插图弹窗用) */
+.img-kind {
+    display: flex;
+    gap: var(--sp-2);
+    margin-top: var(--sp-3);
+}
+.img-kind button {
+    padding: var(--sp-1) var(--sp-3);
+    font-size: var(--fs-14);
+}
+.img-kind button.is-active {
+    color: var(--c-text);
+    border-color: var(--c-accent);
+    background: rgba(148, 94, 236, 0.18);
+}
+
+/* 预览弹窗的标题: 灰色, 与正文拉开层次 */
+.modal-preview-title {
+    margin-bottom: var(--sp-4);
+    font-size: var(--fs-18);
+    color: var(--c-text-dim);
+    letter-spacing: 0.05em;
+}
+
+/* ==================== 空状态 / 加载中 ==================== */
+/* 页面中间的一块话: 上面一个图标 (或转圈), 下面一行大字 + 一行灰字; emptyState() / loadingState() 在 ui.js */
+.page-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-3);
+    width: 100%;
+    padding: var(--sp-12) var(--sp-4);
+    text-align: center;
+}
+/* 放进 .article-grid / .member-grid 这类网格时必须跨满所有列, 否则只会占第一个格子, 看上去就没居中 */
+.article-grid > .page-state,
+.member-grid > .page-state {
+    grid-column: 1 / -1;
+}
+.page-state-icon {
+    color: var(--c-text);
+}
+.page-state-icon svg {
+    width: 56px;
+    height: 56px;
+}
+/* 主句: 白字大号 («一片虚无») */
+.page-state-title {
+    font-size: var(--fs-28);
+    font-weight: bold;
+    color: var(--c-text);
+}
+/* 副句: 灰字稍小 («有待星空来填充此地» / «直达星辰..») */
+.page-state-text {
+    font-size: var(--fs-18);
+    color: var(--c-text-dim);
+}
+/* 加载中的转圈: 与弹窗里的 .busy-spinner 同一个写法 */
+.page-state-spinner {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 4px solid var(--c-border);
+    border-top-color: var(--c-accent);
+    animation: busy-spin 0.8s linear infinite;
+}
+/* 加载中那句「直达星辰..」用白字, 比空状态的副句亮一档 */
+.page-state-loading .page-state-text {
+    color: var(--c-text);
+}
+/* 转圈动画放主文件: 弹窗 (文章页) 与空状态/加载中 (全站) 都引用它 */
+@keyframes busy-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ==================== 滚动条 ==================== */
+/* 轨道全透明 (不抢内容), 滑块用描边色系 + 圆角, 跟边框同一套质感 */
+/* 两个前缀都要写: Firefox 只认 scrollbar-width/color, Chromium 只认 ::-webkit-scrollbar */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--c-border-soft) transparent;
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: var(--c-border-soft);
+  /* 描边 + padding-box 裁切 = 滑块比轨道窄一圈, 两侧留出透明缝 */
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--c-border);
+}
+
+/* ==================== 小工具类 ==================== */
+.field-narrow {
+    width: 260px;
+    max-width: 100%;
+    margin: 0 auto;
+}
+.mt-3 { margin-top: var(--sp-3); }
+.mt-4 { margin-top: var(--sp-4); }
+.row-center { justify-content: center; }
+
+/* 页脚前的弹性留白: 至少 --sp-8, 内容不满一屏时由它吃掉多余空间、把页脚压到底; 别把 basis 改成 0 去抠那 32px */
+.spacer-flex {
+  flex: 1 0 var(--sp-8);
+  width: 100%;
+}
+
+/* 区块纵向间隔: 取代散落的 <div style="height:20px"> 魔法间距 */
+.spacer { height: var(--sp-5); }           /* 20px 默认区块间隔 */
+.spacer-xs { height: var(--sp-3); }        /* 12px 标题与内容的微间隔 */
+.spacer-xl { height: 450px; }              /* 手机端拦截页把提示推到下方 */
+.spacer-page { height: var(--page-top); }  /* 页尾留白 */
+
+/* 文字层级工具类: 取代内联的 color:#ccc / #555 这类硬编码 */
+.text-muted { color: var(--c-text-muted); }
+.text-dim { color: var(--c-text-dim); }
+.text-faint { color: var(--c-text-faint); }
+.text-xs { font-size: var(--fs-14); }
+/* 状态色: 以前是 <font style='color:#ff6b6b'> 这种上古写法 */
+.text-danger { color: var(--c-danger); }
+.text-ok { color: var(--c-ok); }
+/* 弹窗关闭后的占位符 (原来是 <font style='color:#6C6C6C'>…) */
+.modal-placeholder { color: var(--c-text-faint); }
+
+/* ==================== 图片灯箱 ==================== */
+/* 两种图 (.md-img / .chat-attach-in-bubble) 共用同一个灯箱: 样式在这里, 委派逻辑在 ui.js */
+/* z-index 要压过弹窗 (999) —— 预览弹窗里的图也得能放大 */
+.md-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-5);
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(6px);
+  cursor: zoom-out;
+  /* 灯箱的进出场与弹窗同一套: 遮罩只负责淡, 图片自己从下方上浮; 别让整层位移 —— 黑底跟着动就像页面在滑 */
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.md-lightbox.is-in { opacity: 1; }
+.md-lightbox img {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: var(--radius-md);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  translate: 0 18px;
+  transition: opacity 0.2s ease, translate 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.md-lightbox.is-in img {
+  opacity: 1;
+  translate: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .md-lightbox,
+  .md-lightbox img {
+    transition: none;
+  }
+}
+
+/* 装饰手写体「想念是枫糖海盐味」(XNSFengTangHaiYanWei)
+   弹窗 txt 里以前每个字都写一遍 <font style="font-family:...">, 改成一个类 */
+.font-hand { font-family: var(--font-hand); }
+
+/* ==================== 自定义字体 (个性化 › 字体) ==================== */
+/* 选择存在自己那份 profiles 里 (font_chat / font_forum / font_article), core.js 读 /api/me 写到 <html data-font-*>; 'hand' = 想念是枫糖海盐味, 属性不存在 = 默认字体 */
+/* 三块的边界: 聊天 → 私聊页与个人页私聊弹窗; 论坛 → 文章列表页 + 文章下面的评论区; 文章 → 文章详情页 */
+/* 文章那条要用 :not(.comment-text) 挡掉评论 (评论容器同时挂着 .article-body), 反过来评论那条必须点名 .comment-text —— .article-body 自己有 font-family, 元素自身的声明压过继承 */
+html[data-font-chat="hand"] .chat-app,
+html[data-font-chat="hand"] .chat-modal { font-family: var(--font-hand-body); }
+
+html[data-font-forum="hand"] .list-main,
+html[data-font-forum="hand"] .tag-side,
+html[data-font-forum="hand"] .comment-section,
+html[data-font-forum="hand"] .comment-text { font-family: var(--font-hand-body); }
+
+html[data-font-article="hand"] .article-main :is(.article-title, .article-intro, .article-meta, .article-body):not(.comment-text) {
+    font-family: var(--font-hand-body);
+}
+/* 内容语义色: tips.txt 里「红枫林」的红 */
+.text-maple { color: #bf514e; }
+
+/* 页面头部的品牌大图标 (原来写死 height:128px) */
+.hero-icon { height: var(--page-top); display: block; margin: 0 auto; }
+
+/* ==================== 站点 Header (悬浮吸顶) ==================== */
+/* 外框: 只负责定位/居中/宽度伸缩, 内部 = 左侧返回按钮 + 右侧导航栏 */
+.site-bar {
+  position: fixed;
+  top: var(--sp-4);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  /* 导航栏高度在这里定一次, 返回按钮直接拿它当宽度/高度 —— 保证「永远是个正方形」; 窄屏加厚框体后是 63 (见 main-media.css 的 ≤640) */
+  --nav-h: 55px;
+  /* 抵达顶部时更宽, 滚动后收窄 (见 .not-top) */
+  width: min(980px, calc(100% - var(--sp-6)));
+  display: flex;
+  align-items: stretch; /* 返回按钮自动与导航栏等高 */
+  gap: var(--sp-3);
+  transition: width 0.3s;
+}
+.site-bar.not-top {
+  width: min(840px, calc(100% - var(--sp-8)));
+}
+
+.site-header {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  padding: var(--sp-2) var(--sp-4);
+  border: 1px solid transparent;
+  border-radius: var(--radius-lg);
+  /* 透明亚克力: 极淡底色 + 高斯模糊 */
+  background: rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: background-color 0.25s, border-color 0.25s, box-shadow 0.25s;
+}
+.site-header.not-top {
+  /* 滚动后变实心 (更深底色 + 描边 + 阴影) */
+  border-color: var(--c-border);
+  background: rgba(0, 0, 0, 0.72);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.40);
+}
+
+/* 返回按钮: 导航栏左侧的独立小块, 样式与导航栏保持一致; 进页 0.5s 后由 JS 加 .show 滑入 */
+.site-back {
+  flex: none;
+  /* 必须正方形 (宽 = 高 = 导航栏高度): aspect-ratio 对 flex 项根本不管用 (主尺寸按内容算), 百分比高度也算不出来, 所以让它自己就是一个固定正方形; align-self 用 center 而不是 stretch, 某个机型字体把导航栏撑高时只是居中一点, 不会跟着拉长 */
+  align-self: center;
+  width: var(--nav-h);
+  height: var(--nav-h);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: var(--radius-lg);
+  background: rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: var(--c-text);
+  opacity: 0;
+  transform: translateX(-8px);
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease,
+    background-color 0.25s, border-color 0.25s, box-shadow 0.25s, color 0.2s;
+}
+.site-back.show {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+.site-bar.not-top .site-back {
+  border-color: var(--c-border);
+  background: rgba(0, 0, 0, 0.72);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.40);
+}
+.site-back:hover {
+  color: var(--c-accent-hover);
+  border-color: var(--c-accent);
+}
+.site-back svg { width: 22px; height: 22px; }
+
+.site-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-20);
+  font-weight: bold;
+  color: var(--c-text);
+}
+.site-brand img {
+  height: 28px;
+}
+
+.site-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.site-nav button {
+  font-size: var(--fs-20);
+  color: var(--c-text); /* 直接白色, 不再用 dim */
+  padding: var(--sp-1) var(--sp-3);
+  border-radius: var(--radius-sm);
+  /* 下面这两条别删: 窄屏里导航栏一旦被挤, 按钮会被竖向压扁 → 「文章」两字折成两行 → 导航栏整体变高把下面的内容顶下去 (实测 320px 屏 .site-bar 从 63px 变成 92px) */
+  flex: none;
+  white-space: nowrap;
+  transition: color 0.2s, background-color 0.2s;
+}
+.site-nav button:hover {
+  color: var(--c-accent-hover);
+  background-color: rgba(255, 255, 255, 0.08);
+}
+/* 当前页: 只用紫字区分, 不加底色 */
+.site-nav button.site-nav-active {
+  color: var(--c-accent-hover);
+}
+/* 有未读站内信 / 未读私信: 在按钮右上角点一个小红点 (不挤动按钮宽度) */
+.site-nav button.site-auth-btn.has-dot,
+.site-nav button.site-chat-btn.has-dot {
+  position: relative;
+}
+.site-nav button.site-auth-btn.has-dot::after,
+.site-nav button.site-chat-btn.has-dot::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--c-danger);
+}
+
+/* 图标按钮 (回到顶部): 与文字按钮同高, 内容换成 svg */
+.site-nav {
+  --icon-size: 32px;
+}
+.site-nav button.site-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  padding: 0;
+}
+.site-nav button.site-icon-btn svg {
+  width: 22px;
+  height: 22px;
+}
+/* 悬停/聚焦同样变紫 (svg 用 currentColor, 跟随按钮文字色) */
+.site-nav button.site-icon-btn:hover,
+.site-nav button.site-icon-btn:focus-visible {
+  color: var(--c-accent-hover);
+}
+/* ---------- 登录后: 「个人」那个文字按钮换成头像 ----------
+   尺寸与图标按钮一致 (--icon-size), 内容是一张圆形小图 */
+.site-nav button.site-avatar-btn {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  padding: 0;
+  border-radius: 50%;
+  background: none;
+}
+/* 头像外面再套一层方块底不好看 —— hover 改成给圆环 */
+.site-nav button.site-avatar-btn:hover {
+  background-color: transparent;
+}
+.site-nav-avatar {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--c-border);
+  background: rgba(255, 255, 255, 0.06);
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+.site-nav button.site-avatar-btn:hover .site-nav-avatar,
+.site-nav button.site-avatar-btn.site-nav-active .site-nav-avatar {
+  border-color: transparent;
+  box-shadow: 0 0 0 2px var(--c-accent-hover);
+}
+/* 回到顶部: 顶部态用负 margin 抵消占位 (与其他图标重叠且隐身), 缩入后从后面滑出就位 */
+.site-nav button.site-top-btn {
+  margin-left: calc(-1 * (var(--icon-size) + var(--sp-2)));
+  opacity: 0;
+  transform: translateX(8px);
+  pointer-events: none;
+  transition: margin-left 0.3s ease, opacity 0.3s ease, transform 0.3s ease,
+    color 0.2s, background-color 0.2s;
+}
+.site-header.not-top .site-nav button.site-top-btn {
+  margin-left: 0;
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+/* 顶部留白占位: 取代写死的 height:200px */
+.page-top-space {
+  height: var(--page-top);
+}
+
+
+/* 从列表块里挪出来的共用标签样式 (文章页的标签建议也在用) */
+/* 标签 */
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  justify-content: center;
+}
+.tag-chip {
+  font-size: var(--fs-14);
+  padding: var(--gap-micro) var(--sp-3);
+  border: 1px solid var(--c-border);
+  border-radius: 999px;
+  color: var(--c-text-dim);
+  background: transparent;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, background-color 0.2s;
+}
+.tag-chip:hover {
+  color: var(--c-text);
+  border-color: var(--c-accent);
+}
+.tag-chip.active {
+  color: var(--c-text);
+  border-color: var(--c-accent);
+  background: rgba(148, 94, 236, 0.18);
+}
+.tag-chip .tag-count {
+  color: var(--c-text-faint);
+  margin-left: var(--gap-micro);
+}
+
+/* 从 page-article.css 挪回: 列表页 / 个人页也在用 */
+.editor-hint {
+  font-size: var(--fs-14);
+  color: var(--c-text-dim);
+}
+
+/* 作者小块 = 24px 圆头像 + 昵称, 整块可点进作者主页; 文章详情页的 meta 行与列表卡片共用 */
+.meta-author {
+  color: inherit;
+  font-style: normal; /* 名字不跟着卡片那行小字一起斜体 */
+  transition: color 0.2s;
+}
+a.meta-author:hover {
+  color: var(--c-accent-hover);
+}
+.meta-author-avatar {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--c-border);
+  background: rgba(255, 255, 255, 0.06);
+}
+/* 编辑器底部 / 「Md 规则」弹窗里的语法速查: 语法符号用主题色标出来, 一眼能扫到 */
+
+/* 从 page-stats.css 挪回: 文章列表页的「文章总数」也在用 */
+.stat-total {
+    /* 总访问量那个大数字 */
+    font-size: var(--fs-48);
+    color: var(--c-text);
+    user-select: text;
+}
+
+/* ==================== 弹窗里的字号 ==================== */
+/* 只调弹窗 (#modal-content) 内部的四类字, 其余全站字号一律回原样; 写在末尾是为了压过前面各自的 14px (同特异性靠后生效), 别把那套全站复核加回来 */
+.confirm-warning,
+.confirm-field-label,
+.totp-manual,
+.totp-warn {
+  font-size: var(--fs-20);
+}

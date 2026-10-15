@@ -1,0 +1,563 @@
+/* ==================== 私信页 /chat/ ==================== */
+/* 应用式三栏: 图标栏 + 会话列表 + 对话, 窄屏一次只显示一屏 (进对话后左上角返回) */
+/* 气泡与输入框那套 .chat-* 在 main.css, 个人页的私聊弹窗共用; 这里只管本页布局 */
+/* 每块面板自己圆角 + 自己弱描边, 之间只隔 --chat-gap = 2px; 窄屏整块脱框平铺在背景上 */
+/* ==================== 固定一屏 ==================== */
+/* 整页不滚 (html 锁住), 页脚与弹性留白收起, 面板占满「导航栏下沿 -> 视口底部」那一块 */
+html:has(.chat-app) {
+    overflow: hidden;
+}
+body:has(.chat-app) .site-footer,
+body:has(.chat-app) .spacer-flex {
+    display: none;
+}
+.page-layout:has(.chat-app) {
+    /* 必须用 --vh-full 而不是裸的 100dvh (桌面端放大 125% 时 dvh 不跟着除, 用裸的会高出屏幕 25%) */
+    height: var(--vh-full);
+    padding: calc(var(--sp-10) * 2) var(--sp-4) var(--sp-4);
+    gap: 0;
+}
+
+.chat-app {
+    --chat-gap: 2px;
+    --chat-panel-bg: #101014;                    /* 面板底: 比 --c-page-bg 亮一档 */
+    --chat-panel-border: rgba(255, 255, 255, 0.08);
+    --chat-inner-bg: #17171d;                    /* 面板里的二级盒子 (输入区) */
+
+    display: flex;
+    align-items: stretch;
+    gap: var(--chat-gap);
+    width: min(1400px, 100%);
+    /* 高度由父级给, 自己只管抽满 */
+    flex: 1;
+    min-height: 0;
+    text-align: left;
+}
+
+/* 三块面板的公共形制 */
+.chat-rail,
+.chat-list-pane,
+.chat-thread-pane,
+.chat-empty-pane {
+    border: 1px solid var(--chat-panel-border);
+    border-radius: var(--radius-md);
+    background: var(--chat-panel-bg);
+    overflow: hidden;
+}
+
+/* ---------- 左: 图标栏 (QQ 左侧那条 / VS Code 的 activity bar) ---------- */
+.chat-rail {
+    flex: 0 0 56px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--chat-gap);
+    padding: var(--sp-2) 0;
+}
+.chat-rail-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--c-text-dim);
+    transition: color 0.2s, background-color 0.2s;
+}
+.chat-rail-btn svg {
+    width: 22px;
+    height: 22px;
+}
+.chat-rail-btn:hover {
+    color: var(--c-text);
+    background: rgba(255, 255, 255, 0.08);
+}
+/* 当前所在的那颗 (私信页默认第一颗) */
+.chat-rail-btn.is-active {
+    color: var(--c-accent-hover);
+    background: rgba(148, 94, 236, 0.16);
+}
+.chat-rail-me img {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid var(--c-border);
+    background: rgba(255, 255, 255, 0.04);
+}
+/* 把「回到顶部」推到底部 */
+.chat-rail-space {
+    flex: 1 0 auto;
+    min-height: var(--sp-2);
+}
+
+/* ---------- 中: 会话列表 ---------- */
+.chat-list-pane {
+    display: flex;
+    flex-direction: column;
+    flex: 0 0 280px;
+    min-width: 0;
+}
+.chat-list-head {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: var(--sp-3);
+    border-bottom: 1px solid var(--chat-panel-border);
+}
+.chat-list-title {
+    flex: none;
+    font-size: var(--fs-20);
+    font-weight: bold;
+    color: var(--c-text);
+}
+.chat-list-count {
+    flex: 1;
+    min-width: 0;
+    font-size: var(--fs-14);
+    color: var(--c-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+/* 发起私聊: 一颗圆 ＋ 键 */
+.chat-add {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: var(--radius-sm);
+    color: var(--c-text-dim);
+    background: rgba(255, 255, 255, 0.06);
+    transition: color 0.2s, background-color 0.2s;
+}
+.chat-add svg {
+    width: 18px;
+    height: 18px;
+}
+.chat-add:hover {
+    color: var(--c-text);
+    background: rgba(255, 255, 255, 0.16);
+}
+/* 列表本体: 条目之间也是 2px 的缝, 每条自己圆角 */
+.chat-list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--chat-gap);
+    padding: var(--sp-2);
+}
+/* 一条会话: 头像 + 昵称/最后一句 + 时间/未读数 */
+.chat-item {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    padding: var(--sp-2) var(--sp-3);
+    border-radius: var(--radius-sm);
+    text-align: left;
+    transition: background-color 0.2s;
+    /* 脉冲层是绝对定位的 ::after, 得有个定位父级 */
+    position: relative;
+}
+/* 更新脉冲: 内容变了或被顶到最前时淡紫底闪一下 */
+/* 用 ::after 覆盖层而不是直接动 background, 直接动会跟 .is-active 的底色打架 */
+.chat-item.is-pulse::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: rgba(148, 94, 236, 0.3);
+    /* 底子必须写成 0: 动画跑不起来时 (如窄屏在对话里, 列表 display: none) 不能留一层紫底贴在卡片上 */
+    opacity: 0;
+    animation: chat-item-pulse 0.9s ease-out both;
+}
+@keyframes chat-item-pulse {
+    from { opacity: 1; }
+    to   { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .chat-item.is-pulse::after { animation: none; opacity: 0; }
+}
+.chat-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+.chat-item.is-active {
+    background: rgba(148, 94, 236, 0.16);
+}
+.chat-item-avatar {
+    flex: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid var(--c-border);
+    background: rgba(255, 255, 255, 0.04);
+}
+.chat-item-body {
+    flex: 1;
+    min-width: 0;
+}
+.chat-item-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--sp-2);
+}
+.chat-item-name {
+    font-size: var(--fs-18);
+    color: var(--c-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.chat-item-time {
+    flex: none;
+    font-size: var(--fs-14);
+    color: var(--c-text-faint);
+}
+.chat-item-last {
+    margin-top: 2px;
+    font-size: var(--fs-14);
+    color: var(--c-text-dim);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.chat-item-badge {
+    flex: none;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: var(--c-accent);
+    color: #ffffff;
+    font-size: var(--fs-14);
+    line-height: 20px;
+    text-align: center;
+}
+/* ---------- 右: 对话 ---------- */
+.chat-thread-pane {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+}
+.chat-thread-head {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    padding: var(--sp-2) var(--sp-3);
+    /* 不透明: 有聊天背景时那条壁纸只该铺在消息区 (QQ 的头部也是实的) */
+    background: var(--chat-panel-bg);
+    border-bottom: 1px solid var(--chat-panel-border);
+}
+/* 返回列表: 只有窄屏 (单屏模式) 才需要 */
+.chat-back {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: var(--radius-sm);
+    color: var(--c-text-dim);
+    background: rgba(255, 255, 255, 0.06);
+    transition: color 0.2s, background-color 0.2s;
+}
+.chat-back svg { width: 20px; height: 20px; }
+.chat-back:hover { color: var(--c-text); background: rgba(255, 255, 255, 0.16); }
+/* 头像外包一层 <a>, 点了进对方主页 (站内跳转交给 transition.js) */
+/* 这一层必须是 flex 不是 block: block 会多出基线那几像素, 悬浮那圈 box-shadow 会被拉成椭圆 */
+.chat-avatar-link {
+    flex: none;
+    display: flex;
+    border-radius: 50%;
+}
+.chat-avatar-link img {
+    display: block;
+}
+/* 悬浮反馈: 淡紫晕 + 微亮 */
+.chat-avatar-link:hover {
+    box-shadow: 0 0 0 3px rgba(148, 94, 236, 0.25);
+}
+.chat-avatar-link:hover img {
+    filter: brightness(1.12);
+}
+/* 消息区: 撑满剩余高度 (弹窗里那条固定高不生效), 内部滚 */
+.chat-app .chat-body {
+    flex: 1;
+    min-height: 0;
+    padding: var(--sp-2) var(--sp-3);
+    gap: 25px; /* 与 main.css 一致 */
+}
+/* 时间不常驻在气泡下面, 改成鼠标停在气泡上时在气泡上方浮出精确到秒的时间 */
+/* 用 opacity 而不是 display: 一收一放不参与布局, 否则气泡会上下跳一下 */
+.chat-app .chat-msg-main {
+    position: relative;
+}
+.chat-app .chat-msg .chat-time {
+    position: absolute;
+    bottom: calc(100% + 2px);
+    left: 2px;
+    font-size: var(--fs-14);
+    color: rgba(255, 255, 255, 0.62);
+    white-space: nowrap;
+    opacity: 0;
+    /* 鼠标离开立刻淡出 */
+    transition: opacity 0.15s;
+    pointer-events: none;
+}
+.chat-app .chat-msg.is-mine .chat-time {
+    left: auto;
+    right: 2px;
+}
+/* 鼠标停够 1.5 秒才淡入, 用 transition-delay 做, 不上 JS (上 JS 的话扫过时不会淡出来) */
+/* 判定范围是 .chat-msg-main (= 气泡本身) 而不是整条 .chat-msg: 后者撑满宽度, 鼠标飘到气泡右边也算 */
+.chat-app .chat-msg-main:hover .chat-time {
+    opacity: 1;
+    transition-delay: 1.5s;
+}
+/* 发送失败时这行时间是红的, 且不能跟着一起藏起来 */
+.chat-app .chat-msg.is-failed .chat-time {
+    opacity: 1;
+    color: var(--c-danger);
+}
+.chat-day {
+    align-self: center;
+    margin: var(--sp-1) 0;
+    padding: 2px var(--sp-3);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    font-size: var(--fs-14);
+    color: var(--c-text);
+}
+
+/* 输入区: 自己一块圆角盒子, 与消息区之间留 2px 的缝 */
+/* display: block 必须写: main.css 那条 .chat-send 是 flex, 不压会退化成按内容宽收缩的 item */
+.chat-app .chat-send {
+    display: block;
+    padding: 0 var(--sp-2) var(--sp-2);
+    border-top: none;
+}
+/* ---------- 输入盒 + 附件层 ---------- */
+/* 输入盒 / 附件 / 文件卡片那几组住在 main.css (个人页私聊弹窗共用), 本页只留 .chat-send 的布局覆盖 */
+
+/* ---------- 工具行 + 发送键 ---------- */
+/* QQ 形制: 上面一行「输入框 + 发送键」, 下面一排图标; .chat-send-box 开 flex-wrap 就能做到 */
+/* 只写 .chat-app 里的, 个人页私聊弹窗没有 .chat-tools, 别波及它 */
+.chat-app .chat-send-box {
+    flex-wrap: wrap;
+}
+.chat-app .chat-send-btn {
+    /* 发送键贴这一行的最右端 (margin-left: auto), 圆角跟气泡一样大 */
+    flex: none;
+    margin-left: auto;
+    min-height: 34px;
+    padding: var(--sp-1) var(--sp-4);
+    border-radius: var(--radius-lg);
+}
+.chat-tools {
+    flex: none;
+    flex-basis: 100%;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-1);
+    margin-top: 2px;
+    /* 表情面板挂在它上面 (bottom: 100% + 5px), 所以要给个定位参照 */
+    position: relative;
+    /* 图标按钮自带的留白比文字大, 往左蹭一点让第一颗图标与输入框的左缘对齐 */
+    margin-left: -7px;
+}
+/* 一颗工具图标 (图片 / 拍照 / 文件 / ＋) */
+.chat-tool {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--c-text-dim);
+    transition: color 0.2s, background-color 0.2s;
+}
+.chat-tool svg {
+    width: 21px;
+    height: 21px;
+}
+.chat-tool:hover {
+    color: var(--c-text);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* ==================== 消息的尺寸 + 滑入动画 ==================== */
+/* 自己的消息一按下发送就带 .is-new 上屏 (从右边缓进来), 后台再慢慢同步; 失败才加 .is-failed */
+/* 动画只挂新消息 (.is-new), 整块重画不加 —— 否则满屏一起飞会眼花 */
+.chat-app .chat-msg {
+    gap: var(--sp-3); /* 与 main.css 一致 */
+    max-width: 92%;
+}
+/* 头像直径直接跟单行气泡高度挂钩 (变量在 main.css 的 .chat-body 上) */
+.chat-app .chat-msg-avatar {
+    width: var(--chat-avatar-size);
+    height: var(--chat-avatar-size);
+}
+.chat-app .chat-bubble:not(.is-media) {
+    /* 最小宽 = 最小高 (气泡最小是个正方形), 值与内边距一起在 main.css 的 --chat-bubble-line */
+    min-width: var(--chat-bubble-line);
+    min-height: var(--chat-bubble-line);
+    /* 与 main.css 保持一致 */
+    padding: 12px var(--sp-4);
+    line-height: 1.5;
+}
+@keyframes chat-in-mate {
+    from { opacity: 0; transform: translateX(-32px); }
+    to   { opacity: 1; transform: none; }
+}
+@keyframes chat-in-mine {
+    from { opacity: 0; transform: translateX(32px); }
+    to   { opacity: 1; transform: none; }
+}
+.chat-msg.is-new {
+    animation: chat-in-mate 0.3s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+.chat-msg.is-new.is-mine {
+    animation-name: chat-in-mine;
+}
+@media (prefers-reduced-motion: reduce) {
+    .chat-msg.is-new { animation: none; }
+    .chat-rail-btn.is-spin svg { animation: none; }
+}
+/* 刷新: 转一圈的纯反馈, 不阻塞 */
+.chat-rail-btn.is-spin svg {
+    animation: chat-spin 0.6s ease;
+}
+@keyframes chat-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* 宽屏没选人时的占位 */
+.chat-empty-pane {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    min-width: 0;
+    font-size: var(--fs-18);
+    color: var(--c-text-faint);
+}
+
+/* ---------- 窄屏: 单屏模式 (列表 -> 对话) ---------- */
+/* 描边圆角黑底是桌面分栏用的, 窄屏一次只显示一块 → 整块脱掉 (图标栏也收起) */
+/* 功能条与输入区是不透明的圆角面板, 壁纸只留在消息区, 三块之间留 --chat-gap 的缝 */
+@media (max-width: 900px) {
+    .page-layout:has(.chat-app) {
+        height: 100vh;
+        height: 100dvh;
+        padding: calc(var(--sp-10) * 2) var(--sp-4) var(--sp-4);
+    }
+    .chat-app {
+        gap: 0;
+        min-height: 0;
+    }
+    .chat-rail {
+        display: none;
+    }
+    .chat-list-pane,
+    .chat-thread-pane {
+        border: none;
+        border-radius: 0;
+        background: none;
+        /* 头部 / 消息 / 输入之间的 2px 缝 */
+        gap: var(--chat-gap);
+    }
+    .chat-list-pane {
+        flex: 1 1 auto;
+        width: 100%;
+    }
+    .chat-thread-pane {
+        overflow: hidden;
+    }
+    .chat-back {
+        display: flex;
+    }
+    .chat-empty-pane {
+        display: none;
+    }
+    /* 头部与列表头: 不透明 + 自己圆角 (底部分隔线换成另一块面板) */
+    .chat-list-head,
+    .chat-thread-head {
+        background: var(--chat-panel-bg);
+        border-bottom: none;
+        border-radius: var(--radius-md);
+        padding: var(--sp-2) var(--sp-3);
+    }
+    .chat-app .chat-body {
+        padding: var(--sp-3) 0;
+    }
+    /* 手机上头像缩一档; 必须写在这里: main-media.css 那条压不过 .chat-app .chat-msg-avatar (0,2,0) */
+    .chat-app .chat-msg-avatar {
+        width: calc(var(--chat-bubble-line) - 10px);
+        height: calc(var(--chat-bubble-line) - 10px);
+    }
+    .chat-app .chat-send {
+        /* 输入区自己就是圆角盒子, 不要内边距, 缝交给上面那个 gap */
+        padding: 0;
+    }
+
+    /* ---------- QQ 那种输入区 ---------- */
+    /* 脱掉输入盒的描边与底色, 输入框自己是个半透明圆角胶囊, 工具行在最下面一行 */
+    .chat-app .chat-send-box {
+        border: none;
+        background: none;
+        padding: 0;
+        gap: var(--sp-2);
+    }
+    .chat-app .chat-send-box textarea {
+        padding: var(--sp-2) var(--sp-3);
+        border-radius: var(--radius-md);
+        /* 半透明而不是实色: 壁纸要淡淡地透出来 */
+        background: rgba(255, 255, 255, 0.1);
+    }
+    .chat-app .chat-send-box textarea:focus {
+        background: rgba(255, 255, 255, 0.16);
+    }
+    .chat-app .chat-send-btn {
+        min-height: 40px;
+    }
+    /* 附件预览在手机上改成输入区里的第一行 (浮在输入框上空会压住刚发的那条消息) */
+    .chat-app .chat-attach {
+        position: static;
+        bottom: auto;
+        flex-basis: 100%;
+    }
+    .chat-tools {
+        justify-content: flex-start;
+        /* 窄屏输入盒没有内边距, 桌面那 7px 的补偿要还回去 */
+        margin-left: 0;
+    }
+    .chat-tool {
+        width: 40px;
+        height: 40px;
+    }
+}
+
+/* 手机端导航栏比桌面低 (top 32), 所以留白要按 32 + 56 + 8 = 96px 重算, 照抄桌面的 80px 会被压掉 8px */
+@media (max-width: 640px) {
+    .page-layout:has(.chat-app) {
+        padding-top: calc(var(--sp-8) + 56px + var(--sp-2));
+    }
+}

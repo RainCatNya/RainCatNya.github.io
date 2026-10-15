@@ -1,0 +1,178 @@
+/* ==================== 登录页: 极简留白 · 毛玻璃双栏 ==================== */
+/* 背景用全站统一的紫色柔光 (body::before) */
+
+.auth-layout {
+  /* 页面骨架: 卡片在「导航栏 -> 页脚」之间居中 (撑满整屏会把页脚顶到下一屏) */
+  flex: 1 0 auto;
+  display: flex;
+  padding: var(--page-top) var(--sp-6) var(--sp-6);
+}
+
+.auth-card {
+  /* 双栏卡片: 左图像 + 右表单 */
+  display: flex;
+  align-items: stretch;
+  width: min(820px, 100%);
+  margin: auto; /* 居中; 空间不足时自动留白而不裁切 */
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.auth-brand {
+  /* 左侧图像区: 图铺满整栏, 内容底对齐 */
+  position: relative;
+  flex: 1 1 44%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: var(--sp-8) var(--sp-6);
+  overflow: hidden;
+  background: var(--c-page-bg); /* 图没到时给个深色底, 不出白闪 */
+}
+.auth-cover {
+  /* 铺满整栏: 构图不合就裁, 不拉变形 */
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.auth-brand::after {
+  /* 底部压一层暗渐变: 图再亮也读得清站名 */
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.74), rgba(0, 0, 0, 0.2) 46%, rgba(0, 0, 0, 0.04));
+}
+.auth-brand-text {
+  /* 图与渐变都是绝对定位, 文字要自己站到最上面一层 (z-index 不给就会被 ::after 那层渐变盖住) */
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+.auth-logo {
+  /* 图上不再抢戏, 缩到小标记的大小 */
+  height: 64px;
+  margin-bottom: var(--sp-3);
+}
+.auth-title {
+  font-size: var(--fs-36);
+  letter-spacing: 0.04em;
+  margin-bottom: var(--sp-2);
+}
+.auth-welcome {
+  /* 副文案紧贴标题, 形成 大 -> 中 -> 小 的递进 */
+  font-family: var(--font-hand);
+  font-size: var(--fs-20);
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.auth-form {
+  /* 右表单区: 视觉焦点, 纯黑底保证悬浮标签可读; 左右比默认多缩 10px */
+  flex: 1 1 56%;
+  display: flex;
+  flex-direction: column;
+  padding: var(--sp-8) calc(var(--sp-6) + 10px);
+  background: var(--c-surface);
+  border-left: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.auth-view {
+  /* 登录/注册视图: 统一纵向堆叠 + 间距, 字段铺满右栏 (收窄居中会平白多出一截左右白) */
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: var(--sp-3);
+}
+.auth-view[hidden] {
+  display: none;
+}
+.auth-view-title {
+  font-size: var(--fs-36);
+  text-align: left;
+}
+
+/* 桌面端标签浮在框上写着同样的字, 占位符藏起来 (窄屏标签被隐藏, 那里靠它提示) */
+@media (min-width: 901px) {
+  .auth-view input::placeholder {
+    color: transparent;
+  }
+}
+
+/* 第三方入口紧跟当前表单字段: 它与两个视图是兄弟节点, 上下各留一档与输入框同宽的间距 */
+.auth-form > .auth-oauth {
+  margin: var(--sp-3) 0;
+}
+
+.auth-form-foot {
+  /* 底部区: 上边框与字段同宽, 靠 margin-top:auto 压到面板底; 上间距与输入框之间同档 */
+  position: static; /* 覆盖全局 footer{position:absolute} 的遗留规则 */
+  margin: auto 0 0;
+  padding-top: var(--sp-3);
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: var(--sp-3);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.auth-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-3);
+}
+
+.auth-toggle {
+  /* 左下角独立成行: 灰色辅助文字 + 与按钮同字号 */
+  display: flex;
+  align-items: baseline;
+  gap: var(--gap-micro);
+  font-size: var(--fs-20);
+  color: var(--c-text-dim);
+}
+.auth-toggle .auth-link-btn {
+  color: var(--c-accent);
+  font-size: var(--fs-20);
+  padding: 0;
+}
+.auth-toggle .auth-link-btn:hover {
+  background-color: transparent;
+  color: var(--c-accent-hover);
+}
+
+.auth-agree {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-14);
+  color: var(--c-text-dim);
+}
+.auth-agree input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background-color: transparent;
+  accent-color: var(--c-accent);
+}
+.auth-agree .auth-link {
+  color: var(--c-accent);
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: inherit;
+}
+.auth-note {
+  /* 辅助说明文字: 字号与颜色都跟随所在容器 */
+  font-size: inherit;
+  color: inherit;
+}
+
+/* 移动端: 卡片改为纵向, 品牌区在上 */

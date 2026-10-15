@@ -1,0 +1,244 @@
+{
+  /* zh.jsonc为翻译文件的蓝本 */
+
+  /* 通用文本 */
+  "hint.loading": "Loading…",
+  "hint.loading.failed": "Loading failed",
+  "hint.operation.failed": "Operation failed",
+
+  /* 操作文本 */
+  "opt.cancel": "Cancel",
+  "opt.confirm": "Confirm",
+  "opt.continue": "Continue",
+  "opt.save-changes": "Save Changes",
+  "opt.discard-changes": "Discard",
+  "opt.discarded-changes": "Discarded uncommitted changes",
+  "opt.saved-changes": "Saved",
+  "opt.set": "Set",
+  "opt.NotSet": "Not set",
+  "opt.verify": "Verify",
+  "opt.bind": "Bind",
+  "opt.upload": "Upload",
+  "opt.uploading": "",
+  "opt.remove": "Remove",
+  "opt.download": "Download",
+  "opt.copy": "Copy",
+  "opt.review": "Review",
+  "opt.run": "Run",
+  "opt.reflesh": "Reflesh",
+  "opt.open": "Open",
+  "opt.loadMore": "Load more",
+  "opt.submit": "Submit",
+  "opt.submitting": "Submitting…",
+
+  /* 名称 */
+  "name.totp": "TOTP",
+  "name.email": "Email",
+  "name.password": "Password",
+  "name.token": "Token",
+  "name.account": "Account",
+  "name.advanced.devtools": "Devtools",
+  "name.terminal.quotekey": "",
+  "name.blur": "Blur",
+  "name.verificationCode": "Verification code",
+  "name.article": "Article",
+  "name.resource": "Resource",
+  "name.avatar": "Avatar",
+  "name.narra": "",
+  "term.max": "Max",
+  "term.global": "Global",
+  "term.unknown": "Unknown",
+  "term.none": "None",
+  
+  /* 状态&数值语句 */
+  "target.activated": "{target} activated.",
+  "target.deactivated": "{target} deactivated.",
+  "target.link": "Link to {target}",
+  "target.linked": "Linked {target}",
+  "target.emailSent": "A verification email has been sent to {target} and is valid for {value} minutes.",
+  "target.filledIn": "Filled in: {value}",
+  "value.digit": "{value}-digit code",
+  "value.lines": "{value} lines",
+  "value.theDayJoinFoarine": "Join Foraine for {value} days",
+  "value.lastLogin": "Last logged in on {value}",
+  "value.articleNumber": "{value} articles",
+  "value.resourceNumber": "{value} items",
+  "value.NotYet": "No {value} yet.",
+  "value.TooLarge-mb": "The file can't be larger than {value} MB",
+
+  /* Meta */
+  "meta.profile": "Profile · Foraine",
+
+  /* 主页 */
+  "home.welcome.title": "Welcome to Foraine !",
+  "home.welcome.description": "Unleash your creativity.",
+
+  /* Profile页面  */
+  "profile.tab.profile": "Profile",
+  "profile.tab.custom": "Personalize",
+  "profile.tab.works": "Works",
+  "profile.tab.members": "Stars",
+  "profile.tab.inbox": "Inbox",
+  "profile.tab.d1": "Database",
+  "profile.tab.r2": "Bucket",
+  "profile.tab.foraine": "Site",
+  "profile.pf.avatar.btn-upload": "Upload",
+  "profile.pf.nickname": "Nickname",
+  "profile.pf.nickname.input.placeholder": "Name as a part of Foraine universe.",
+  "profile.pf.bio": "Bio",
+  "profile.pf.bio.input.placeholder": "A brief introduction as one of countless stars in Foraine.",
+  "profile.pf.bio.ph": "No bio",
+  "profile.pf.email.notice.unbound": "Foraine needs an email from you to keep going.\nIt cannot be changed once saved.",
+  "toast.email.ok-bindingCompleted": "Email successfully linked, please complete the verification as soon as possible.",
+  "profile.pf.email.notice.unverified": "For your own safety, verify your email soon.\nEmail is incorrect? Please contact the site admin to fix it.",
+  "profile.pf.location": "Location",
+  "profile.pf.location.input.placeholder": "Coordinates in the Foraine universe",
+  "profile.pf.other": "Other",
+  "profile.pf.other.input.placeholder": "e.g. 'Company: Maybe foraine Inc.'",
+  "profile.pf.connection": "Linked accounts",
+  "profile.pf.advanced": "Advanced",
+  "profile.pf.advanced.devtools.description": "Includes some advanced operations on databases and repositories. Please enable this feature with caution.",
+  "profile.cst.display": "Display",
+  "profile.cst.display.label": "The profile background can be seen by everyone; changes like uploading, removing, or adjusting the blur of images will be saved immediately.",
+  "profile.cst.display.profileBackgound": "Profile Background",
+  "profile.cst.display.chatBackgound": "Chat Background",
+  "profile.cst.display.quotekey.description": "",
+  "profile.cst.char": "Character",
+  "profile.cst.char.language": "Language",
+  "profile.cst.char.language.description": "Switch the language displayed for the entire Foraine site.",
+  "profile.cst.char.font": "Font",
+  "profile.cst.char.font.notice": "Font options will only change your own view.",
+  "profile.cst.interact": "Interact",
+  "notice.EffectToYourOwnDeviceOnly": "Only change the behavior on your own device.",
+  "profile.cst.sound": "Sound",
+  "opt.MarkAll-Read": "Mark all as read",
+  "opt.sendInbox": "Send",
+
+  /* Toggle功能文本 */
+  "ctrl.cst.sound.pluviophile": "Downpour",
+  "ctrl.cst.sound.pluviophile.description": "Play the sound of rain on every page in Foraine",
+  "ctrl.cst.interact.rightclick-override": "Global override right-click",
+  "ctrl.cst.interact.rightclick-override.description": "Capture all right-click events on this site, do nothing if none are specified.",
+  
+  /* Foraine 相关 */
+  "foraine.DownstreamTrafficControl": "Downstream Traffic",
+  "foraine.DownstreamTrafficControl.description": "Controls download concurrency in stages",
+  "foraine.MaximumResourcesLimit": "Maximum Resources Limit",
+  "foraine.MaximumResourcesLimit.description": "Cloud storage with a limited quota",
+
+  /* 位置相关 */
+  "opt.locate": "Locate",
+  "opt.locate.processing": "Locating…",
+  "locate.error-Unable2Get": "Unable to locate your device.",
+
+  /* 邮件相关 */
+  "email.warn-EmptyAddress": "Email address cannot be empty.",
+  "email.error-NameNotSuitable": "That email address is not valid.",
+  "email.error-NoService": "Email service is currently offline.",
+  "email.input.placeholder": "your-email@example.com",
+  "toast.email.ok-verifySuccessful": "Email verified successfully.",
+  "toast.email.ok-unboundSuccessful": "Email unlinked.",
+  "toast.email.ok-reboundSuccessful": "Email changed successfully.",
+  "toast.email.warn-VerificationTakenByOther": "This email has already been verified by another account.",
+  "toast.email.error-Failed2SentEmail": "Failed to send verification email.",
+  "toast.email.error-LinkExpired": "The verification link has expired.",
+  "toast.email.error-LinkDead4EmailChanged": "The email has been changed, so the verification link is no longer valid.",
+  "toast.email.error-LinkInvalid": "Invalid link.",
+
+  /* 账号相关 */
+  "account.resetPassword": "Reset password",
+  "account.verifyEmail": "Verify Email",
+  "account.changeEmail": "Change Email",
+  "account.logOut": "Log out",
+  "account.deleteAccount": "Delete Account",
+
+  /* 密码相关 */
+  "label.newPassword": "New password",
+  "label.confirmPassword": "Confirm password",
+  "toast.resetPassword.warn-AtLeastChar": "Password must be at least {value} characters.",
+  "toast.resetPassword.error-DoesNotMatch": "The passwords do not match.",
+  "toast.resetPassword.success": "Password reset. All sessions on other devices have been invalidated.",
+
+  /* Toast */
+  // 注意: 此类的键必须足够通用, 最好是使用情景较多的完整语句
+  "toast.error-WrongCode": "The verification code is incorrect.",
+  "toast.error-WrongPassword": "The password is incorrect.",
+
+  /* Foraine-Toast */
+  "foraine-toast.foraineWouldRemember": "Foraine will remember this..",
+  "foraine-toast.saveProgress": "Save Progress...",
+  "foraine-toast.loading": "Loading..",
+  "foraine-toast.processing": "In progress...",
+
+  /* OSS相关 */
+  "toast.oss.error-NoService": "Object storage service is currently offline.",
+
+  /* 模态框 */
+  // 警告文本
+  "modal.warning.CannotbeUndone": "This action cannot be undone.",
+
+  /* 流程 */
+  // 退出登录
+  "ops.logOut.ctn": "Are you sure you want to log out?", // title使用account.LogOut
+  // 重置密码
+  "ops.resetPassword.a-ctn": "Are you sure you want to reset your password?",
+  "ops.resetPassword.b-ctn": "Please type your new password.",
+  // 注销账户
+  "ops.deleteAccount.a-ctn": "Are you sure you want to delete your account?",
+  "toast.deleteAccount.warn-emailVerificationNeeded": "You need to verify your email before deleting your account.",
+  "ops.deleteAccount.b-title": "Delete account..?",
+  "ops.deleteAccount.b-ctn": "Are you sure you want to leave the Foraine universe? If you go, there will be one less star in the universe..\n\nHere, enter your information one last time to continue.",
+  "label.MadeMyMind": "I've made up my mind",
+  "label.stay": "Stay",
+  "label.goodble": "Goodbye",
+  "ops.deleteAccount.c-ctn": "Your Foraine account has been deactivated.\nWe hope you can discover even more beautiful scenery in the bigger universe!\nIf you still have feelings for Foraine, you can log in at any time within 7 days to cancel the deactivation.",
+  "hint.accountAlreadyInDeactivated": "This account is already in the process of being deleted. If you want to cancel, please click the 'Cancel Deletion' button above.",
+  "toast.deleteAccout.ok-requestSubmitted": "The deletion request has been submitted, and the account will be deleted in {value} days",
+  "notice.deleteAccount.title": "The account deletion has been requested (will be deleted in {value} days)",
+  "notice.deleteAccount.ctn": "Your account will be deleted on {value}, and the name will then be available for others to use.\nIf you want to cancel the deletion, just click the 'Cancel Deletion' button below.",
+  // 取消注销账户
+  "label.cancelAccountDeletion": "Cancel Deletion",
+  "ops.cancelAccountDeletion.ctn": "Your account will return to normal; the 7-day retention period ends immediately.\nAre you sure you want to cancel this deletion request?",
+  "toast.cancelAccountDeletion.ok-confirmed": "Account deletion request has been canceled.",
+  "hint.accountDeletionRequestOverflow": "You can't reapply within {value} days after canceling the account deletion.",
+  // 换绑邮箱
+  "ops.changeEmail": "Change Email",
+  "ops.changeEmail.a-ctn": "Are you sure you want to change your email?",
+  "ops.changeEmail.b-ctn": "Foraine sent a verification email to your mailbox to verify your identity.\nEnter the {value}-digit number shown in the email to continue.",
+  "ops.changeEmail.c-ctn": "The old email has been verified. Foraine will complete the binding after verifying your new email.\nEnter your new email address.",
+  // 验证身份
+  "ops.verifyIdentity.title": "You are performing a sensitive operation. Foraine needs to verify your identity.\nPlease select a method to continue.", // title使用opt.verify
+  "hint.2FANotEnabled": "This account hasn't enabled two-factor authentication.",
+  "hint.emailNotVerified": "Your account email hasn't been verified yet.",
+  "toast.verifyIdentity.warn-MethodNotAvailable": "This method is currently unavailable.",
+  "ops.verifyIdentity.token.ctn": "Please open the authenticator and enter the {value}-digit number it currently shows.",
+  "ops.verifyIdentity.password.ctn": "Type your password here to continue.",
+  "ops.verifyIdentity.email.ctn": "Enter the {value}-digit number shown in your email.",
+
+  /* 终端相关 */
+  "terminal.title": "",
+  "terminal.home": "",
+  "terminal.system": "",
+  "terminal.denied": "",
+  "terminal.quest": "",
+  "terminal.needKey": "",
+  "terminal.submit": "",
+  "terminal.permission.unlocked": "",
+  "narra.button": "",
+  "narra.key": "",
+  "narra.hint": "",
+  "narra.create": "",
+  "terminal.article.error": "",
+  "terminal.article.empty": "",
+
+  /* 导航栏相关 */
+  // tooltip
+  "nav.home": "Foraine · Home",
+  "nav.resource": "Resources",
+  "nav.articles": "Articles",
+  "nav.chat": "Messages",
+  "nav.top": "Back to top",
+  "nav.back": "Back",
+  "nav.login": "Sign in",
+  "nav.profile": "Profile"
+}

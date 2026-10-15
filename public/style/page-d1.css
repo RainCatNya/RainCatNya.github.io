@@ -1,0 +1,934 @@
+/* ==================== D1 控制台 (个人页「D1」页签, 仅站长) ==================== */
+/* 结构照 Cloudflare D1 Studio: 一级页签 -> .d1-tabbar -> .d1-toolbar -> .d1-body */
+/* 窄屏适配在 main-media.css (页签栏横向滚动 / 工具行折行 / 网格横向滚) */
+
+.d1-console {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+/* 跑 SQL / 提交改动期间: 面板整体不吃点击 —— 运行中再改格子或排列操作,
+   回来那份待提交清单就和刚执行过的库对不上了 (「取消更改」另有 disabled 兜一层) */
+.d1-console.is-running .d1-tabbar,
+.d1-console.is-running .d1-toolbar,
+.d1-console.is-running .d1-body,
+.d1-console.is-running .d1-statusbar {
+    pointer-events: none;
+}
+/* D1 / R2 内切页签: 与一级页签同款的渐入 (keyframes 在 page-profile.css) */
+#d1-body.tab-enter-right, #r2-body.tab-enter-right { animation: tab-enter-right 0.24s ease both; }
+#d1-body.tab-enter-left,  #r2-body.tab-enter-left  { animation: tab-enter-left 0.24s ease both; }
+
+/* ---------- 二级页签栏 ---------- */
+.d1-tabbar {
+    position: relative; /* 「打开表」面板以它为基准绝对定位 */
+    z-index: 60;        /* 让「打开表」面板压在工具行与结果区上面 */
+    display: flex;
+    align-items: stretch;
+    gap: var(--sp-2);
+    /* 透明亚克力 (跟悬浮导航栏同一套): 个人页可能有背景图, 只有一条下边框会糊在图里 */
+    padding: 0 var(--sp-2);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    background: rgba(0, 0, 0, 0.18);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--c-border);
+    min-width: 0;
+}
+/* 标签多了横向滚动; 滚动只发生在这里, 面板挂外层才不会被裁掉 */
+.d1-tab-list {
+    display: flex;
+    align-items: stretch;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.d1-tab-list::-webkit-scrollbar {
+    display: none;
+}
+.d1-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1);
+    flex: none;
+    max-width: 220px;
+    padding: var(--sp-2) var(--sp-3);
+    font-size: var(--fs-14);
+    font-weight: normal;
+    color: var(--c-text-dim);
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    transition: color 0.2s, background-color 0.2s, border-color 0.2s;
+}
+.d1-tab:hover {
+    color: var(--c-text);
+    background-color: rgba(255, 255, 255, 0.06);
+}
+.d1-tab.is-active {
+    color: var(--c-text);
+    border-bottom-color: var(--c-accent);
+    background-color: rgba(255, 255, 255, 0.05);
+}
+.d1-tab-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+/* 关掉标签的 ✕: 平时淡, 悬停才亮 */
+.d1-tab-close {
+    flex: none;
+    font-size: var(--fs-14);
+    line-height: 1;
+    padding: 2px 3px;
+    border-radius: var(--radius-sm);
+    color: var(--c-text-faint);
+    transition: color 0.2s, background-color 0.2s;
+}
+.d1-tab:hover .d1-tab-close,
+.d1-tab.is-active .d1-tab-close {
+    color: var(--c-text-dim);
+}
+.d1-tab-close:hover {
+    color: var(--c-danger);
+    background-color: rgba(255, 255, 255, 0.12);
+}
+/* 「＋」: 打开表 / 新建查询 */
+.d1-tab-add {
+    flex: none;
+    align-self: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    font-size: var(--fs-18);
+    line-height: 1;
+    color: var(--c-text-dim);
+    background: none;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: color 0.2s, background-color 0.2s;
+}
+.d1-tab-add:hover,
+.d1-tab-add.is-open {
+    color: var(--c-text);
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* 「打开表」面板 (挂在 tabbar 上绝对定位, 不会把布局顶开) */
+.d1-picker {
+    position: absolute;
+    top: calc(100% + var(--sp-1));
+    right: 0;
+    z-index: 40;
+    width: min(360px, 80vw);
+    padding: var(--sp-3);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-md);
+    /* 悬浮面板: 比 --c-surface 亮一档, 不然叠在深色页面上像挖了个洞 */
+    background: #16161c;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.7);
+}
+.d1-picker-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    margin-bottom: var(--sp-2);
+    font-size: var(--fs-14);
+    color: var(--c-text-dim);
+}
+.d1-picker-count {
+    color: var(--c-text-faint);
+}
+.d1-picker-body {
+    display: flex;
+    flex-direction: column;
+    max-height: 46vh;
+    overflow-y: auto;
+}
+.d1-picker-item {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    width: 100%;
+    padding: var(--sp-2) var(--sp-2);
+    text-align: left;
+    font-size: var(--fs-18);
+    font-weight: normal;
+    color: var(--c-text);
+    background: none;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s;
+}
+.d1-picker-item:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: var(--c-accent-hover);
+}
+.d1-picker-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--font-mono);
+    font-size: var(--fs-14);
+}
+.d1-picker-meta,
+.d1-picker-dot {
+    flex: none;
+    font-size: var(--fs-14);
+    color: var(--c-text-faint);
+}
+.d1-picker-dot {
+    color: var(--c-accent);
+}
+.d1-picker-foot {
+    margin-top: var(--sp-2);
+    padding-top: var(--sp-2);
+    border-top: 1px solid var(--c-border);
+}
+.d1-picker-new {
+    width: 100%;
+    padding: var(--sp-2);
+    font-size: var(--fs-14);
+    color: var(--c-text-dim);
+    background: none;
+    border: 1px dashed var(--c-border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+}
+.d1-picker-new:hover {
+    color: var(--c-accent-hover);
+    border-color: var(--c-accent);
+}
+
+/* ---------- 工具行 ---------- */
+/* 行里的四件东西同高: 靠 stretch 跟着最高的输入框拉齐, 手写 height 会在窄屏换字体后差几像素 */
+.d1-toolbar {
+    display: flex;
+    align-items: stretch;
+    gap: var(--sp-2);
+    margin-top: var(--sp-3);
+    min-width: 0;
+    /* 行高要拉到和标准按钮一致, 否则继承的 32px 行高会把整行控件撑到 51.2px */
+    line-height: 1.28;
+}
+/* 行数下拉: 跟输入框等高但窄一点 (不被 flex 压扁) */
+.d1-limit {
+    flex: none;
+    width: auto;
+    font-size: var(--fs-14);
+    padding: var(--sp-2) var(--sp-8) var(--sp-2) var(--sp-3);
+}
+/* 下拉框文字要跟同一行那几个按钮一样大 (.ui-select-btn 默认吃 --btn-fs, 会大一圈) */
+.d1-toolbar .ui-select-btn {
+    font-size: var(--fs-18);
+}
+/* 概览卡片里那一行列名: 主键列标紫 */
+.d1-col.is-pk {
+    color: var(--c-accent-hover);
+    font-weight: 500;
+}
+/* 命令行: 等宽 + 小一号 (它比正文更像终端) */
+.d1-sql {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-family: var(--font-mono);
+    font-size: var(--fs-14);
+    padding: var(--sp-2) var(--sp-3);
+}
+/* 工具行里的按钮: 与「刷新」同一套间距与 2px 描边, 只是「运行」保留紫身份 */
+/* 别再给这一行单独写小号 padding / 1px 描边: 同一个工具栏里会一大一小, 不像一家人 */
+.d1-toolbar .btn {
+    flex: none;
+    color: var(--c-accent-hover);
+    background-color: rgba(148, 94, 236, 0.18);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 2px solid rgba(148, 94, 236, 0.5);
+}
+.d1-toolbar .btn:hover {
+    color: #fff;
+    background-color: rgba(148, 94, 236, 0.36);
+    border-color: var(--c-accent);
+}
+/* 工具行里的方形图标按钮, 外观就是 .btn-acrylic, 这里只管尺寸 */
+/* 不要再写成 align-self: stretch + JS 量行高写回宽度: 那是个反馈环, 浏览器每切一次缩放就乘一次 */
+.d1-icon-btn {
+    flex: none;
+    align-self: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1 / 1;
+    padding: var(--sp-2);
+    min-width: 0;
+    box-sizing: content-box;   /* padding 两边各一份, 保证正方形不被 border-box 算歪 */
+}
+.d1-icon-btn svg {
+    width: 22px;
+    height: 22px;
+}
+
+.d1-hint {
+    margin-top: var(--sp-2);
+    font-size: var(--fs-14);
+    /* 用浅白色: --c-text-faint 压在有背景图的页面上几乎看不见 */
+    color: var(--c-text-muted);
+    line-height: 1.6;
+}
+.d1-hint code {
+    padding: 1px 4px;
+    border-radius: var(--radius-sm);
+    background: #1f1f27;
+    font-family: var(--font-mono);
+    font-size: 0.92em;
+}
+
+/* ---------- 结果区 ---------- */
+.d1-body {
+    margin-top: var(--sp-3);
+    min-width: 0;
+}
+.d1-status {
+    margin-top: var(--sp-2);
+    font-size: var(--fs-14);
+    color: var(--c-text-dim);
+    font-variant-numeric: tabular-nums;
+}
+.d1-status.is-error {
+    color: var(--c-danger);
+}
+
+/* 结果网格: 外层横向滚动 (列多的时候), 行号列 sticky 在左边 */
+.d1-grid-wrap {
+    max-height: 60vh;
+    overflow: auto;
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-md);
+    background: rgba(0, 0, 0, 0.32);
+}
+.d1-grid {
+    border-collapse: separate;
+    border-spacing: 0;
+    /* 数据格走等宽字体, 字号比 --fs-14 再小一档 (数据表格一行要塞得下更多列) */
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+.d1-grid th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: 6px var(--sp-3);
+    text-align: left;
+    white-space: nowrap;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: bold;
+    color: var(--c-text-dim);
+    background: #16161c;
+    border-bottom: 1px solid var(--c-border);
+}
+.d1-grid td {
+    padding: 6px var(--sp-3);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    color: var(--c-text-muted);
+    /* 必须显式写: main.css 有 td { font-size: var(--fs-20) } 那条全局规则, 继承写法会被压成 20px */
+    font-size: 12px;
+    max-width: 340px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.d1-grid tbody tr:hover td {
+    background: rgba(255, 255, 255, 0.05);
+}
+/* 行号列: 横向滚动时的定位锚 (sticky 左边), 悬停也不变底色 */
+.d1-grid .d1-grid-rownum {
+    position: sticky;
+    left: 0;
+    z-index: 3;
+    width: 1%;
+    padding-right: var(--sp-2);
+    text-align: right;
+    color: var(--c-text-faint);
+    background: #131318;
+}
+.d1-grid thead .d1-grid-rownum {
+    z-index: 4;
+    background: #16161c;
+}
+/* NULL 与数字: 一眼能分出「空」和「0」 */
+.d1-null {
+    font-style: italic;
+    color: var(--c-text-faint);
+}
+.d1-num {
+    color: #a5d6ff; /* 与代码块里的数字同色 (Shiki github-dark) */
+}
+.d1-empty {
+    padding: var(--sp-4);
+    text-align: center;
+    font-size: var(--fs-14);
+    color: var(--c-text-dim);
+}
+
+/* 报错: 把 D1 的原文摊开 (行内空白要保留) */
+.d1-error {
+    padding: var(--sp-3) var(--sp-4);
+    border: 1px solid var(--c-danger-strong);
+    border-radius: var(--radius-md);
+    background: rgba(214, 69, 69, 0.10);
+}
+.d1-error-title {
+    font-size: var(--fs-14);
+    color: var(--c-danger);
+    margin-bottom: var(--sp-1);
+}
+.d1-error-body {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: var(--fs-14);
+    color: var(--c-text-muted);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* ---------- 概览: 表清单 + 常用查询 ---------- */
+.d1-overview-head {
+    display: flex;
+    align-items: baseline;
+    gap: var(--sp-3);
+    margin-bottom: var(--sp-3);
+}
+.d1-overview-title {
+    font-size: var(--fs-18);
+    color: var(--c-text);
+}
+.d1-overview-meta {
+    font-size: var(--fs-14);
+    /* 「共 N 张表」这类计数小字用浅灰, --c-text-faint 太深 */
+    color: var(--c-text-dim);
+}
+/* ---------- 统计卡片 (Cloudflare GraphQL 分析) ---------- */
+.d1-stats {
+    margin-bottom: var(--sp-4);
+    padding: var(--sp-3);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-md);
+    background: rgba(0, 0, 0, 0.18);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+.d1-stats-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3);
+    flex-wrap: wrap;
+    margin-bottom: var(--sp-2);
+}
+.d1-stats-title {
+    font-size: var(--fs-18);
+    color: var(--c-text);
+}
+.d1-stats-ranges {
+    display: flex;
+    gap: var(--sp-1);
+}
+.d1-stats-range {
+    padding: 2px var(--sp-3);
+    border: 1px solid var(--c-border);
+    border-radius: 999px;
+    background: none;
+    color: var(--c-text-dim);
+    font-size: var(--fs-14);
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s, background-color 0.15s;
+}
+.d1-stats-range:hover {
+    color: var(--c-text);
+    border-color: var(--c-accent);
+}
+.d1-stats-range.is-active {
+    color: var(--c-accent-hover);
+    border-color: var(--c-accent);
+    background: rgba(148, 94, 236, 0.16);
+}
+.d1-stats-totals {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+    margin-bottom: var(--sp-2);
+}
+.d1-stat-pill {
+    display: flex;
+    align-items: baseline;
+    gap: var(--sp-2);
+    padding: var(--sp-1) var(--sp-3);
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.06);
+}
+.d1-stat-label {
+    font-size: var(--fs-14);
+    color: var(--c-text-dim);
+}
+.d1-stat-value {
+    font-size: var(--fs-18);
+    font-weight: bold;
+    color: var(--c-text);
+    font-variant-numeric: tabular-nums;
+}
+.d1-stats-chart-wrap {
+    position: relative;
+}
+.d1-stats-chart {
+    display: block;
+    width: 100%;
+    height: 110px;
+}
+.d1-stats-chart .is-read {
+    stroke: var(--c-accent);
+}
+.d1-stats-chart .is-write {
+    stroke: #ff9f43;
+}
+.d1-stats-legend {
+    display: flex;
+    gap: var(--sp-4);
+    margin-top: var(--sp-1);
+}
+.d1-stats-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1);
+    font-size: var(--fs-14);
+    color: var(--c-text-dim);
+}
+.d1-stats-legend-item .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+}
+.d1-stats-legend-item .dot.is-read { color: var(--c-accent); }
+.d1-stats-legend-item .dot.is-write { color: #ff9f43; }
+.d1-table-list {
+    display: grid;
+    /* 必须能缩到比 240px 更窄 (min()), 否则窄屏会顶出横向滚动条 */
+    grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
+    gap: var(--sp-2);
+}
+.d1-table-card {
+    display: block;
+    width: 100%;
+    /* 必须写 min-width: 0: 卡片里有 nowrap 的列名串, grid 项默认最小尺寸是 min-content, 会把页面撑裂 */
+    min-width: 0;
+    padding: var(--sp-3);
+    text-align: left;
+    background: rgba(0, 0, 0, 0.32);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+.d1-table-card:hover {
+    border-color: rgba(148, 94, 236, 0.55);
+    background: rgba(148, 94, 236, 0.08);
+}
+.d1-table-card-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    min-width: 0;
+}
+.d1-table-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--font-mono);
+    font-size: var(--fs-18);
+    color: var(--c-text);
+}
+.d1-table-count {
+    flex: none;
+    font-size: var(--fs-14);
+    color: var(--c-text-faint);
+}
+.d1-table-cols {
+    margin-top: var(--sp-1);
+    min-width: 0;
+    font-size: var(--fs-14);
+    color: var(--c-text-dim);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.d1-quick {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+    margin-top: var(--sp-4);
+    padding-top: var(--sp-3);
+    border-top: 1px solid var(--c-border);
+}
+.d1-quick-title {
+    font-size: var(--fs-14);
+    color: var(--c-text-faint);
+    margin-right: var(--sp-1);
+}
+.d1-quick-btn {
+    padding: var(--sp-1) var(--sp-3);
+    font-size: var(--fs-14);
+    color: var(--c-text-dim);
+    background: rgba(0, 0, 0, 0.32);
+    border: 1px solid var(--c-border);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+}
+.d1-quick-btn:hover {
+    color: var(--c-accent-hover);
+    border-color: var(--c-accent);
+}
+
+/* ---------- 写操作 ---------- */
+/* 输入框里是写语句时「运行」变红: 一眼能看出这次不是只读 */
+.d1-toolbar .btn.is-write {
+    color: #fff;
+    background-color: rgba(214, 69, 69, 0.45);
+    border-color: var(--c-danger-strong);
+}
+.d1-toolbar .btn.is-write:hover {
+    background-color: var(--c-danger);
+    border-color: var(--c-danger);
+}
+/* 确认弹窗里把 SQL 原文摊开 (一个字符都不能看错) */
+.d1-confirm-sql {
+    display: block;
+    margin-top: var(--sp-2);
+    padding: var(--sp-2) var(--sp-3);
+    max-height: 26vh;
+    overflow: auto;
+    text-align: left;
+    font-family: var(--font-mono);
+    font-size: var(--fs-14);
+    line-height: 1.6;
+    color: var(--c-text-muted);
+    background: #191921;
+    border-radius: var(--radius-sm);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+/* 写操作跑完的回执 (影响 N 行) */
+.d1-done {
+    padding: var(--sp-3) var(--sp-4);
+    border: 1px solid var(--c-ok-strong);
+    border-radius: var(--radius-md);
+    background: rgba(46, 158, 79, 0.12);
+}
+.d1-done-title {
+    font-size: var(--fs-18);
+    color: var(--c-ok);
+    margin-bottom: var(--sp-1);
+}
+.d1-done-body {
+    font-size: var(--fs-14);
+    color: var(--c-text-dim);
+    font-variant-numeric: tabular-nums;
+}
+.d1-done-note {
+    margin-top: var(--sp-1);
+    font-size: var(--fs-14);
+    color: var(--c-text-faint);
+}
+
+/* ---------- 状态行 + 刷新 ---------- */
+.d1-statusbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3);
+    flex-wrap: wrap;
+    /* 与表格底端留 5px */
+    margin-top: 5px;
+}
+.d1-statusbar .d1-status {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+}
+.d1-refresh {
+    flex: 0 0 auto;
+    cursor: pointer;
+}
+.d1-status.is-dirty {
+    color: var(--c-warn, #e0a33a);
+}
+
+/* 选中的格子: 紫色方框, 光标保持普通箭头 (改值走右键菜单「编辑…」) */
+.d1-grid td.is-selectable {
+    cursor: pointer;
+}
+.d1-grid td.is-selected {
+    box-shadow: inset 0 0 0 2px var(--c-accent);
+}
+/* 打码列 (password_hash / token …): 不给选、不给复制, 也不给改 */
+.d1-grid td.is-masked {
+    opacity: 0.55;
+    cursor: not-allowed;
+    user-select: none;
+}
+/* 浏览器自带的焦点线不要, 选中靠上面那个紫框 */
+.d1-grid td:focus,
+.d1-grid td:focus-visible,
+.d1-grid th:focus,
+.d1-grid th:focus-visible {
+    outline: none;
+}
+/* 改过但还没提交: 紫底 + 紫边, 点「运行」才真发出去 */
+.d1-grid td.is-edited {
+    background: rgba(152, 91, 196, 0.18);
+    box-shadow: inset 0 0 0 1px var(--c-accent);
+}
+/* ==================== 待提交的标记 ==================== */
+/* 四种「排队中」共用一套观感: 删除行/列 = 红框, 新增行/列 = 蓝框, 都要合成一个整框 */
+/* 框一律用 box-shadow 的 inset 画, 不吃布局也不会把行/列撑开 */
+.d1-grid tbody tr.is-pending-delete > td {
+    background: rgba(255, 77, 77, 0.14);
+    box-shadow: inset 0 1px 0 rgba(255, 77, 77, 0.85), inset 0 -1px 0 rgba(255, 77, 77, 0.85);
+}
+.d1-grid tbody tr.is-pending-delete > td:first-child {
+    box-shadow: inset 0 1px 0 rgba(255, 77, 77, 0.85), inset 0 -1px 0 rgba(255, 77, 77, 0.85), inset 1px 0 0 rgba(255, 77, 77, 0.85);
+}
+.d1-grid tbody tr.is-pending-delete > td:last-child {
+    box-shadow: inset 0 1px 0 rgba(255, 77, 77, 0.85), inset 0 -1px 0 rgba(255, 77, 77, 0.85), inset -1px 0 0 rgba(255, 77, 77, 0.85);
+}
+.d1-grid tbody tr.is-pending-delete > td.d1-grid-rownum {
+    color: #ff4d4d;
+    font-weight: bold;
+}
+
+/* 整列的框 (红 = 待删 / 蓝 = 新增): 竖着合一个整框 */
+.d1-grid td.is-pending-drop,
+.d1-grid th.is-pending-drop {
+    background: rgba(255, 77, 77, 0.14);
+    box-shadow: inset 1px 0 0 rgba(255, 77, 77, 0.85), inset -1px 0 0 rgba(255, 77, 77, 0.85);
+}
+.d1-grid thead th.is-pending-drop {
+    box-shadow: inset 1px 0 0 rgba(255, 77, 77, 0.85), inset -1px 0 0 rgba(255, 77, 77, 0.85), inset 0 1px 0 rgba(255, 77, 77, 0.85);
+}
+.d1-grid tbody tr:last-child > td.is-pending-drop,
+.d1-grid tbody tr.is-pending-add > td.is-pending-drop {
+    box-shadow: inset 1px 0 0 rgba(255, 77, 77, 0.85), inset -1px 0 0 rgba(255, 77, 77, 0.85), inset 0 -1px 0 rgba(255, 77, 77, 0.85);
+}
+
+/* 新增的行: 横向合一个整框 (蓝) */
+.d1-grid tbody tr.is-pending-add > td {
+    background: rgba(90, 160, 255, 0.16);
+    color: var(--c-text-dim);
+    box-shadow: inset 0 1px 0 rgba(90, 160, 255, 0.75), inset 0 -1px 0 rgba(90, 160, 255, 0.75);
+}
+.d1-grid tbody tr.is-pending-add > td:first-child {
+    box-shadow: inset 0 1px 0 rgba(90, 160, 255, 0.75), inset 0 -1px 0 rgba(90, 160, 255, 0.75), inset 1px 0 0 rgba(90, 160, 255, 0.75);
+}
+.d1-grid tbody tr.is-pending-add > td:last-child {
+    box-shadow: inset 0 1px 0 rgba(90, 160, 255, 0.75), inset 0 -1px 0 rgba(90, 160, 255, 0.75), inset -1px 0 0 rgba(90, 160, 255, 0.75);
+}
+.d1-grid tbody tr.is-pending-add > td.d1-grid-rownum {
+    color: #5aa0ff;
+    font-weight: bold;
+}
+
+/* 新增的列: 竖着合一个整框 (蓝) */
+.d1-grid td.is-pending-col,
+.d1-grid th.is-pending-col {
+    background: rgba(90, 160, 255, 0.16);
+    box-shadow: inset 1px 0 0 rgba(90, 160, 255, 0.75), inset -1px 0 0 rgba(90, 160, 255, 0.75);
+}
+.d1-grid thead th.is-pending-col {
+    box-shadow: inset 1px 0 0 rgba(90, 160, 255, 0.75), inset -1px 0 0 rgba(90, 160, 255, 0.75), inset 0 1px 0 rgba(90, 160, 255, 0.75);
+}
+.d1-grid tbody tr:last-child > td.is-pending-col,
+.d1-grid tbody tr.is-pending-add > td.is-pending-col {
+    box-shadow: inset 1px 0 0 rgba(90, 160, 255, 0.75), inset -1px 0 0 rgba(90, 160, 255, 0.75), inset 0 -1px 0 rgba(90, 160, 255, 0.75);
+}
+
+/* 标记块内部的格线要全部压掉 (铺在红底/蓝底上会读成一条竖线), !important 才压得过表格自带的格线 */
+.d1-grid tbody tr.is-pending-delete > td,
+.d1-grid tbody tr.is-pending-add > td,
+.d1-grid td.is-pending-drop,
+.d1-grid th.is-pending-drop,
+.d1-grid td.is-pending-col,
+.d1-grid th.is-pending-col {
+    /* 四条边全设透明而不是只设左右: 表格自带行分隔线, 只压左右会被横线切开, 连续两行间还会出双线 */
+    border-color: transparent !important;
+}
+/* 连续两行都被标记时相接的那条横线要共用 (否则中间出双线): 只留底边, 上边交给上一行 */
+.d1-grid tbody tr.is-pending-delete + tr.is-pending-delete > td {
+    box-shadow: inset 0 -1px 0 rgba(255, 77, 77, 0.85);
+}
+.d1-grid tbody tr.is-pending-delete + tr.is-pending-delete > td:first-child {
+    box-shadow: inset 0 -1px 0 rgba(255, 77, 77, 0.85), inset 1px 0 0 rgba(255, 77, 77, 0.85);
+}
+.d1-grid tbody tr.is-pending-delete + tr.is-pending-delete > td:last-child {
+    box-shadow: inset 0 -1px 0 rgba(255, 77, 77, 0.85), inset -1px 0 0 rgba(255, 77, 77, 0.85);
+}
+.d1-grid tbody tr.is-pending-add + tr.is-pending-add > td {
+    box-shadow: inset 0 -1px 0 rgba(90, 160, 255, 0.75);
+}
+.d1-grid tbody tr.is-pending-add + tr.is-pending-add > td:first-child {
+    box-shadow: inset 0 -1px 0 rgba(90, 160, 255, 0.75), inset 1px 0 0 rgba(90, 160, 255, 0.75);
+}
+.d1-grid tbody tr.is-pending-add + tr.is-pending-add > td:last-child {
+    box-shadow: inset 0 -1px 0 rgba(90, 160, 255, 0.75), inset -1px 0 0 rgba(90, 160, 255, 0.75);
+}
+
+/* 上面那套是每行各自画满四条边, 相邻两个标记行之间仍会多一条线; 下面这组覆盖它 (同特异性 + 后写) */
+/* 做法: box-shadow 清成 none, 左右竖线用 box-shadow 画在首/末格, 上下横线改用 border 只给块的首末行 */
+/* 必须带 !important: 上面 tr.is-pending-delete + tr.is-pending-delete > td 的特异性更高 */
+.d1-grid tbody tr.is-pending-delete > td,
+.d1-grid tbody tr.is-pending-add > td,
+.d1-grid td.is-pending-drop,
+.d1-grid th.is-pending-drop,
+.d1-grid td.is-pending-col,
+.d1-grid th.is-pending-col {
+    box-shadow: none !important;
+}
+/* —— 标记行 (红) —— */
+.d1-grid tbody tr.is-pending-delete > td:first-child {
+    box-shadow: inset 1px 0 0 rgba(255, 77, 77, 0.85) !important;
+}
+.d1-grid tbody tr.is-pending-delete > td:last-child {
+    box-shadow: inset -1px 0 0 rgba(255, 77, 77, 0.85) !important;
+}
+.d1-grid tbody tr.is-pending-delete:not(tr.is-pending-delete + tr.is-pending-delete) > td {
+    border-top: 1px solid rgba(255, 77, 77, 0.85) !important;
+}
+.d1-grid tbody tr.is-pending-delete:not(:has(+ tr.is-pending-delete)) > td {
+    border-bottom: 1px solid rgba(255, 77, 77, 0.85) !important;
+}
+/* —— 标记行 (蓝) —— */
+.d1-grid tbody tr.is-pending-add > td:first-child {
+    box-shadow: inset 1px 0 0 rgba(90, 160, 255, 0.75) !important;
+}
+.d1-grid tbody tr.is-pending-add > td:last-child {
+    box-shadow: inset -1px 0 0 rgba(90, 160, 255, 0.75) !important;
+}
+.d1-grid tbody tr.is-pending-add:not(tr.is-pending-add + tr.is-pending-add) > td {
+    border-top: 1px solid rgba(90, 160, 255, 0.75) !important;
+}
+.d1-grid tbody tr.is-pending-add:not(:has(+ tr.is-pending-add)) > td {
+    border-bottom: 1px solid rgba(90, 160, 255, 0.75) !important;
+}
+/* —— 标记列 (红): 左右竖线每格都画, 上下只有表头格与最后一行的格 —— */
+.d1-grid td.is-pending-drop,
+.d1-grid th.is-pending-drop {
+    border-left: 1px solid rgba(255, 77, 77, 0.85) !important;
+    border-right: 1px solid rgba(255, 77, 77, 0.85) !important;
+}
+.d1-grid thead th.is-pending-drop {
+    border-top: 1px solid rgba(255, 77, 77, 0.85) !important;
+}
+.d1-grid tbody tr:last-child > td.is-pending-drop {
+    border-bottom: 1px solid rgba(255, 77, 77, 0.85) !important;
+}
+/* —— 标记列 (蓝) —— */
+.d1-grid td.is-pending-col,
+.d1-grid th.is-pending-col {
+    border-left: 1px solid rgba(90, 160, 255, 0.75) !important;
+    border-right: 1px solid rgba(90, 160, 255, 0.75) !important;
+}
+.d1-grid thead th.is-pending-col {
+    border-top: 1px solid rgba(90, 160, 255, 0.75) !important;
+}
+.d1-grid tbody tr:last-child > td.is-pending-col {
+    border-bottom: 1px solid rgba(90, 160, 255, 0.75) !important;
+}
+/* 改格子走右键菜单「编辑…」的模态框, 格内不再有输入框 */
+
+/* ---------- 写操作弹窗里那句 SQL (要高亮 + fit-content + 多行) ---------- */
+.d1-confirm-sql.is-code {
+    width: fit-content;
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    white-space: pre;
+    overflow-x: auto;
+    tab-size: 4;
+}
+/* 语法高亮的配色 (文章页那份是 .article-body .md-code 作用域的, 这里要自己来一份) */
+.d1-confirm-sql .tk-c { color: #8b949e; }
+.d1-confirm-sql .tk-k { color: #ff7b72; }
+.d1-confirm-sql .tk-s { color: #a5d6ff; }
+.d1-confirm-sql .tk-n { color: #79c0ff; }
+
+/* ---------- OSS 页签 (名叫 R2, 内核是阿里云 OSS) ---------- */
+.r2-link {
+    padding: 0;
+    font: inherit;
+    color: var(--c-accent-hover);
+    background: none;
+    border: 0;
+    cursor: pointer;
+}
+.r2-link:hover {
+    text-decoration: underline;
+}
+.r2-more {
+    margin-top: var(--sp-3);
+    cursor: pointer;
+}
+/* 空目录时那一行全空白的占位行: 列表永远画出来, 表体里也得有个地方接右键 (新建文件夹 / 上传文件) */
+/* 必须给它一个高度: 四个空 <td> 会缩成一条缝, 看着像 bug */
+.r2-blank-row td {
+    height: calc(var(--fs-14) * 1.6 + var(--sp-3));
+    cursor: default;
+}
+/* 列对象失败时的诊断卡片: 签名对不上时要能逐字节对比「我们算的规范请求」与「OSS 算的那份」 */
+.r2-diag {
+    padding: var(--sp-4);
+    background: rgba(0, 0, 0, 0.32);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 2px solid var(--c-danger-strong);
+    border-radius: var(--radius-md);
+}
+.r2-diag-title {
+    margin: 0 0 var(--sp-3);
+    font-size: var(--fs-20);
+    color: #ffd2d2;
+}
+.r2-diag-pre {
+    max-height: 320px;
+    margin: 0;
+    padding: var(--sp-3);
+    border-radius: var(--radius-sm);
+    background: rgba(0, 0, 0, 0.45);
+    font-size: var(--fs-14);
+    line-height: 1.55;
+    color: var(--c-text-muted);
+    white-space: pre-wrap;   /* 长 URL / 长 XML 都换行, 不给个横向滚动条 */
+    word-break: break-all;
+    overflow: auto;
+}
+.r2-diag-copy {
+    margin-top: var(--sp-3);
+    cursor: pointer;
+}
+.r2-diag-hint {
+    margin: var(--sp-2) 0 0;
+    font-size: var(--fs-14);
+    color: var(--c-text-faint);
+}

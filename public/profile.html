@@ -1,0 +1,3603 @@
+<!DOCTYPE html>
+
+<html lang="zh">
+    <head>
+        <!-- 元数据 -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=0.8">
+        <base href="/">
+        <title data-i18n="meta.profile">meta.profile</title>
+
+        <!-- 加载资源 -->
+        <link rel="icon" type="image/x-icon" href="assets/Icon/foraine-icon-v2.png">
+        <link rel="stylesheet" href="/style/main.css?v=40">
+        <link rel="stylesheet" href="/style/page-profile.css?v=40">
+        <link rel="stylesheet" href="/style/page-d1.css?v=40">
+        <link rel="stylesheet" href="/style/page-storage.css?v=40">
+        <link rel="stylesheet" href="/style/page-site.css?v=40">
+        <link rel="stylesheet" href="/style/page-foraine-toast.css?v=40">
+        <script>
+            if (matchMedia('(max-width: 900px)').matches) {
+                const mediaLink = document.createElement('link');
+                mediaLink.rel = 'stylesheet';
+                mediaLink.href = '/style/main-media.css';
+                document.head.appendChild(mediaLink);
+            }
+        </script>
+        <!-- 加载脚本 -->
+        <script src="/script/i18n.js?v=40" defer></script>
+        <script src="/script/core.js?v=40" defer></script>
+        <script src="/script/ui.js?v=40" defer></script>
+        <script src="/script/transition.js?v=40" defer></script>
+        <script src="/script/header.js?v=40" defer></script>
+        <script src="/script/layout.js?v=40" defer></script>
+        <script src="/script/rain-sound.js?v=40" defer></script>
+        <script src="/script/d1-console.js?v=40" defer></script>
+        <script src="/script/highlight.js?v=40" defer></script>
+        <script src="/script/qr.js?v=40" defer></script>
+        <script src="/script/oss-console.js?v=40" defer></script>
+        <script src="/script/site-flags.js?v=40" defer></script>
+        <!-- 作品卡片上的标题与简介也能用自定行内 DOM (inlinePlain): 要 latex 先于 markdown -->
+        <script src="/script/latex.js?v=40" defer></script>
+        <script src="/script/markdown.js?v=40" defer></script>
+    </head>
+
+    <body>
+        <div class="page-layout">
+
+            <div class="profile-layout">
+
+                <!-- 左侧 -->
+                <aside class="profile-side No-slc" data-anim>
+
+                    <!-- 头像 -->
+                    <img id="profile-avatar" class="profile-avatar" src="assets/Icon/foraine-icon-v2.png" data-i18n-alt="name.avatar">
+                    <h1 id="profile-nickname" class="profile-nickname">...</h1>
+                    <!-- @用户名、角色 -->
+                    <p id="profile-meta" class="profile-meta"></p>
+                    <p id="profile-bio" class="profile-bio"></p>
+
+                    <!-- 文章、追随者数 -->
+                    <div class="profile-stats-row">
+                        <p class="profile-stat" id="profile-stat" hidden></p>
+                        <p class="profile-stat" id="profile-stat-followers" hidden></p>
+                    </div>
+
+                    <!-- 关注。私聊-->
+                    <div class="profile-actions" id="profile-actions" hidden></div>
+
+                    <!-- 信息列表 -->
+                    <div class="profile-info" id="profile-info"></div>
+                </aside>
+
+                <!-- 右侧 -->
+                <div class="profile-main" data-anim>
+                    <div class="ban-banner" id="ban-banner" hidden></div>
+                    <div class="pending-banner" id="pending-banner" hidden></div>
+
+                    <!-- 页签 -->
+                    <nav class="profile-tabs No-slc" id="profile-tabs">
+                        <!-- 资料 -->
+                        <button class="profile-tab active" data-tab="profile" onclick="switchProfileTab('profile')" data-i18n="profile.tab.profile"></button>
+                        <!-- 个性化 -->
+                        <button class="profile-tab" data-tab="custom" id="profile-tab-custom" onclick="switchProfileTab('custom')" data-i18n="profile.tab.custom"></button>
+                        <!-- 作品 -->
+                        <button class="profile-tab" data-tab="articles" onclick="switchProfileTab('articles')" data-i18n="profile.tab.works"></button>
+                        <button class="profile-tab" data-tab="members" onclick="switchProfileTab('members')" data-i18n="profile.tab.members"></button>
+                        <!-- 站内信 -->
+                        <button class="profile-tab" data-tab="notices" id="profile-tab-notices" onclick="switchProfileTab('notices')">
+                            <span data-i18n="profile.tab.inbox"></span><span class="tab-count tab-count-alert" id="tab-notice-count" hidden></span>
+                        </button>
+                        <!-- D1 -->
+                        <button class="profile-tab" data-tab="d1" id="profile-tab-d1" hidden onclick="switchProfileTab('d1')" data-i18n="profile.tab.d1"></button>
+                        <!-- OSS -->
+                        <button class="profile-tab" data-tab="r2" id="profile-tab-r2" hidden onclick="switchProfileTab('r2')" data-i18n="profile.tab.r2"></button>
+                        <!-- 站点方案 -->
+                        <button class="profile-tab" data-tab="site" id="profile-tab-site" hidden onclick="switchProfileTab('site')" data-i18n="profile.tab.foraine"></button>
+                        <!-- 紫条~ -->
+                        <span class="profile-tab-indicator" id="tab-indicator"></span>
+                    </nav>
+
+                    <!-- 资料标签页 -->
+                    <section class="profile-panel" id="tab-profile">
+                    <div id="profile-edit-fields">
+                      
+                        <!-- 头像栏 -->
+                        <div class="profile-field">
+                            <span class="profile-field-label"><span class="profile-field-icon" data-icon="avatar"></span><div data-i18n="name.avatar"></div></span>
+                            <div class="profile-field-body profile-avatar-row">
+                                <img class="profile-avatar-thumb" id="avatar-thumb" src="/assets/Icon/foraine-icon-v2.png">
+                                <input type="file" id="avatar-file" accept="image/png,image/jpeg,image/webp,image/gif" hidden onchange="uploadAvatar(this)">
+                                <button class="btn-acrylic" id="avatar-upload" onclick="document.getElementById('avatar-file').click()" data-i18n="profile.pf.avatar.btn-upload"></button>
+                            </div>
+                        </div>
+
+                        <!-- 昵称栏 -->
+                        <div class="profile-field">
+                            <span class="profile-field-label"><span class="profile-field-icon" data-icon="user"></span><div data-i18n="profile.pf.nickname"></div></span>
+                            <div class="profile-field-body">
+                                <input type="text" id="nickname-input" maxlength="40" autocomplete="off" data-i18n-placeholder="profile.pf.nickname.input.placeholder">
+                            </div>
+                        </div>
+                        
+                        <!-- 简介栏 -->
+                        <div class="profile-field profile-field-top">
+                            <span class="profile-field-label"><span class="profile-field-icon" data-icon="note"></span><div data-i18n="profile.pf.bio"></div></span>
+                            <div class="profile-field-body">
+                                <textarea id="bio-input" rows="1" maxlength="300"  data-i18n-placeholder="profile.pf.bio.input.placeholder"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- 邮箱栏 -->
+                        <div class="profile-field">
+                            <span class="profile-field-label"><span class="profile-field-icon" data-icon="mail"></span><div data-i18n="name.email"></div></span>
+                            <div class="profile-field-body">
+                                <input type="text" id="email-input" maxlength="120" autocomplete="off" data-i18n-placeholder="email.input.placeholder">
+                                <div class="email-notice" id="email-notice" hidden>
+                                    <button type="button" class="btn-acrylic" id="email-notice-btn"></button>
+                                    <p class="email-notice-text" id="email-notice-text"></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 位置栏 -->
+                        <div class="profile-field">
+                            <span class="profile-field-label"><span class="profile-field-icon" data-icon="pin"></span><div data-i18n="profile.pf.location"></div></span>
+                            <div class="profile-field-body">
+                                <input type="text" id="extra-location" maxlength="80" autocomplete="off" data-i18n-placeholder="profile.pf.location.input.placeholder">
+                                <button type="button" class="btn-acrylic profile-locate" id="profile-locate" onclick="locateMe()" data-i18n="opt.locate"></button>
+                            </div>
+                        </div>
+
+                        <!-- 其他栏 -->
+                        <div class="profile-field profile-field-top">
+                            <span class="profile-field-label"><span class="profile-field-icon" data-icon="list"></span><div data-i18n="profile.pf.other"></div></span>
+                            <div class="profile-field-body">
+                                <textarea id="other-input" rows="1" maxlength="500" data-i18n-placeholder="profile.pf.other.input.placeholder"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- 保存更改/取消 -->
+                        <div class="profile-field profile-field-actions">
+                            <span class="profile-field-label"></span>
+                            <div class="profile-field-body">
+                                <button class="btn-ok" id="profile-save" onclick="saveProfileChanges()" disabled data-i18n="opt.save-changes"></button>
+                                <button class="btn-outline" id="profile-cancel" onclick="cancelProfileChanges()" hidden data-i18n="opt.cancel"></button>
+                            </div>
+                        </div>
+
+                        <!-- 关联栏 -->
+                        <div class="profile-field">
+                            <span class="profile-field-label"><span class="profile-field-icon" data-icon="link"></span><div data-i18n="profile.pf.connection"></div></span>
+                            <div class="profile-field-body profile-oauth" id="profile-oauth" hidden></div>
+                        </div>
+
+                        <!-- 高级栏 -->
+                        <div class="profile-field" id="advanced-section" hidden>
+                            <span class="profile-field-label"><span class="profile-field-icon" data-icon="shield"></span><div data-i18n="profile.pf.advanced"></div></span>
+                            <div class="profile-field-body">
+                                <label class="ctx-card" for="dev-tools">
+                                    <span class="ctx-card-main">
+                                        <span class="custom-card-title" data-i18n="name.advanced.devtools"></span>
+                                        <span class="ctx-note" data-i18n="profile.pf.advanced.devtools.description"></span>
+                                    </span>
+                                    <span class="ctx-switch">
+                                        <input type="checkbox" id="dev-tools">
+                                        <span class="ctx-switch-track"></span>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- 账号栏 -->
+                        <div class="profile-field">
+                            <span class="profile-field-label"><span class="profile-field-icon" data-icon="logout"></span><div data-i18n="name.account"></div></span>
+                            <div class="profile-field-body account-actions">
+                               <!-- 行一 -->
+                                <div class="account-row">
+                                    <button class="btn-acrylic" id="reset-password" onclick="resetPassword()" data-i18n="account.resetPassword"></button>
+                                    <button class="btn-acrylic" id="email-verify" onclick="verifyEmail()" hidden data-i18n="account.verifyEmail"></button>
+                                    <button class="btn-acrylic" id="email-rebind" onclick="rebindEmailStart()" hidden data-i18n="account.changeEmail"></button>
+                                </div>
+                                <!-- 行二 -->
+                                <div class="account-row">
+                                    <button class="btn-acrylic-danger" onclick="logout()" data-i18n="account.logOut"></button>
+                                    <button class="btn-danger" id="account-delete" onclick="deleteAccount()" data-i18n="account.deleteAccount"></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 访客模式: 只读资料  -->
+                    <div id="profile-readonly" hidden></div>
+                    </section>
+
+                    <!-- 个性化 -->
+                    <section class="profile-panel" id="tab-custom" hidden>
+                        <div class="custom-section">
+                            <h2 class="custom-section-title" data-i18n="profile.cst.display"></h2>
+                            <p class="custom-section-hint" data-i18n="profile.cst.display.label"></p>
+                            <div class="profile-custom">
+                                <div class="custom-card" id="card-profile-bg">
+                                    <div class="custom-card-head">
+                                        <span class="custom-card-title" data-i18n="profile.cst.display.profileBackgound"></span>
+                                    </div>
+                                    <div class="custom-thumb" id="thumb-profile-bg">
+                                        <span class="custom-thumb-empty" data-i18n="opt.NotSet"></span>
+                                    </div>
+                                    <div class="custom-card-actions">
+                                        <button type="button" class="btn-acrylic editor-image-btn" onclick="pickCustomImage('profile')">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"></path><path d="m7.5 8.5 4.5-4.5 4.5 4.5"></path><path d="M4 16v2.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V16"></path></svg>
+                                            <div data-i18n="opt.upload"></div>
+                                        </button>
+                                        <button type="button" class="btn-outline" id="clear-profile-bg" onclick="removeCustomImage('profile')" hidden data-i18n="opt.remove"></button>
+                                    </div>
+                                    <label class="custom-blur" id="blur-row-profile">
+                                        <span class="custom-blur-label" data-i18n="name.blur"></span>
+                                        <input type="range" id="blur-profile" min="0" max="100" step="1" value="0">
+                                        <span class="custom-blur-value" id="blur-profile-value">0</span>
+                                    </label>
+                                </div>
+
+                                <div class="custom-card" id="card-chat-bg">
+                                    <div class="custom-card-head">
+                                        <span class="custom-card-title" data-i18n="profile.cst.display.chatBackgound"></span>
+                                    </div>
+                                    <div class="custom-thumb" id="thumb-chat-bg">
+                                        <span class="custom-thumb-empty" data-i18n="opt.NotSet"></span>
+                                    </div>
+                                    <div class="custom-card-actions">
+                                        <button type="button" class="btn-acrylic editor-image-btn" onclick="pickCustomImage('chat')">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"></path><path d="m7.5 8.5 4.5-4.5 4.5 4.5"></path><path d="M4 16v2.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V16"></path></svg>
+                                            <div data-i18n="opt.upload"></div>
+                                        </button>
+                                        <button type="button" class="btn-outline" id="clear-chat-bg" onclick="removeCustomImage('chat')" hidden data-i18n="opt.remove"></button>
+                                    </div>
+                                    <label class="custom-blur" id="blur-row-chat">
+                                        <span class="custom-blur-label" data-i18n="name.blur"></span>
+                                        <input type="range" id="blur-chat" min="0" max="100" step="1" value="0">
+                                        <span class="custom-blur-value" id="blur-chat-value">0</span>
+                                    </label>
+                                </div>
+                                <!-- 一张隐藏的文件选择器, 两张卡片共用 -->
+                                <input type="file" id="custom-image-file" accept="image/*" hidden>
+                            </div>
+                            <!-- 终端文章面板的 key 显示开关 (只有持有 terminal.keyviewer 的人会看到这张卡, 默认关) -->
+                            <label class="ctx-card" id="card-term-quotekey" for="term-quotekey" hidden>
+                                <span class="ctx-card-main">
+                                    <span class="custom-card-title" data-i18n="name.terminal.quotekey"></span>
+                                    <span class="ctx-note" data-i18n="profile.cst.display.quotekey.description"></span>
+                                </span>
+                                <span class="ctx-switch">
+                                    <input type="checkbox" id="term-quotekey">
+                                    <span class="ctx-switch-track"></span>
+                                </span>
+                            </label>
+                        </div>
+
+                        <!-- 语言栏 -->
+                        <div class="custom-section" id="language-section">
+                            <h2 class="custom-section-title" data-i18n="profile.cst.char"></h2>
+                            <label class="ctx-card" for="site-language">
+                                <span class="ctx-card-main">
+                                    <span class="custom-card-title" data-i18n="profile.cst.char.language"></span>
+                                    <span class="ctx-note" data-i18n="profile.cst.char.language.description"></span>
+                                </span>
+                                <select id="site-language"></select>
+                            </label>
+                            <!-- 字体卡片 [目前隐藏]-->
+                            <div class="custom-card" id="card-font" hidden>
+                                <div class="custom-card-head">
+                                    <span class="custom-card-title" data-i18n="profile.cst.char.font"></span>
+                                </div>
+                                <p class="custom-card-hint" data-i18n="profile.cst.char.font.notice"></p>
+                                <div class="font-choices" id="font-choices"></div>
+                            </div>
+                        </div>
+
+                        <!-- 交互栏 -->
+                        <div class="custom-section" id="ctx-section">
+                            <h2 class="custom-section-title" data-i18n="profile.cst.interact"></h2>
+                            <p class="custom-section-hint" data-i18n="notice.EffectToYourOwnDeviceOnly"></p>
+                            <label class="ctx-card" for="ctx-capture">
+                                <span class="ctx-card-main">
+                                    <span class="custom-card-title" data-i18n="ctrl.cst.interact.rightclick-override"></span>
+                                    <span class="ctx-note" data-i18n="ctrl.cst.interact.rightclick-override.description"></span>
+                                </span>
+                                <span class="ctx-switch">
+                                    <input type="checkbox" id="ctx-capture">
+                                    <span class="ctx-switch-track"></span>
+                                </span>
+                            </label>
+                        </div>
+
+                        <!-- 声音栏 -->
+                        <div class="custom-section" id="sound-section">
+                            <h2 class="custom-section-title" data-i18n="profile.cst.sound"></h2>
+                            <p class="custom-section-hint" data-i18n="notice.EffectToYourOwnDeviceOnly"></p>
+                            <label class="ctx-card" for="rain-sound">
+                                <span class="ctx-card-main">
+                                    <span class="custom-card-title title-pluviophile" data-i18n="ctrl.cst.sound.pluviophile"></span>
+                                    <span class="ctx-note" data-i18n="ctrl.cst.sound.pluviophile.description"></span>
+                                </span>
+                                <span class="ctx-switch">
+                                    <input type="checkbox" id="rain-sound">
+                                    <span class="ctx-switch-track"></span>
+                                </span>
+                            </label>
+                        </div>
+                    </section>
+
+                    <!-- 作品标签页 -->
+                    <section class="profile-panel" id="tab-articles" hidden>
+                        <h2 class="tab-section-title" data-i18n="name.article"></h2>
+                        <div class="tab-head">
+                            <span class="tab-hint" id="article-hint"></span>
+                        </div>
+                        <div class="article-grid" id="my-article-list">
+                            <p class="editor-hint" data-i18n="hint.loading"></p>
+                        </div>
+
+                        <!-- 资源栏 -->
+                        <h2 class="tab-section-title" data-i18n="name.resource"></h2>
+                        <div class="tab-head">
+                            <span class="tab-hint" id="my-resource-hint"></span>
+                        </div>
+                        <div class="article-grid" id="my-resource-list"></div>
+                    </section>
+
+                    <section class="profile-panel" id="tab-members" hidden>
+                        <!-- 头部一行: 左侧「共 N 星点」, 右侧排序切换 (按名称 / 按编号, 都是正序) -->
+                        <div class="tab-head">
+                            <span class="tab-hint" id="member-hint"></span>
+                            <span class="tab-head-actions">
+                                <button type="button" class="sort-toggle" id="member-sort" onclick="toggleMemberSort()">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16"></path><path d="m3 8 4-4 4 4"></path><path d="M17 20V4"></path><path d="m13 16 4 4 4-4"></path></svg>
+                                    <span id="member-sort-label">按编号排序</span>
+                                </button>
+                            </span>
+                        </div>
+                        <div class="member-grid" id="member-grid">
+                            <p class="editor-hint" data-i18n="hint.loading"></p>
+                        </div>
+                        <div class="member-more" id="member-more-wrap" hidden>
+                            <button class="btn-outline" onclick="loadMoreMembers()" data-i18n="opt.loadMore"></button>
+                        </div>
+                    </section>
+
+                    <!-- 站内信 -->
+                    <section class="profile-panel" id="tab-notices" hidden>
+                        <div class="tab-head">
+                            <span class="tab-hint" id="notice-hint"></span>
+                            <span class="tab-head-actions">
+                                <button class="btn-outline" id="notice-read-all" onclick="markAllNoticesRead()" hidden data-i18n="opt.MarkAll-Read"></button>
+                                <button class="btn-acrylic" onclick="openSendNotice()" data-i18n="opt.sendInbox"></button>
+                            </span>
+                        </div>
+                        <div class="notice-list" id="notice-list">
+                            <p class="editor-hint" data-i18n="hint.loading"></p>
+                        </div>
+                    </section>
+
+                    <!-- D1 控制台 -->
+                    <section class="profile-panel" id="tab-d1" hidden>
+                        <div class="d1-console">
+                            <div class="d1-tabbar">
+                                <div class="d1-tab-list" id="d1-tab-list"></div>
+                                <button type="button" class="d1-tab-add" id="d1-tab-add">＋</button>
+                                <div class="d1-picker" id="d1-picker" hidden></div>
+                            </div>
+                            <div class="d1-toolbar">
+                                <select class="d1-limit" id="d1-limit">
+                                    <option value="50" data-i18n="value.lines" data-i18n-value="50"></option>
+                                    <option value="100" data-i18n="value.lines" data-i18n-value="100"></option>
+                                    <option value="200" data-i18n="value.lines" data-i18n-value="200"></option>
+                                    <option value="1000000" data-i18n="term.max"></option>
+                                </select>
+                                <input type="text" class="d1-sql" id="d1-sql" spellcheck="false" autocomplete="off">
+                                <button type="button" class="btn" id="d1-run" data-i18n="opt.run"></button>
+                                <button type="button" class="btn-acrylic" id="d1-reload" data-i18n="opt.reflesh"></button>
+                            </div>
+                            <div class="d1-body" id="d1-body"></div>
+                            <div class="d1-statusbar">
+                                <div class="d1-status" id="d1-status"></div>
+                                <button type="button" class="btn-outline d1-refresh" id="d1-revert" hidden data-i18n="opt.discard-changes"></button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- OSS标签页 -->
+                    <section class="profile-panel" id="tab-r2" hidden>
+                        <div class="d1-console">
+                            <div class="d1-tabbar">
+                                <div class="d1-tab-list" id="r2-tab-list"></div>
+                            </div>
+                            <div class="d1-toolbar">
+                                <button type="button" class="btn-acrylic d1-icon-btn" id="r2-up">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"></path><path d="M12 19l-7-7 7-7"></path></svg>
+                                </button>
+                                <input type="text" class="d1-sql" id="r2-prefix" spellcheck="false" autocomplete="off"
+                                       onkeydown="if(event.key==='Enter')window.r2Console.go()">
+                                <button type="button" class="btn" id="r2-go" data-i18n="opt.open"></button>
+                                <button type="button" class="btn-acrylic" id="r2-refresh" data-i18n="opt.reflesh"></button>
+                            </div> 
+                            <div class="d1-body" id="r2-body"></div>
+                            <div class="d1-status" id="r2-status"></div>
+                        </div>
+                    </section>
+
+                    <!-- 「Foraine」页签 -->
+                    <section class="profile-panel" id="tab-site" hidden>
+                        <div class="site-flags">
+                            <div class="site-flag" id="site-flag-downlink">
+                                <div class="site-flag-head">
+                                    <h2 class="site-flag-title" data-i18n="foraine.DownstreamTrafficControl"></h2>
+                                    <span class="site-flag-scope" data-i18n="term.global"></span>
+                                </div>
+                                <label class="site-flag-toggle">
+                                    <span class="ctx-switch">
+                                        <input type="checkbox" id="flag-downlink">
+                                        <span class="ctx-switch-track"></span>
+                                    </span>
+                                    <span class="site-flag-state" id="flag-downlink-state" data-i18n="hint.loading"></span>
+                                </label>
+                                <p class="site-flag-hint" data-i18n="foraine.DownstreamTrafficControl.description"></p>
+                            </div>
+                            <div class="site-flag" id="site-flag-quota">
+                                <div class="site-flag-head">
+                                    <h2 class="site-flag-title" data-i18n="foraine.MaximumResourcesLimit"></h2>
+                                    <span class="site-flag-scope" data-i18n="term.global"></span>
+                                </div>
+                                <label class="site-flag-toggle">
+                                    <span class="ctx-switch">
+                                        <input type="checkbox" id="flag-quota">
+                                        <span class="ctx-switch-track"></span>
+                                    </span>
+                                    <span class="site-flag-state" id="flag-quota-state" data-i18n="hint.loading"></span>
+                                </label>
+                                <p class="site-flag-hint" data-i18n="foraine.MaximumResourcesLimit.description"></p>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+            <!-- 弹性留白 -->
+            <div class="spacer-flex"></div>
+        </div>
+
+        <script>
+            /* profile.html */
+            const PUBLIC_MATCH = location.pathname.match(/^\/u\/([^/]+)\/?$/);
+            const PUBLIC_USERNAME = PUBLIC_MATCH
+              ? decodeURIComponent(PUBLIC_MATCH[1])
+              : (new URLSearchParams(location.search).get('u') || '');
+            const isPublicView = !!PUBLIC_USERNAME;
+
+            // Token未登录时跳转登录页
+            document.addEventListener('DOMContentLoaded', () => {
+              if (!isPublicView) initAuthGuard({ requireAuth: true });
+            });
+
+            let currentUser = null;
+            let publicArticles = null;
+            let publicViewUser = null;
+
+            /* 左侧资料栏 */
+            const ICONS = {
+              book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>',
+              clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>',
+              mail: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="m2 7 10 6 10-6"></path></svg>',
+              link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7L12 5"></path><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7L12 19"></path></svg>',
+              pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.7-7-11a7 7 0 1 1 14 0c0 5.3-7 11-7 11z"></path><circle cx="12" cy="10" r="2.5"></circle></svg>',
+              building: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="1.5"></rect><path d="M9 7h1M14 7h1M9 11h1M14 11h1M9 15h1M14 15h1"></path></svg>',
+              info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5"></path><path d="M12 8h.01"></path></svg>',
+              /* 资料表的行图标 */
+              user: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>',
+              badge: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 2.6v5.6c0 4.3-2.9 7.9-7 9.8-4.1-1.9-7-5.5-7-9.8V5.6z"></path></svg>',
+              /* 头像行 */
+              avatar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="10" r="3"></circle><path d="M6.6 18.4a6.5 6.5 0 0 1 10.8 0"></path></svg>',
+              note: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path></svg>',
+              list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13"></path><circle cx="3.5" cy="6" r="1.2" fill="currentColor" stroke="none"></circle><circle cx="3.5" cy="12" r="1.2" fill="currentColor" stroke="none"></circle><circle cx="3.5" cy="18" r="1.2" fill="currentColor" stroke="none"></circle></svg>',
+              logout: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><path d="m16 17 5-5-5-5"></path><path d="M21 12H9"></path></svg>',
+              /* 个性化 */
+              sparkle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><circle cx="8.5" cy="9.5" r="1.2" fill="currentColor" stroke="none"></circle><circle cx="12" cy="7.5" r="1.2" fill="currentColor" stroke="none"></circle><circle cx="15.5" cy="9.5" r="1.2" fill="currentColor" stroke="none"></circle><path d="M12 21a3 3 0 0 1 0-6 3 3 0 0 0 0-6"></path></svg>',
+              check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 6"></path></svg>',
+              /* 连携星点 & 权限圆点与通知类型 */
+              star: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1.8C12.5 7.5 16.5 11.5 22.2 12 16.5 12.5 12.5 16.5 12 22.2 11.5 16.5 7.5 12.5 1.8 12 7.5 11.5 11.5 7.5 12 1.8Z"></path></svg>',
+              shield: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l7 2.6v5.6c0 4.3-2.9 7.9-7 9.8-4.1-1.9-7-5.5-7-9.8V5.6z"></path></svg>',
+              lock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg>',
+              bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 6-2 7-2 7h16s-2-1-2-7"></path><path d="M13.7 20a2 2 0 0 1-3.4 0"></path></svg>',
+              chat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9.3 9.3 0 0 1-3.2-.6L3.5 21l1.7-4.6A8.3 8.3 0 0 1 4 11.5a8.4 8.4 0 0 1 8.5-8.4A8.4 8.4 0 0 1 21 11.5z"></path></svg>',
+              trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"></path><path d="M10 11v6M14 11v6"></path><path d="M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"></path><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>'
+            };
+
+            function paintFieldIcons() {
+              document.querySelectorAll('.profile-field-icon[data-icon]').forEach((box) => {
+                const name = box.dataset.icon;
+                box.innerHTML = (name === 'github' ? GH_ICON : ICONS[name]) || ICONS.info;
+              });
+            }
+
+            // 自定义信息对应的标签
+            const INFO_ICON_RULES = [
+              [/位置|地点|城市|所在地|坐标/i, 'pin'],
+              [/公司|组织|单位|团队|学校/i, 'building'],
+              [/链接|网站|博客|主页|url/i, 'link'],
+              [/邮箱|邮件|mail/i, 'mail'],
+              [/时间|时区|生日/i, 'clock']
+            ];
+
+            function cleanOther(raw) {
+              // 清除老数据的占位符 ({}/[]/null)
+              const text = String(raw || '').trim();
+              return /^(\{\s*\}|\[\s*\]|null|undefined)$/i.test(text) ? '' : text;
+            }
+
+            function parseOther(raw) {
+              // 解析Other栏，一行一条
+              return cleanOther(raw).split(/\r?\n/).map((line) => {
+                const text = line.trim();
+                if (!text) return null;
+                const idx = text.search(/[:：]/);
+                if (idx < 0) return { label: '', value: text };
+                return { label: text.slice(0, idx).trim(), value: text.slice(idx + 1).trim() };
+              }).filter(Boolean);
+            }
+
+            function infoRow(icon, text, href, textClass) {
+              const row = el('p', 'profile-info-row');
+              const holder = document.createElement('span');
+              holder.innerHTML = ICONS[icon] || ICONS.info;
+              if (holder.firstChild) row.appendChild(holder.firstChild);
+              if (href) {
+                const a = el('a', textClass || null, text);
+                a.href = href;
+                if (href.indexOf('mailto:') !== 0) {
+                  a.target = '_blank';
+                  a.rel = 'noopener noreferrer';
+                }
+                row.appendChild(a);
+              } else if (textClass) {
+                row.appendChild(el('span', textClass, text));
+              } else {
+                row.appendChild(document.createTextNode(text));
+              }
+              return row;
+            }
+
+            function localTimeText() {
+              // 本地时间
+              const now = new Date();
+              const offset = -now.getTimezoneOffset();
+              const sign = offset >= 0 ? '+' : '-';
+              const abs = Math.abs(offset);
+              const hh = String(Math.floor(abs / 60)).padStart(2, '0');
+              const mm = String(abs % 60).padStart(2, '0');
+              return now.toTimeString().slice(0, 5) + ' (UTC ' + sign + hh + ':' + mm + ')';
+            }
+
+            function renderProfileSide(user) {
+              if (!user) return;
+              // @用户名
+              const role = realRole(user);
+              document.getElementById('profile-meta').textContent = '@' + user.username;
+              // 站长的神秘红色用户名
+              document.querySelector('.profile-side').classList.toggle('is-owner', role === '站长');
+
+              const box = document.getElementById('profile-info');
+              box.innerHTML = '';
+              box.appendChild(infoRow('clock', localTimeText()));
+              /* 邮箱: 验证后才对外展示，看别人主页时只在双方互相关注时才显示 */
+              const isMe = !!(currentUser && currentUser.username === user.username);
+              const mail = (user.email_verified && user.email)
+                ? user.email
+                : (isMe && currentUser.email_verified ? currentUser.email : '');
+              if (mail) {
+                box.appendChild(infoRow('mail', mail, 'mailto:' + mail));
+              }
+              if (user.github_login) {
+                box.appendChild(infoRow('link', 'github.com/' + user.github_login, 'https://github.com/' + user.github_login));
+              }
+              parseOther(user.other).forEach((item) => {
+                const rule = INFO_ICON_RULES.find((r) => r[0].test(item.label));
+                const isUrl = /^https?:\/\//i.test(item.value);
+                box.appendChild(infoRow(
+                  rule ? rule[1] : 'info',
+                  item.label ? item.label + '：' + item.value : item.value,
+                  isUrl ? item.value : null
+                ));
+              });
+
+              // 计算最后登录、加入Foraine天数
+              if (isPublicView && !isMe) {
+                if (user.id) box.appendChild(infoRow('user', 'ID：' + user.id));
+                if (user.created_at) {
+                  const days = Math.max(1, Math.floor((Date.now() - Number(user.created_at)) / 86400000) + 1);
+                  box.appendChild(infoRow('clock', I18N.t('value.theDayJoinFoarine', {value: days})));
+                }
+                box.appendChild(infoRow('clock', user.last_login_at
+                  ? I18N.t('value.lastLogin', {value: formatTime(user.last_login_at)})
+                  : I18N.t('value.lastLogin', {value: I18N.t('term.unknown')})));
+              }
+              box.appendChild(infoRow('badge', roleMeta(role).label, null,
+                'profile-role role-' + roleMeta(role).key));
+            }
+
+            function renderArticleStat(count) {
+              const stat = document.getElementById('profile-stat');
+              stat.innerHTML = '';
+              const holder = document.createElement('span');
+              holder.innerHTML = ICONS.book;
+              if (holder.firstChild) stat.appendChild(holder.firstChild);
+              stat.appendChild(el('span', null, I18N.t('value.articleNumber', {value: count})));
+              stat.hidden = false;
+
+              // 文章标签页顶部那一行
+              const hint = document.getElementById('article-hint');
+              if (hint) hint.textContent = count ? I18N.t('value.articleNumber', {value: count}) : I18N.t('term.none');
+              moveTabIndicator();
+            }
+
+            /* 选项卡 */
+            let currentTab = null;
+
+            // 切页时滑动方向
+            const TAB_ORDER = ['profile', 'custom', 'articles', 'members', 'notices', 'd1', 'r2', 'site'];
+
+            function tabPanel(name) {
+              return document.getElementById('tab-' + name);
+            }
+
+            // 紫色滑条~
+            let tabIndicatorPlaced = false;
+            function moveTabIndicator() {
+              const nav = document.getElementById('profile-tabs');
+              const bar = document.getElementById('tab-indicator');
+              const active = nav && nav.querySelector('.profile-tab.active');
+              if (!nav || !bar || !active) return;
+
+              if (!tabIndicatorPlaced) {
+                // 记住已经放过的位置，并在返回时直接定位
+                bar.style.transition = 'none';
+                bar.style.width = active.offsetWidth + 'px';
+                bar.style.transform = 'translateX(' + active.offsetLeft + 'px)';
+                void bar.offsetWidth;
+                bar.style.transition = '';
+                tabIndicatorPlaced = true;
+                return;
+              }
+              bar.style.width = active.offsetWidth + 'px';
+              bar.style.transform = 'translateX(' + active.offsetLeft + 'px)';
+            }
+
+            function switchProfileTab(name, options) {
+              let tab = TAB_ORDER.includes(name) ? name : 'profile';
+              // 隐藏公共视角的标签页
+              if (isPublicView && (tab === 'notices' || tab === 'members' || tab === 'd1' || tab === 'r2' || tab === 'site' || tab === 'custom')) tab = 'profile';
+              // 隐藏俩站长的标签页呐
+              if ((tab === 'd1' || tab === 'r2' || tab === 'site') && !amISiteOwner()) tab = 'profile';
+              const from = currentTab;
+              currentTab = tab;
+
+              document.querySelectorAll('.profile-tab').forEach((btn) => {
+                btn.classList.toggle('active', btn.dataset.tab === tab);
+              });
+              TAB_ORDER.forEach((key) => {
+                const panel = tabPanel(key);
+                if (panel) panel.hidden = key !== tab;
+              });
+
+              // 渐入
+              const animate = from && from !== tab && !(options && options.silent);
+              if (animate) {
+                const panel = tabPanel(tab);
+                const dir = TAB_ORDER.indexOf(tab) > TAB_ORDER.indexOf(from) ? 'right' : 'left';
+                panel.classList.remove('tab-enter-left', 'tab-enter-right');
+                void panel.offsetWidth; // 强制回流, 动画才重播
+                panel.classList.add('tab-enter-' + dir);
+              }
+
+              moveTabIndicator();
+              if (!options || !options.silent) {
+                // 必须拼绝对路径
+                history.replaceState(null, '', location.pathname + location.search +
+                  (tab === 'profile' ? '' : '#' + tab));
+              }
+
+              // 一点懒加载
+              if (tab === 'members' && !membersLoaded) loadMemberCards();
+              if (tab === 'notices' && !noticesLoaded) loadNotices();
+              if (tab === 'articles' && !resourcesLoaded) loadMyResources();
+              if (tab === 'd1' && window.d1Console) window.d1Console.open();
+              if (tab === 'r2' && window.r2Console) window.r2Console.open();
+              if (tab === 'site' && window.siteFlags) window.siteFlags.open();
+              /* 作品栏的卡片瀑布流要等这一栏真的显示出来才量得到宽度 (藏着的元素 clientWidth 是 0) */
+              if (tab === 'articles') {
+                layoutCardColumns(document.getElementById('my-article-list'));
+                layoutCardColumns(document.getElementById('my-resource-list'));
+              }
+            }
+
+            // 视奸视窗变化，避免横条位置出错
+            window.addEventListener('resize', moveTabIndicator);
+            if (document.fonts && document.fonts.ready) document.fonts.ready.then(moveTabIndicator);
+
+            /* 页签上的徽章 (文章数/未读数/成员数)  */
+            if (window.ResizeObserver) {
+              const tabObserver = new ResizeObserver(() => {
+                if (tabIndicatorPlaced) moveTabIndicator();
+              });
+              document.querySelectorAll('.profile-tab').forEach((btn) => tabObserver.observe(btn));
+            }
+
+            document.addEventListener('DOMContentLoaded', () => {
+              paintFieldIcons();
+              bindProfileForm();
+              bindProfileShortcuts();
+              // 背景图层高度随内容量变化
+              bindBgLayerSync();
+              // 验证邮件的resetToken带回本页
+              const resetToken = new URLSearchParams(location.search).get('reset');
+              if (resetToken && !isPublicView) {
+                // 身份认证完成时弹重置框, 期间挂「加载中」
+                const busy = showForaineToast({ text: I18N.t('foraine-toast.loading'), block: true });
+                getCurrentUser().then((u) => {
+                  busy.close();
+                  if (u) openPasswordResetDialog(resetToken);
+                  else location.replace('/login.html?reset=' + encodeURIComponent(resetToken));
+                }).catch(() => busy.close());
+              }
+              // 事已至此，先Loading吧
+              ['my-article-list', 'member-grid', 'notice-list'].forEach((id) => {
+                const box = document.getElementById(id);
+                if (box) {
+                  box.innerHTML = '';
+                  box.appendChild(loadingState());
+                }
+              });
+              // 公开主页直接拉去数据
+              if (isPublicView) {
+                ['notices', 'members', 'custom'].forEach((name) => {
+                  const tab = document.querySelector('.profile-tab[data-tab="' + name + '"]');
+                  if (tab) tab.remove();
+                });
+                moveTabIndicator();
+                getCurrentUser().then((viewer) => {
+                  if (!viewer) return;
+                  currentUser = viewer;
+                  if (publicArticles) renderArticleCards(publicArticles);
+                  // 重绘侧栏
+                  if (publicViewUser) renderProfileSide(publicViewUser);
+                });
+                loadPublicProfile();
+                switchProfileTab(location.hash === '#profile' ? 'profile' : 'articles', { silent: true });
+              }
+            });
+
+            window.addEventListener('authready', async (e) => {
+              const user = e.detail.user;
+              if (!user) return;
+              currentUser = user;
+
+              document.getElementById('profile-nickname').textContent = user.nickname || user.username;
+              if (user.avatar_url) document.getElementById('profile-avatar').src = user.avatar_url;
+              setAvatarPreview(user.avatar_url);
+              document.getElementById('profile-bio').textContent = user.bio || I18N.t('profile.pf.bio.ph');
+              applyEmailState(user);
+              fillProfileForm(user);
+
+              renderProfileSide(user);
+              renderOauthBind(user);
+              renderEmailAction(user);
+              renderAccountGates(user);
+              loadMyArticles();
+              loadFollowState(user.username);
+
+              // 封禁横幅、未读站内信角标
+              renderBanBanner(user);
+              // 注销申请横幅 (如果有的话; 请不要退出Foraine啦..呜..)
+              renderPendingBanner(user);
+              setUnreadBadge(user.unread || 0);
+
+              // 站长专属的d1,r2,site
+              if (amISiteOwner()) {
+                const advanced = document.getElementById('advanced-section');
+                if (advanced) advanced.hidden = false;
+                applyDevTools();
+              }
+
+              // 看别人主页时如果token给到权限则重绘一次
+              if (isPublicView && publicArticles) renderArticleCards(publicArticles);
+
+              // 刷新/直链带着 #articles 这类锚点也能停在同一个页签
+              const wantTab = location.hash.replace('#', '');
+              switchProfileTab(TAB_ORDER.includes(wantTab) ? wantTab : 'profile', { silent: true });
+
+              // 邮件链接回访
+              const EMAIL_RESULT = {
+                verified: [I18N.t('toast.email.ok-verifySuccessful'), 'ok'],
+                unbound: [I18N.t('toast.email.ok-unboundSuccessful'), 'ok'],
+                taken: [I18N.t('toast.email.warn-VerificationTakenByOther'), 'warn'],
+                expired: [I18N.t('toast.email.error-LinkExpired'), 'error'],
+                changed: [I18N.t('toast.email.error-LinkDead4EmailChanged'), 'error'],
+                invalid: [I18N.t('toast.email.error-LinkInvalid'), 'error']
+              };
+              const emailResult = new URLSearchParams(location.search).get('email');
+              if (emailResult && EMAIL_RESULT[emailResult]) {
+                showProfileStatus(EMAIL_RESULT[emailResult][0], EMAIL_RESULT[emailResult][1]);
+                // 清掉参数
+                history.replaceState(null, '', location.pathname + location.hash);
+              }
+
+              // 从第三方授权页redirect回来
+              const params = new URLSearchParams(location.search);
+              if (params.get('github') === 'linked') showProfileStatus(I18N.t('target.linked', {target: 'github'}), 'ok');
+            });
+
+            async function loadMyArticles() {
+              // 加载文章与草稿
+              const list = document.getElementById('my-article-list');
+              list.innerHTML = '';
+              list.appendChild(loadingState());
+              try {
+                const response = await fetch('/api/my/articles', { cache: 'no-store' });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || I18N.t('hint.loading.failed'));
+                const articles = data.articles || [];
+                renderArticleStat(articles.length);
+                renderArticleCards(articles);
+                replayItems(list, '.article-card');
+              } catch (error) {
+                showToast(error.message, 'error');
+                list.innerHTML = '';
+                list.appendChild(emptyState({ icon: 'book' }));
+              }
+            }
+
+            /* 作品 > 资源 */
+            let resourcesLoaded = false;
+
+            async function loadMyResources() {
+              const list = document.getElementById('my-resource-list');
+              if (!list) return;
+              // 等待登录态读取完成后再拉取
+              const username = isPublicView
+                ? PUBLIC_USERNAME
+                : ((currentUser && currentUser.username) || '');
+              if (!username) return;
+              resourcesLoaded = true;
+
+              list.innerHTML = '';
+              list.appendChild(loadingState());
+              try {
+                const response = await fetch('/api/resources?uploader=' + encodeURIComponent(username) + '&size=50', { cache: 'no-store' });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || I18N.t('hint.loading.failed'));
+                renderResourceCards(data.resources || []);
+                replayItems(list, '.article-card');
+              } catch (error) {
+                showToast(error.message, 'error');
+                list.innerHTML = '';
+                list.appendChild(emptyState({ icon: 'book' }));
+              }
+            }
+
+            /* 资源卡片 */
+            function renderResourceCards(resources) {
+              const list = document.getElementById('my-resource-list');
+              const hint = document.getElementById('my-resource-hint');
+              if (!list) return;
+              list.innerHTML = '';
+              if (hint) hint.textContent = resources.length ? I18N.t('value.resourceNumber', {value: resources.length}) : '';
+
+              if (resources.length === 0) {
+                list.appendChild(emptyState({
+                  icon: 'book',
+                  title: I18N.t('value.NotYet', {value: I18N.t('name.resource')}),
+                  text: isPublicView ? '这位还没有上传过资源' : '在资源中心上传的文件会出现在这里'
+                }));
+                return;
+              }
+
+              resources.forEach((r) => {
+                const card = el('div', 'article-card');
+                card.appendChild(el('span', 'article-id-badge', '#' + r.id));
+                card.appendChild(el('div', 'article-title', r.title || r.name));
+                if (r.description) card.appendChild(el('div', 'article-intro', r.description));
+
+                /* /api/resources 返回的是**组卡片**字段 (file_count / total_size / kinds),
+                   没有 size / ext / kind —— 直接 formatFileSize(r.size) 会得到「0 B」。
+                   形制照资源中心那张卡片来 */
+                const meta = el('div', 'article-meta');
+                const groupKinds = r.kinds || [];
+                groupKinds.slice(0, 3).forEach((k) => {
+                  meta.appendChild(el('span', 'resource-tag is-' + k.key, k.label + (k.count > 1 ? ' ' + k.count : '')));
+                });
+                if (groupKinds.length > 3) meta.appendChild(el('span', 'resource-tag', '+' + (groupKinds.length - 3)));
+                if (!groupKinds.length) {
+                  meta.appendChild(el('span', 'resource-tag', (r.ext || '').toUpperCase() || '文件'));
+                }
+                meta.appendChild(el('span', 'resource-size', (r.file_count || 1) + ' 个文件 · ' + formatFileSize(r.total_size)));
+                meta.appendChild(el('span', null, formatTime(r.created_at)));
+                card.appendChild(meta);
+
+                card.onclick = () => pageTransitionTo('/resource/?id=' + r.id);
+                list.appendChild(card);
+              });
+              layoutCardColumns(list);
+            }
+
+            /* 当前登录者是不是站长 (服务端还会再校验一次)。
+               ⚠️ 旧的 '*' 串 2026-09-29 已经取消, 现在站长看 `dev.access` */
+            function amISiteOwner() {
+              const perms = (currentUser && currentUser.permissions) || [];
+              return perms.includes('dev.access');
+            }
+            function canManageOthersArticles() {
+              const perms = (currentUser && currentUser.permissions) || [];
+              return perms.includes('article.review');
+            }
+
+            // 删除别人的文章 (站长直接删)
+            async function deleteArticleById(id) {
+              const yes = await confirmAction({
+                title: '删除文章',
+                message: '删除后这篇文章会从列表和首页消失。',
+                confirmText: '删除',
+                danger: true
+              });
+              if (!yes) return;
+              // 删除文章要验一次密码 (仅需密码)
+              if (!(await verifyIdentity({ methods: ['password'] }))) return;
+              await withLoading(() => apiPost('/api/articles/delete', { id }));
+              showToast('文章已删除', 'ok');
+              if (isPublicView) loadPublicProfile(); else loadMyArticles();
+            }
+
+            // 审核删除别人的文章 (管理员: 必须填理由, 会留档 + 站内信告知作者)
+            async function moderateArticleById(id) {
+              await confirmAction({
+                title: '审核删除',
+                message: '这是别人的文章，删除需要填写理由。\n理由会存档，并作为站内信发给作者。',
+                confirmText: '删除并通知作者',
+                danger: true,
+                warning: '',
+                fields: [{
+                  name: 'reason',
+                  placeholder: '删除理由（必填）',
+                  multiline: true,
+                  required: true,
+                  maxlength: 300
+                }],
+                onConfirm: async (values) => {
+                  await apiPost('/api/moderation/article', { id, reason: values.reason });
+                  showToast('已删除，并已通知作者', 'ok');
+                  if (isPublicView) loadPublicProfile(); else loadMyArticles();
+                }
+              });
+            }
+
+            // 文章卡片: 自己的主页和别人的主页共用
+            function renderArticleCards(articles) {
+              /* 卡片上的标题 / 简介也能用 <view …>: 把观看者上下文填上 (走到这里 currentUser 已经就绪) */
+              if (typeof setViewContext === 'function') {
+                setViewContext({
+                  user: currentUser && currentUser.username,
+                  nickname: currentUser && (currentUser.nickname || currentUser.username),
+                  permissions: (currentUser && currentUser.permissions) || [],
+                  time: Date.now()
+                });
+              }
+              const list = document.getElementById('my-article-list');
+              list.innerHTML = '';
+              renderArticleStat(articles.length);
+              if (articles.length === 0) {
+                list.appendChild(emptyState({ icon: 'book' }));
+                return;
+              }
+
+              // 看别人的主页时: 有管理权限的人右键卡片就能删
+              const canManage = isPublicView && canManageOthersArticles();
+              const directDelete = canManage && amISiteOwner();
+
+              articles.forEach(a => {
+                const card = el('div', 'article-card');
+                // 右上角灰色编号 (跟文章列表页的 #N 一致)
+                card.appendChild(el('span', 'article-id-badge', '#' + a.id));
+                const title = (a.title && a.title.trim()) ? a.title : (a.intro || a.summary || '无标题');
+                const titleEl = el('div', 'article-title', '');
+                titleEl.innerHTML = inlinePlain(title);      // 标题能用自定行内 DOM
+                card.appendChild(titleEl);
+                // 简介: 作者自己在编辑器里写的那一句 (没写就什么都不显示, 卡片只剩标题)
+                if (a.intro) {
+                  const introEl = el('div', 'article-intro', '');
+                  introEl.innerHTML = inlinePlain(a.intro);    // 简介同理
+                  card.appendChild(introEl);
+                }
+                const meta = el('div', 'article-meta');
+                if (isPublicView) {
+                  meta.appendChild(el('span', null, formatTime(a.created_at)));
+                } else if (a.narra) {
+                  /* 叙述没有「草稿 / 已发布」这一说, 只标它是叙述
+                     (它不进公开列表, 但自己的作品栏看得到, 终端世界里也有一份) */
+                  meta.appendChild(el('span', 'article-narra', I18N.t('name.narra', '叙述')));
+                  meta.appendChild(el('span', null, formatTime(a.updated_at || a.created_at)));
+                } else {
+                  meta.appendChild(el('span', 'article-status', a.status === 'draft' ? '草稿' : '已发布'));
+                  meta.appendChild(el('span', null, formatTime(a.updated_at || a.created_at)));
+                }
+                card.appendChild(meta);
+                card.onclick = () => pageTransitionTo('/article/?id=' + a.id);
+
+                if (canManage) {
+                  card.oncontextmenu = (e) => {
+                    e.preventDefault();
+                    showContextMenu(e, [
+                      { label: '打开文章', icon: CTX_ICONS.eye, onClick: () => pageTransitionTo('/article/?id=' + a.id) },
+                      directDelete
+                        ? { label: '删除文章…', danger: true, icon: CTX_ICONS.trash, onClick: () => deleteArticleById(a.id) }
+                        : { label: '审核删除…', danger: true, icon: CTX_ICONS.trash, onClick: () => moderateArticleById(a.id) }
+                    ]);
+                  };
+                }
+                list.appendChild(card);
+              });
+              layoutCardColumns(list);
+            }
+
+            /* 卡片瀑布流: 顺序仍是从左到右, 但每一列各往上贴 ——
+               同一行里矮的那张不该被最高那张撑出空档 (用户 2026-10-01)。
+               做法: 按容器宽度算列数, 依次把卡片丢进「当前最矮的那一列」。
+               ⚠️ 容器不可见时 clientWidth 是 0: 那时什么都不做 (切到这一栏时会重跑) */
+            function layoutCardColumns(grid) {
+              if (!grid) return;
+              // 先拆回原样 (重渲染 / 换列数都走这条路, 所以要求幂等)
+              grid.classList.remove('is-columns');
+              Array.prototype.forEach.call(grid.querySelectorAll('.article-col'), (col) => {
+                while (col.firstChild) grid.appendChild(col.firstChild);
+                col.remove();
+              });
+              const cards = Array.prototype.filter.call(grid.children, (n) => n.classList.contains('article-card'));
+              if (cards.length < 2) return;                 // 一张 (或空状态) 就按原来的走
+              const gap = 12;                               // = --sp-3
+              const minW = 220;                             // 与原来那套网格同一档
+              const count = Math.max(1, Math.floor((grid.clientWidth + gap) / (minW + gap)));
+              if (count < 2) return;                        // 一列时本来就是竖排, 不用多包一层
+              grid.classList.add('is-columns');
+              const cols = [];
+              for (let i = 0; i < count; i += 1) {
+                const col = el('div', 'article-col');
+                grid.appendChild(col);
+                cols.push(col);
+              }
+              cards.forEach((card) => {
+                let best = cols[0];
+                for (let i = 1; i < cols.length; i += 1) if (cols[i].offsetHeight < best.offsetHeight) best = cols[i];
+                best.appendChild(card);
+              });
+            }
+
+            /* 窗口尺寸变了要重分列 (列数与每张卡的高度都会变); 拖窗口时别每帧都算, 等它停一下 */
+            let colResizeTimer = 0;
+            window.addEventListener('resize', () => {
+              clearTimeout(colResizeTimer);
+              colResizeTimer = setTimeout(() => {
+                layoutCardColumns(document.getElementById('my-article-list'));
+                layoutCardColumns(document.getElementById('my-resource-list'));
+              }, 120);
+            }, { passive: true });
+
+            /* 头像上传 (阿里云 OSS) */
+            const DEFAULT_AVATAR_SRC = '/assets/Icon/foraine-icon-v2.png';
+            const AVATAR_MAX_MB = 2;
+
+            function setAvatarPreview(url) {
+              // 同一张图同时出现在「头像」行的小预览和左侧大圆里
+              const thumb = document.getElementById('avatar-thumb');
+              const side = document.getElementById('profile-avatar');
+              const src = url || DEFAULT_AVATAR_SRC;
+              if (thumb) thumb.src = src;
+              if (side && url) side.src = url;
+            }
+
+            async function uploadAvatar(input) {
+              const file = input.files && input.files[0];
+              if (!file) return;
+
+              if (file.size > AVATAR_MAX_MB * 1024 * 1024) {
+                showToast(I18N.t('value.TooLarge-mb', {value: AVATAR_MAX_MB}), 'warn');
+                input.value = '';
+                return;
+              }
+
+              const btn = document.getElementById('avatar-upload');
+              const form = new FormData();
+              form.append('file', file);
+              btn.disabled = true;
+              btn.textContent = '上传中…';
+              try {
+                const response = await fetch('/api/avatar', {
+                  method: 'POST',
+                  body: form, // 注意: 别手动设 Content-Type —— 边界串要由浏览器写
+                  cache: 'no-store'
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(data.error || '上传失败');
+                setAvatarPreview(data.avatar_url);
+                if (currentUser) currentUser.avatar_url = data.avatar_url;
+                showToast('头像已更新', 'ok');
+              } catch (error) {
+                showToast(error.message, 'error');
+              } finally {
+                btn.disabled = false;
+                btn.textContent = '上传新头像';
+                input.value = '';
+              }
+            }
+
+            /* 连携星点 (站内用户目录) */
+            // 卡片角上的小圆: 颜色 + 图标 = 权限 (站长 / 管理员), 成员不加角标
+            const ROLE_DOT = {
+              '站长':   { key: 'owner', icon: 'star',   label: '站长' },
+              '管理员': { key: 'admin', icon: 'shield', label: '管理员' }
+            };
+            const DEFAULT_AVATAR = '/assets/Icon/foraine-icon-v2.png';
+
+            let membersLoaded = false;
+            let memberPage = 1;
+            let memberCan = { moderate: false, remove: false };
+            let memberList = []; // 已加载的成员 (关注状态变了要就地改)
+            let memberSort = 'id'; // 'id' 按编号 | 'name' 按名称 (两种都是正序, 站长管理员始终在前)
+
+            function toggleMemberSort() {
+              memberSort = memberSort === 'id' ? 'name' : 'id';
+              const label = document.getElementById('member-sort-label');
+              if (label) label.textContent = memberSort === 'id' ? '按编号排序' : '按名称排序';
+              reloadMembers();
+            }
+
+            async function loadMemberCards(append) {
+              const grid = document.getElementById('member-grid');
+              if (!append) {
+                memberPage = 1;
+                grid.innerHTML = '';
+                grid.appendChild(loadingState());
+              }
+              try {
+                const response = await fetch('/api/users?page=' + memberPage + '&size=48&sort=' + memberSort, { cache: 'no-store' });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || '加载失败');
+                membersLoaded = true;
+                if (data.can) memberCan = data.can;
+
+                if (!append) memberList = [];
+                (data.users || []).forEach((u) => memberList.push(u));
+                renderMemberGrid();
+
+                // 「共 N 星点」写在页签内容的最高处 (页签上不再挂徽章)
+                const hint = document.getElementById('member-hint');
+                if (hint) hint.textContent = '共 ' + (data.total || 0) + ' 星点';
+                document.getElementById('member-more-wrap').hidden = !data.hasMore;
+              } catch (error) {
+                membersLoaded = false;
+                grid.innerHTML = '';
+                grid.appendChild(el('p', 'editor-hint', error.message || '加载失败'));
+              }
+            }
+
+            /* 卡片墙整体重画: 关注状态变化时不用重新请求 */
+            function renderMemberGrid() {
+              const grid = document.getElementById('member-grid');
+              if (!grid) return;
+              grid.innerHTML = '';
+              if (!memberList.length) {
+                grid.appendChild(emptyState({ icon: 'star' }));
+                return;
+              }
+              memberList.forEach((u) => grid.appendChild(memberCard(u)));
+              // 只重播星点卡 —— 有新内容时不该触发整个标签栏与标签页的动画
+              replayItems(grid, '.member-card');
+            }
+
+            function loadMoreMembers() {
+              memberPage += 1;
+              loadMemberCards(true);
+            }
+
+            // 做过封禁 / 删号之后重拉一遍 (卡片顺序与状态都可能变)
+            function reloadMembers() {
+              membersLoaded = false;
+              loadMemberCards();
+            }
+
+            function memberCard(user) {
+              const card = el('div', 'member-card');
+              // 右上角的编号 = 用户的 id
+              card.appendChild(el('span', 'member-idx', '#' + user.id));
+              const avatar = el('div', 'member-avatar');
+              const img = document.createElement('img');
+              img.alt = '';
+              img.loading = 'lazy';
+              img.src = user.avatar_url || DEFAULT_AVATAR;
+              // 头像源挂了就别一直重试, 退回站点图标
+              img.onerror = () => { img.onerror = null; img.src = DEFAULT_AVATAR; };
+              avatar.appendChild(img);
+
+              const roleName = (user.roles || []).find((r) => ROLE_DOT[r]);
+              if (roleName) {
+                const dot = el('span', 'member-role-dot role-' + ROLE_DOT[roleName].key);
+                dot.title = ROLE_DOT[roleName].label;
+                dot.innerHTML = ICONS[ROLE_DOT[roleName].icon] || '';
+                avatar.appendChild(dot);
+              }
+              card.appendChild(avatar);
+
+              card.appendChild(el('p', 'member-name', user.nickname || user.username));
+              card.appendChild(el('p', 'member-username', '@' + user.username));
+              /* 关注状态与封禁状态都是给卡片本身上色: 已关注 → 左上角一个紫点 (右上角是权限小圆, 不抢位置);
+                    封禁中 → 整张卡红亚克力底 + 红描边 (只给有管理权限的人看) */
+              const marks = [];
+              if (user.is_following) {
+                card.classList.add('is-following');
+                marks.push('已关注');
+              }
+              if (memberCan.moderate && user.banned) {
+                card.classList.add('is-banned');
+                marks.push('封禁中');
+              }
+              if (marks.length) card.title = marks.join(' · ');
+
+              card.onclick = () => openMemberProfile(user);
+              card.oncontextmenu = (e) => { e.preventDefault(); openMemberMenu(e, user); };
+              return card;
+            }
+
+            function openMemberProfile(user) {
+              pageTransitionTo('/u/' + encodeURIComponent(user.username));
+            }
+
+            /* 右键菜单: 权限越高能做的事越多 (成员 ⊂ 管理员 ⊂ 站长)。
+                  菜单项按「当前身份」过滤, 服务端还会再校验一次 */
+            function openMemberMenu(evt, user) {
+              const isSelf = !!(currentUser && currentUser.username === user.username);
+              const isOwner = (user.roles || []).includes('站长');
+              const isAdmin = (user.roles || []).includes('管理员');
+
+              const items = [
+                { label: '查看个人信息', icon: CTX_ICONS.eye, onClick: () => openMemberProfile(user) },
+                { label: '查看文章', icon: CTX_ICONS.book, onClick: () => pageTransitionTo('/u/' + encodeURIComponent(user.username) + '#articles') }
+              ];
+
+              // 关注 / 私聊 (自己对自己没这两项)
+              if (!isSelf) {
+                items.push('-');
+                items.push({
+                  label: user.is_following ? '取消关注' : '关注',
+                  icon: user.is_following ? CTX_ICONS.starOff : CTX_ICONS.star,
+                  onClick: () => toggleFollow(user.username, !user.is_following)
+                });
+                items.push({ label: '私聊', icon: CTX_ICONS.chat, onClick: () => openChat(user) });
+              }
+
+              // 管理动作: 「封禁」与「设为管理员」放**同一栏**
+              if (!isSelf && !isOwner) {
+                const manage = [];
+                if (memberCan.moderate) {
+                  manage.push(user.banned
+                    ? { label: '解除封禁…', icon: CTX_ICONS.check, onClick: () => unbanMember(user) }
+                    : { label: '封禁…', danger: true, icon: CTX_ICONS.ban, onClick: () => banMember(user) });
+                }
+                if (memberCan.remove) {
+                  manage.push(isAdmin
+                    ? { label: '取消管理员', icon: CTX_ICONS.shield, onClick: () => setMemberAdmin(user, false) }
+                    : { label: '设为管理员', icon: CTX_ICONS.shield, onClick: () => setMemberAdmin(user, true) });
+                  if (user.reset_pending) {
+                    manage.push({ label: '批准改密请求', icon: CTX_ICONS.key, onClick: () => approvePasswordRequest(user) });
+                  }
+                }
+                if (manage.length) { items.push('-'); items.push(...manage); }
+              }
+
+              /* 高级: 删号 / 重新指定 ID。「重新指定 ID」可以对自己生效, 但不能对同为站主的人生效。
+                   两个都是高级功能 —— 没开发者功能时都不可见 */
+              const advanced = [];
+              if (memberCan.remove && devToolsOn() && !isSelf && !isOwner) {
+                advanced.push({ label: '删除该用户…', danger: true, icon: CTX_ICONS.userX, onClick: () => deleteMember(user) });
+              }
+              if (memberCan.remove && devToolsOn() && (!isOwner || isSelf)) {
+                advanced.push({ label: '重新指定 ID…', danger: true, icon: CTX_ICONS.key, onClick: () => remapMemberId(user) });
+              }
+              if (advanced.length) { items.push('-'); items.push(...advanced); }
+
+              showContextMenu(evt, items);
+            }
+
+            /* 重新指定 ID: 目标 id 已被占用时后端回 409 → 弹 toast 但不关弹窗
+                  (confirmAction 的 onConfirm 返回 false 就留在原地) */
+            function remapMemberId(user) {
+              confirmAction({
+                title: '重新指定 ID',
+                message: '确定要更改此用户的 id 吗？这将大量更新数据表\n除非你知道你在做什么，否则请不要轻易使用此功能',
+                confirmText: '确定',
+                danger: true,
+                fields: [{ name: 'id', label: '目标 id', placeholder: '不可与现有用户的ID重合', required: true }],
+                onConfirm: async (values) => {
+                  const target = parseInt(String((values || {}).id || '').trim(), 10);
+                  if (!Number.isInteger(target) || target <= 0) {
+                    showToast('目标 id 得是正整数', 'warn');
+                    return false;
+                  }
+                  try {
+                    await apiPost('/api/admin/user/remap-id', { confirm: 'RUN', from: user.id, to: target });
+                  } catch (err) {
+                    showToast(err.message || '改 id 失败', 'error');
+                    return false;   // 留在弹窗里, 让人改个别的号再试
+                  }
+                  showToast('已把 @' + user.username + ' 改成 #' + target, 'ok');
+                  reloadMembers();
+                  return true;
+                }
+              });
+            }
+
+            /* 授予 / 取消管理员 (仅站长)。服务端 /api/admin/grant|revoke 还会再查一次 '*' */
+            async function setMemberAdmin(user, grant) {
+              const name = user.nickname || user.username;
+              await confirmAction({
+                title: (grant ? '设为管理员：' : '取消管理员：') + name,
+                message: grant
+                  ? '管理员可以删除别人的文章并封禁其他用户。'
+                  : '取消后对方就只剩普通成员的权限了。',
+                confirmText: grant ? '设为管理员' : '取消管理员',
+                warning: '',
+                onConfirm: async () => {
+                  await apiPost(grant ? '/api/admin/grant' : '/api/admin/revoke', {
+                    username: user.username,
+                    role: 'admin'
+                  });
+                  showToast(grant ? '已设为管理员' : '已取消管理员', 'ok');
+                  reloadMembers();
+                }
+              });
+            }
+
+            /* 批准「向站长申请改密」: 请求里存的就是加密后的新密码, 直接搬过去生效。
+                  站长没有「直接给人设密码」的入口 —— 那等于能冒充任何人 */
+            async function approvePasswordRequest(user) {
+              const name = user.nickname || user.username;
+              await confirmAction({
+                title: '批准改密请求',
+                message: '同意后 ' + name + ' 申请的那个新密码立即生效，他需要用它重新登录。',
+                confirmText: '同意',
+                warning: '',
+                onConfirm: async () => {
+                  await apiPost('/api/admin/password/approve', { username: user.username });
+                  showToast('已同意，新密码已生效', 'ok');
+                  reloadMembers();
+                }
+              });
+            }
+
+            async function banMember(user) {
+              const name = user.nickname || user.username;
+              await confirmAction({
+                title: '封禁 ' + name,
+                message: '封禁立刻生效：其仍然可以浏览站内内容，但无法发送文章。\n站长会收到一封站内信告知。',
+                confirmText: '封禁',
+                danger: true,
+                warning: '',
+                fields: [
+                  { name: 'reason', label: '理由', placeholder: '请填写合理详实的封禁依据', multiline: true, required: true, maxlength: 300 },
+                  { name: 'days', label: '时长', placeholder: '留空表示永久' }
+                ],
+                onConfirm: async (values, api) => {
+                  const days = (values.days || '').trim();
+                  if (days && !/^\d+$/.test(days)) {
+                    api.setError('天数请填数字（1–3650），留空表示永久');
+                    return false;
+                  }
+                  await apiPost('/api/moderation/ban', {
+                    username: user.username,
+                    reason: values.reason,
+                    days: days || null
+                  });
+                  showToast('已封禁 ' + user.username, 'ok');
+                  reloadMembers();
+                }
+              });
+            }
+
+            async function unbanMember(user) {
+              await confirmAction({
+                title: '解除封禁',
+                message: '解除后 ' + (user.nickname || user.username) + ' 可以重新发布文章，对方会收到一封站内信。',
+                confirmText: '解除封禁',
+                onConfirm: async () => {
+                  await apiPost('/api/moderation/unban', { username: user.username });
+                  showToast('已解除封禁', 'ok');
+                  reloadMembers();
+                }
+              });
+            }
+
+            async function deleteMember(user) {
+              // 站长的动作: 两步确认 —— 先说明后果, 再要求把用户名打一遍
+              await confirmAction({
+                title: '删除用户 ' + user.username,
+                message: '该账号与其全部文章都会被删除，且无法恢复。\n' +
+                  '文章会从站内消失（作者显示为「已注销」），账号本身彻底清空。',
+                confirmText: '删除用户',
+                danger: true,
+                requireText: user.username,
+                warning: '',
+                onConfirm: async () => {
+                  await apiPost('/api/admin/user/delete', { username: user.username });
+                  showToast('已删除 ' + user.username, 'ok');
+                  reloadMembers();
+                }
+              });
+            }
+
+            /* 关注 (追随者): 左侧「N 名追随者」+ 看别人主页时的「关注」按钮 + 连携星点右键菜单。
+                  计数公开, 「我关注了谁」只有自己看得到 (服务端按登录态算) */
+            let followState = null;
+            let followTarget = ''; // 当前这个主页是谁的
+
+            async function loadFollowState(username) {
+              followTarget = username || '';
+              if (!followTarget) return;
+              try {
+                const response = await fetch('/api/follow?username=' + encodeURIComponent(followTarget), { cache: 'no-store' });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || '加载失败');
+                applyFollowState(data);
+              } catch (error) {
+                // 追随者数拿不到就不显示这一行, 不弹错误 (它只是个锦上添花的信息)
+              }
+            }
+
+            function applyFollowState(data) {
+              followState = data || { followers: 0, following: 0, is_following: false, is_self: true };
+              const stat = document.getElementById('profile-stat-followers');
+              if (stat) {
+                stat.innerHTML = '';
+                const holder = document.createElement('span');
+                holder.innerHTML = ICONS.user;
+                if (holder.firstChild) stat.appendChild(holder.firstChild);
+                stat.appendChild(el('span', null, (followState.followers || 0) + ' 名追随者'));
+                stat.hidden = false;
+              }
+              renderFollowActions();
+            }
+
+            function renderFollowActions() {
+              const box = document.getElementById('profile-actions');
+              if (!box) return;
+              box.innerHTML = '';
+              // 只有「看别人的公开主页」才需要: 自己的主页有编辑表单, 访客什么都不给
+              if (!isPublicView || !followState || followState.is_self) {
+                box.hidden = true;
+                return;
+              }
+              const followBtn = el('button',
+                followState.is_following ? 'btn-acrylic' : 'btn',
+                followState.is_following ? '已关注' : '关注');
+              followBtn.onclick = () => toggleFollow(followTarget, !(followState && followState.is_following));
+              box.appendChild(followBtn);
+
+              const chatBtn = el('button', 'btn-acrylic', '私聊');
+              chatBtn.onclick = () => openChat({
+                username: followTarget,
+                nickname: document.getElementById('profile-nickname').textContent || followTarget
+              });
+              box.appendChild(chatBtn);
+              box.hidden = false;
+            }
+
+            async function toggleFollow(username, wantFollow) {
+              if (!currentUser) {
+                showToast('登录后才能关注', 'warn');
+                return;
+              }
+              try {
+                const data = await apiPost('/api/follow', { username, follow: !!wantFollow });
+                // 主页上的按钮 / 计数
+                if (username === followTarget) applyFollowState(data);
+                // 连携星点里那张卡片上的「已关注」标记
+                const cached = memberList.find((u) => u.username === username);
+                if (cached) {
+                  cached.is_following = data.is_following;
+                  renderMemberGrid();
+                }
+                // 三元的每一边都是一个完整句子 → 各给一个 key, 别让译文去理解条件
+                showToast(data.is_following
+                  ? I18N.t('follow.on', '已关注 @{name}', { name: username })
+                  : I18N.t('follow.off', '已取消关注 @{name}', { name: username }), 'ok');
+              } catch (error) {
+                showToast(error.message, 'error');
+              }
+            }
+
+            /* 私聊 (保留聊天记录的模态框): 一个弹窗 = 一段两人对话, 打开时拉最近 200 条, 打开期间每 5 秒轮询一次。
+                  轮询靠「#chat-body 还在不在」自己收尾 —— 弹窗可以用遮罩 / × 关掉, 没有统一的关闭回调 */
+            const CHAT_POLL_MS = 5000;
+            let chatPeer = null;
+            let chatTimer = null;
+            let chatLastId = 0;
+
+            function openChat(user) {
+              if (!currentUser) {
+                showMessage('需要登录<br><br>' +
+                  '<button class="btn" onclick="closeModal(); pageTransitionTo(\'/login.html\')">去登录</button>');
+                return;
+              }
+              // 手机端：用专门的私信页 (QQ 那种整屏界面); 桌面端保持弹窗
+              if (matchMedia('(max-width: 900px)').matches) {
+                pageTransitionTo('/chat/?u=' + encodeURIComponent(user.username));
+                return;
+              }
+              chatPeer = {
+                username: user.username,
+                nickname: user.nickname || user.username,
+                avatar_url: user.avatar_url || DEFAULT_AVATAR
+              };
+              chatLastId = 0;
+
+              showMessage(
+                '<div class="chat-modal">' +
+                  '<div class="chat-head">' +
+                    '<img class="chat-avatar" alt="" src="' + escapeHtml(chatPeer.avatar_url) + '">' +
+                    '<div class="chat-who">' +
+                      '<p class="chat-name">' + escapeHtml(chatPeer.nickname) + '</p>' +
+                      '<p class="chat-username">@' + escapeHtml(chatPeer.username) + '</p>' +
+                    '</div>' +
+                    '<button type="button" class="chat-close" onclick="closeChat()" aria-label="关闭" title="关闭">' +
+                      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>' +
+                    '</button>' +
+                  '</div>' +
+                  '<div class="chat-body" id="chat-body"></div>' +
+                  '<div class="chat-send">' +
+                    '<div class="chat-send-box">' +
+                      '<textarea id="chat-input" rows="1" maxlength="600" placeholder="说点什么…"></textarea>' +
+                      '<button type="button" class="chat-attach-btn" onclick="openChatAttach()" title="上传文件 / 图片" aria-label="上传文件或图片">' +
+                        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>' +
+                      '</button>' +
+                      '<button type="button" class="btn" id="chat-send-btn" onclick="sendChat()">发送</button>' +
+                    '</div>' +
+                  '</div>' +
+                '</div>'
+              );
+
+              const input = document.getElementById('chat-input');
+              if (input) {
+                hardenField(input);
+                // 弹窗里的私聊输入框也跟着内容长高 (在底部 → 向上长), 与私信页一致
+                bindAutoGrow(input, 5);
+                input.addEventListener('keydown', (event) => {
+                  if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    sendChat();
+                  }
+                });
+                // 粘贴图片 / 文件 (与私信页同一套, 实体在 ui.js)
+                input.addEventListener('paste', (event) => {
+                  const items = (event.clipboardData && event.clipboardData.items) || [];
+                  for (let i = 0; i < items.length; i += 1) {
+                    if (items[i].kind !== 'file') continue;
+                    const file = items[i].getAsFile();
+                    if (!file) continue;
+                    event.preventDefault();
+                    chatAttachTake(file);
+                    return;
+                  }
+                });
+                input.focus();
+              }
+
+              refreshChat(true);
+              clearInterval(chatTimer);
+              chatTimer = setInterval(() => {
+                if (!document.getElementById('chat-body')) { // 弹窗已关
+                  clearInterval(chatTimer);
+                  chatTimer = null;
+                  return;
+                }
+                refreshChat(false);
+              }, CHAT_POLL_MS);
+            }
+
+            function closeChat() {
+              clearInterval(chatTimer);
+              chatTimer = null;
+              chatPeer = null;
+              closeModal();
+            }
+
+            async function refreshChat(force) {
+              if (!chatPeer || !document.getElementById('chat-body')) return;
+              try {
+                const response = await fetch('/api/chat?username=' + encodeURIComponent(chatPeer.username), { cache: 'no-store' });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || '加载失败');
+
+                const box = document.getElementById('chat-body');
+                if (!box) return; // 请求期间被关掉了
+                // 本地删掉的那些（右键 → 删除）不再画出来（服务端不知道这件事）;
+                // 同时按 cid / 服务端 id 去重: 自己刚发的那条早就乐观上屏了
+                const messages = (data.messages || []).filter((m) => !isChatMessageHidden(m.id)).filter((m) => {
+                  const existing = findChatRow(m);
+                  if (existing) { patchChatRow(existing, m); return false; }
+                  return true;
+                });
+                const newest = messages.length ? messages[messages.length - 1].id : 0;
+                if (!force && newest === chatLastId) return; // 没新消息就不动 DOM (否则滚动位置会被弹回)
+
+                const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 48;
+                renderChatMessages(messages);
+                chatLastId = newest;
+                if (force || atBottom) box.scrollTop = box.scrollHeight;
+              } catch (error) {
+                showToast(error.message, 'error');
+              }
+            }
+
+            function chatMyAvatar() {
+              return (currentUser && currentUser.avatar_url) || DEFAULT_AVATAR;
+            }
+
+            /* 一条消息 = 头像 + (气泡 + 时间); options 可覆盖 mine / isNew / body (乐观那条还没有服务端数据)。
+                  内容渲染走 ui.js 的 fillChatBubble (与私信页共用) */
+            function chatMessageRow(data, options) {
+              const opts = options || {};
+              const mine = opts.mine !== undefined ? opts.mine : !!data.mine;
+              const row = el('div', 'chat-msg' + (mine ? ' is-mine' : '') + (opts.isNew ? ' is-new' : ''));
+              /* 右键菜单（复制 / 引用 / 删除 / 撤回）靠行上这几个属性 —— 两个宿主写法一致,
+                    具体用法见 ui.js 的 document 委派 */
+              if (data.id) row.dataset.id = String(data.id);
+              if (data.created_at) row.dataset.at = String(data.created_at);
+              if (data.cid || opts.cid) row.dataset.cid = String(data.cid || opts.cid);
+              row.dataset.body = String(opts.body !== undefined ? opts.body : (data.body || ''));
+              row.dataset.who = mine ? '我' : ((chatPeer && chatPeer.nickname) || '');
+
+              const img = document.createElement('img');
+              img.className = 'chat-msg-avatar';
+              img.alt = '';
+              img.src = mine ? chatMyAvatar() : ((chatPeer && chatPeer.avatar_url) || DEFAULT_AVATAR);
+              img.onerror = () => { img.onerror = null; img.src = DEFAULT_AVATAR; };
+              row.appendChild(img);
+
+              const main = el('div', 'chat-msg-main');
+              const bubble = el('span', 'chat-bubble');
+              fillChatBubble(bubble, opts.body !== undefined ? opts.body : data.body);
+              main.appendChild(bubble);
+              main.appendChild(el('span', 'chat-time', formatChatTime(data.created_at)));
+              row.appendChild(main);
+              return row;
+            }
+
+            function renderChatMessages(messages) {
+              const box = document.getElementById('chat-body');
+              if (!box) return;
+              box.innerHTML = '';
+              if (!messages.length) {
+                box.appendChild(el('p', 'chat-empty', ''));
+                return;
+              }
+              messages.forEach((m) => { box.appendChild(chatMessageRow(m)); });
+            }
+
+            /* 弹窗里的附件位: 点链接按钮弹模态框 ([上传][选择上传的类型] 左右两个虚线框, 左侧文件 / 右侧图片);
+                  粘贴也走同一路 (chatAttachTake) */
+            const chatAttachState = { att: null };
+
+            function chatSendBox() {
+              return document.querySelector('.chat-modal .chat-send-box');
+            }
+
+            function renderChatAttachChip() {
+              renderChatAttach(chatSendBox(), chatAttachState.att, () => chatAttachClear(true));
+            }
+
+            function chatAttachClear(revokePreview) {
+              if (revokePreview && chatAttachState.att && chatAttachState.att.previewUrl) {
+                URL.revokeObjectURL(chatAttachState.att.previewUrl);
+              }
+              chatAttachState.att = null;
+              renderChatAttachChip();
+            }
+
+            function chatAttachTake(file) {
+              return setChatAttach(chatAttachState, file, chatSendBox(), renderChatAttachChip);
+            }
+
+            // 选完类型就立即发送
+            function openChatAttach() {
+              openChatAttachPicker((file) => {
+                if (chatAttachTake(file)) sendChat();
+              });
+            }
+
+            /* 乐观发送: 一按下就上屏 + 播放动画, 后台再传附件 / 发消息 (与私信页完全一套行为) */
+            function appendSentChat(body, cid) {
+              const box = document.getElementById('chat-body');
+              if (!box) return null;
+              const empty = box.querySelector('.chat-empty');
+              if (empty) empty.remove();
+              const row = chatMessageRow({ body: body, created_at: Date.now() }, { mine: true, isNew: true, cid: cid });
+              box.appendChild(row);
+              box.scrollTop = box.scrollHeight;
+              return row;
+            }
+
+            async function syncSentChat(row, username, text, att, quote, stickerUrl, cid) {
+              try {
+                let body = text;
+                if (att) {
+                  // 进度写回气泡里那张卡片的水位层 (见 ui.js 的 setChatFileProgress)
+                  const data = await uploadChatAttach(att, (pct) => setChatFileProgress(row, pct));
+                  body = chatAttachBody(text, att, data.url, { id: data.id });
+                } else if (quote) {
+                  body = chatQuoteBody(text, quote);
+                }
+                const res = await apiPost('/api/chat', { username: username, body: body, cid: cid });
+                const msg = res.message || null;
+                if (row && row.isConnected) {
+                  row.classList.remove('is-new');
+                  if (msg) {
+                    const bubble = row.querySelector('.chat-bubble');
+                    if (bubble) fillChatBubble(bubble, msg.body);
+                    const time = row.querySelector('.chat-time');
+                    if (time) time.textContent = formatChatStamp(msg.created_at);
+                    patchChatRow(row, msg);
+                  }
+                }
+                if (att && att.previewUrl) URL.revokeObjectURL(att.previewUrl);
+              } catch (error) {
+                if (row && row.isConnected) {
+                  row.classList.add('is-failed');
+                  failChatFileUpload(row);   // 「上传中」→「上传失败」(水位停在原地)
+                  const time = row.querySelector('.chat-time');
+                  if (time) time.textContent = '发送失败：' + (error.message || '未知错误');
+                }
+                showToast(error.message, 'error');
+              }
+            }
+
+            function sendChat() {
+              const input = document.getElementById('chat-input');
+              if (!input || !chatPeer) return;
+              const box = chatSendBox();
+              const text = input.value.trim();
+              const att = chatAttachState.att;
+              const quote = currentChatQuote(box);
+              if (!text && !att && !quote) return;
+
+              const username = chatPeer.username;
+              const preview = att ? chatAttachBody(text, att, '', { pending: true })
+                : (quote ? chatQuoteBody(text, quote) : text);
+              const cid = newChatCid();
+              const row = appendSentChat(preview, cid);
+              input.value = '';
+              autoGrowLines(input, 5);
+              if (quote) takeChatQuote(box);
+              if (att) chatAttachClear(false); // 别 revoke
+              syncSentChat(row, username, text, att, att ? null : quote, null, cid);
+            }
+
+            /* 站内信 */
+            const NOTICE_KIND = {
+              'user':            { icon: 'mail',  label: '私信' },
+              'article.delete':  { icon: 'trash', label: '文章被删除' },
+              'ban':             { icon: 'lock',  label: '封禁' },
+              'unban':           { icon: 'check', label: '解封' },
+              'comment.article': { icon: 'chat',  label: '新评论' },
+              'comment.reply':   { icon: 'chat',  label: '新回复' },
+              'system':          { icon: 'bell',  label: '系统' }
+            };
+            let noticesLoaded = false;
+
+            // 未读数同时改三处: 页签徽章 / 页签本身的高亮 / 顶部导航的小红点
+            function setUnreadBadge(count) {
+              const badge = document.getElementById('tab-notice-count');
+              if (badge) {
+                badge.textContent = String(count || 0);
+                badge.hidden = !count;
+              }
+              const tab = document.getElementById('profile-tab-notices');
+              if (tab) tab.classList.toggle('has-unread', !!count);
+              if (currentUser) currentUser.unread = count || 0;
+              const authBtn = document.querySelector('.site-auth-btn');
+              if (authBtn) authBtn.classList.toggle('has-dot', !!count);
+              moveTabIndicator(); // 徽章一露出来页签就变宽了
+            }
+
+            async function loadNotices() {
+              const list = document.getElementById('notice-list');
+              list.innerHTML = '';
+              list.appendChild(loadingState());
+              try {
+                const response = await fetch('/api/notices', { cache: 'no-store' });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || '加载失败');
+                noticesLoaded = true;
+                renderNotices(data.notices || []);
+                setUnreadBadge(data.unread || 0);
+                // 只重播信件本身, 页签与小表头不动
+                replayItems(list, '.notice-item');
+              } catch (error) {
+                noticesLoaded = false;
+                list.innerHTML = '';
+                list.appendChild(el('p', 'editor-hint', error.message || '加载失败'));
+              }
+            }
+
+            function renderNotices(notices) {
+              const list = document.getElementById('notice-list');
+              list.innerHTML = '';
+
+              const unread = notices.filter((n) => !n.read_at).length;
+              document.getElementById('notice-hint').textContent = notices.length
+                ? (unread ? unread + ' 条未读' : '共 ' + notices.length + ' 条')
+                : '';
+              document.getElementById('notice-read-all').hidden = !unread;
+
+              if (!notices.length) {
+                list.appendChild(emptyState({ icon: 'bell' }));
+                return;
+              }
+
+              notices.forEach((n) => {
+                const kind = NOTICE_KIND[n.kind] || NOTICE_KIND.system;
+                const isComment = n.kind === 'comment.article' || n.kind === 'comment.reply';
+
+                /* 评论提醒: 一行就能说完 (谁 · 干了什么 · 说了什么)。点卡片直接去那篇文章;
+                      右边原来那个垃圾桶已改成右键菜单里的删除 */
+                if (isComment) {
+                  const item = el('div', 'notice-item is-comment' + (n.read_at ? '' : ' is-unread'));
+
+                  const face = document.createElement('img');
+                  face.className = 'notice-avatar';
+                  face.alt = '';
+                  face.loading = 'lazy';
+                  face.src = n.from_avatar || DEFAULT_AVATAR;
+                  face.onerror = () => { face.onerror = null; face.src = DEFAULT_AVATAR; };
+                  item.appendChild(face);
+
+                  const line = el('p', 'notice-line');
+                  line.appendChild(el('b', 'notice-from', n.from_nickname || n.from_username || '有人'));
+                  line.appendChild(document.createTextNode(
+                    n.kind === 'comment.reply' ? ' 回复了你的评论 ' : ' 评论了你的文章 '
+                  ));
+                  line.appendChild(el('i', 'notice-article', '《' + (n.title || '无标题') + '》'));
+                  const snippet = String(n.body || '').replace(/\s+/g, ' ').trim();
+                  if (snippet) line.appendChild(el('span', 'notice-snippet', '：' + snippet));
+                  item.appendChild(line);
+
+                  item.onclick = () => {
+                    markNoticeRead(n.id, item);
+                    if (n.article_id) pageTransitionTo('/article/?id=' + encodeURIComponent(n.article_id));
+                  };
+                  bindNoticeMenu(item, n);
+                  list.appendChild(item);
+                  return;
+                }
+
+                const item = el('div', 'notice-item' + (n.read_at ? '' : ' is-unread'));
+
+                const icon = el('span', 'notice-icon');
+                icon.innerHTML = ICONS[kind.icon] || ICONS.bell;
+                item.appendChild(icon);
+
+                const body = el('div', 'notice-body');
+                const title = el('p', 'notice-title', n.title || kind.label);
+                title.appendChild(el('span', 'notice-kind', kind.label));
+                body.appendChild(title);
+                if (n.body) body.appendChild(el('p', 'notice-text', n.body));
+                // 发信的人写在时间旁边 (系统通知没有发信人)
+                const meta = el('p', 'notice-time');
+                if (n.from_username) meta.textContent = '来自 @' + n.from_username + ' · ';
+                meta.appendChild(document.createTextNode(formatTime(n.created_at)));
+                body.appendChild(meta);
+                item.appendChild(body);
+                bindNoticeMenu(item, n);
+
+                // 超过两行的信: 卡片上只露两行, 点开在弹窗里看全文
+                const lineCount = String(n.body || '').split('\n').length;
+                const expandable = lineCount > 2;
+                if (expandable) item.classList.add('is-expandable');
+
+                item.onclick = () => {
+                  markNoticeRead(n.id, item);
+                  if (expandable) showNoticeDetail(n, kind);
+                };
+                list.appendChild(item);
+              });
+            }
+
+            /* 删除站内信: 卡片右边的垃圾桶删掉了, 改成右键菜单里的「删除」, 而且删之前要确认 ——
+                  垃圾桶太容易误点, 而站内信删了就找不回来了 */
+            function bindNoticeMenu(item, n) {
+              item.oncontextmenu = (event) => {
+                event.preventDefault();
+                showContextMenu(event, [{
+                  label: '删除',
+                  danger: true,
+                  icon: CTX_ICONS.trash,
+                  onClick: () => deleteNotice(n.id, item)
+                }]);
+              };
+            }
+
+            async function deleteNotice(id, item) {
+              const yes = await confirmAction({
+                title: '',
+                message: '删除后这条站内信就找不回来了，确定删除吗？',
+                confirmText: '确定'
+              });
+              if (!yes) return;
+              try {
+                const data = await withLoading(() => apiPost('/api/notices/delete', { id }));
+                if (item) item.remove();
+                showToast('已删除', 'ok');
+                if (data && typeof data.unread === 'number') setUnreadBadge(data.unread);
+                // 表头那句「N 条未读 / 共 N 条」跟着改 (不重拉列表: 免得整列重播一次入场动画)
+                const left = document.querySelectorAll('.notice-item').length;
+                if (!left) {
+                  loadNotices();
+                  return;
+                }
+                const unreadLeft = document.querySelectorAll('.notice-item.is-unread').length;
+                const hint = document.getElementById('notice-hint');
+                if (hint) hint.textContent = unreadLeft ? unreadLeft + ' 条未读' : '共 ' + left + ' 条';
+                document.getElementById('notice-read-all').hidden = !unreadLeft;
+              } catch (error) {
+                showToast(error.message, 'error');
+              }
+            }
+
+            // 站内信全文弹窗 (长信点开看; 空行分段用 pre-line 保着)
+            function showNoticeDetail(n, kind) {
+              const meta = kind.label + ' · ' + formatTime(n.created_at) +
+                (n.from_username ? ' · 来自 @' + n.from_username : '');
+              showMessage(
+                '<p class="modal-title-lg">' + escapeHtml(n.title || kind.label) + '</p>' +
+                '<p class="notice-detail-meta">' + escapeHtml(meta) + '</p>' +
+                '<div class="notice-detail-body">' + escapeHtml(n.body || '') + '</div>' +
+                '<div class="confirm-actions">' +
+                '<button type="button" class="btn-outline" onclick="closeModal()">关闭</button>' +
+                '</div>'
+              );
+            }
+
+            // 发站内信: 收信人用下拉框, 正文纯文本、空行分段 (不支持草稿)
+            async function openSendNotice() {
+              let users = [];
+              // 拉名单之后才弹框, 这段等待挂「加载中」
+              const busy = showForaineToast({ text: I18N.t('foraine-toast.loading'), block: true });
+              try {
+                const response = await fetch('/api/users?size=60', { cache: 'no-store' });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || '加载用户失败');
+                users = data.users || [];
+              } catch (error) {
+                showToast(error.message, 'error');
+                return;
+              } finally {
+                busy.close();
+              }
+
+              const options = users
+                .filter((u) => !currentUser || u.username !== currentUser.username)
+                .map((u) => ({
+                  value: u.username,
+                  label: (u.nickname || u.username) + (u.nickname && u.nickname !== u.username ? '（@' + u.username + '）' : '')
+                }));
+              if (!options.length) {
+                showToast('站里还没有其他人可以收信', 'warn');
+                return;
+              }
+
+              await confirmAction({
+                title: '发送站内信',
+                message: '',
+                confirmText: '确认发送',
+                warning: '',
+                fields: [
+                  { name: 'to', type: 'select', label: '收信人', placeholder: '选择收信人', options, required: true },
+                  { name: 'body', label: '内容', placeholder: '写点什么…（纯文本，空行分段）', multiline: true, rows: 4, required: true, maxlength: 600 }
+                ],
+                onConfirm: async (values) => {
+                  await apiPost('/api/notices/send', { to: values.to, body: values.body });
+                  showToast('站内信已发出', 'ok');
+                  loadNotices();
+                }
+              });
+            }
+
+            async function markNoticeRead(id, item) {
+              if (item && !item.classList.contains('is-unread')) return;
+              try {
+                const res = await apiPost('/api/notices/read', { id });
+                if (item) item.classList.remove('is-unread');
+                setUnreadBadge(res && typeof res.unread === 'number' ? res.unread : 0);
+                const left = document.querySelectorAll('.notice-item.is-unread').length;
+                document.getElementById('notice-hint').textContent =
+                  (left ? left + ' 条未读' : '共 ' + document.querySelectorAll('.notice-item').length + ' 条');
+                document.getElementById('notice-read-all').hidden = !left;
+              } catch (error) {
+                // 标已读失败不值得打扰用户
+                console.warn('标记已读失败:', error);
+              }
+            }
+
+            async function markAllNoticesRead() {
+              try {
+                await apiPost('/api/notices/read', { all: true });
+                document.querySelectorAll('.notice-item.is-unread').forEach((it) => it.classList.remove('is-unread'));
+                document.getElementById('notice-read-all').hidden = true;
+                document.getElementById('notice-hint').textContent =
+                  '共 ' + document.querySelectorAll('.notice-item').length + ' 条';
+                setUnreadBadge(0);
+                showToast('已全部标为已读', 'ok');
+              } catch (error) {
+                showToast(error.message, 'error');
+              }
+            }
+
+            // 被封禁时的横幅: 说明还能做什么、不能做什么
+            function renderBanBanner(user) {
+              const box = document.getElementById('ban-banner');
+              if (!box) return;
+              if (!user || !user.ban) {
+                box.hidden = true;
+                return;
+              }
+              const until = user.ban.until ? formatDate(user.ban.until) + ' 到期' : '永久';
+              box.innerHTML = '';
+              box.appendChild(el('p', 'ban-banner-title', '账号已被封禁（' + until + '）'));
+              box.appendChild(el('p', 'ban-banner-text',
+                '你仍然可以浏览站内内容，但无法发布或保存文章。' +
+                (user.ban.reason ? '理由：' + user.ban.reason : '')));
+              box.hidden = false;
+            }
+
+            /* 公开主页 */
+            function readonlyRow(label, value) {
+              const row = el('div', 'profile-field');
+              row.appendChild(el('span', 'profile-field-label', label));
+              const body = el('div', 'profile-field-body');
+              body.appendChild(el('span', 'profile-field-value', value));
+              row.appendChild(body);
+              return row;
+            }
+
+            function applyPublicUser(user) {
+              // 看自己的公开主页时, 公开接口里没有邮箱 / 邮箱验证状态, 侧栏于是少一行。
+              // 把本人这份存起来, renderProfileSide 会在用户名一致时补上邮箱 ——
+              // 别人看到的仍然只有公开字段
+              publicViewUser = user;
+              document.title = (user.nickname || user.username) + ' · Foraine';
+              document.getElementById('profile-nickname').textContent = user.nickname || user.username;
+              if (user.avatar_url) document.getElementById('profile-avatar').src = user.avatar_url;
+              document.getElementById('profile-bio').textContent = user.bio || '这个人很懒，什么都没写';
+              renderProfileSide(user);
+
+              // 编辑入口全在「资料」页签里, 访客模式就把它藏掉
+              document.getElementById('profile-edit-fields').hidden = true;
+
+              const ro = document.getElementById('profile-readonly');
+              ro.innerHTML = '';
+              ro.appendChild(readonlyRow('昵称', user.nickname || user.username));
+              if (user.bio) ro.appendChild(readonlyRow('简介', user.bio));
+              if (user.created_at) ro.appendChild(readonlyRow('加入于', formatDate(user.created_at)));
+              if (user.github_login) {
+                const row = el('div', 'profile-field');
+                row.appendChild(el('span', 'profile-field-label', 'GitHub'));
+                const body = el('div', 'profile-field-body');
+                const link = el('a', 'profile-field-value', 'github.com/' + user.github_login);
+                link.href = 'https://github.com/' + user.github_login;
+                link.target = '_blank';
+                link.rel = 'noopener noreferrer';
+                body.appendChild(link);
+                row.appendChild(body);
+                ro.appendChild(row);
+              }
+              ro.hidden = false;
+            }
+
+            async function loadPublicProfile() {
+              const list = document.getElementById('my-article-list');
+              try {
+                const response = await fetch('/api/user?username=' + encodeURIComponent(PUBLIC_USERNAME), { cache: 'no-store' });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || '加载失败');
+                applyPublicUser(data.user);
+                publicArticles = data.articles || [];
+                renderArticleCards(publicArticles);
+                loadFollowState(data.user.username); // 追随者数 + 关注/私聊按钮
+                // 别人的主页背景 (bg_image 是公开字段; 聊天背景当然不给我们)
+                viewedUserBg = data.user;
+                applyBackgrounds();
+              } catch (error) {
+                document.getElementById('profile-nickname').textContent = '没有这个用户';
+                document.getElementById('profile-bio').textContent = error.message;
+                list.innerHTML = '';
+                list.appendChild(el('p', 'editor-hint', error.message));
+              }
+            }
+
+            // GitHub 图标 (Octicons mark-github)
+            const GH_ICON = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.73.5.5 5.73.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56 0-.28-.01-1.02-.02-2-3.2.7-3.88-1.54-3.88-1.54-.53-1.34-1.29-1.7-1.29-1.7-1.05-.72.08-.71.08-.71 1.17.08 1.78 1.2 1.78 1.2 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 2.9-.39c.98 0 1.97.13 2.9.39 2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.42-2.69 5.39-5.25 5.68.41.36.78 1.06.78 2.14 0 1.55-.01 2.8-.01 3.18 0 .31.21.68.8.56A11.51 11.51 0 0 0 23.5 12C23.5 5.73 18.27.5 12 .5z"></path></svg>';
+
+            // 支持绑定的第三方账号 (加新渠道只需要往这里加一项)
+            const OAUTH_PROVIDERS = [
+              { key: 'github', label: 'GitHub', field: 'github_login', icon: GH_ICON, cls: 'btn-gh' }
+            ];
+
+            // 动态令牌图标 (锁) + 弹窗流程 (TOTP)
+            const TOTP_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>';
+
+            function renderOauthBind(user) {
+              // 未绑定 → 亮出按钮; 已绑定 → 只显示账号, 不再给按钮
+              const box = document.getElementById('profile-oauth');
+              if (!box) return;
+              box.innerHTML = '';
+              box.hidden = false;
+
+              OAUTH_PROVIDERS.forEach((p) => {
+                const value = user[p.field];
+                // 已绑定: 按钮留着但变灰写「已绑定」, 不再给点
+                const btn = el('button', p.cls + (value ? ' is-bound' : ''));
+                btn.innerHTML = p.icon + '<span>' + (I18N.t(value ? 'target.linked' : 'target.link', {target: p.label})) + '</span>';
+                if (value) {
+                  btn.disabled = true;
+                  btn.title = p.label + ' ' + value;
+                } else {
+                  btn.onclick = () => { window.location.href = '/api/auth/' + p.key + '?link=1'; };
+                }
+                box.appendChild(btn);
+              });
+
+              // 动态令牌: 确认过就变灰 (按钮文字保持「动态令牌」)。
+              // 图标不能裸用 .btn-acrylic —— 裸 SVG 没人管尺寸, 会撑满整个按钮变成大锁方块;
+              // 改用 .btn-gh (与 GitHub 那个同一个类): `.btn-gh svg` 把图标钉在 20×20
+              const totpBtn = el('button', 'btn-gh' + (user.totp_enabled ? ' is-bound' : ''));
+              totpBtn.innerHTML = TOTP_ICON + '<span>' + (I18N.t('name.totp')) + '</span>';
+              if (user.totp_enabled) {
+                totpBtn.disabled = true;
+                totpBtn.title = '已启用基于时间的动态令牌';
+              } else {
+                totpBtn.onclick = () => openTotpSetup();
+              }
+              box.appendChild(totpBtn);
+            }
+
+            /* 动态令牌: 每次都现生成一个新密钥 (关掉再打开就是新二维码)。
+                  confirmAction 的 messageHtml 是塞进 <p> 里的, 里面只能用行内元素 ——
+                  用 <div> 会被浏览器拆开, 所以这里全用 <span> + display:block */
+            async function openTotpSetup() {
+              /* 「绑定令牌需要邮箱验证」: 邮箱是身份锚点, 没验证过就把令牌绑上, 等于一把没锚的钥匙 */
+              if (!emailIsVerified(currentUser)) {
+                showProfileStatus('绑定动态令牌前，请先验证邮箱', 'warn');
+                return;
+              }
+              let data;
+              // 现生成密钥之后才弹二维码框, 这段等待挂「加载中」
+              const busy = showForaineToast({ text: I18N.t('foraine-toast.loading'), block: true });
+              try {
+                data = await apiPost('/api/totp/setup', {});
+              } catch (error) {
+                showToast(error.message || '生成失败', 'error');
+                return;
+              } finally {
+                busy.close();
+              }
+              const svg = qrSvg(data.url, { scale: 5 });
+              await confirmAction({
+                title: '动态令牌',
+                messageHtml:
+                  '<span class="totp-note">基于时间的动态令牌是一种二步验证方案<br>'
+                  + '其能保证验证秘钥的不可获知性，提供至多60秒的窗口期<br>'
+                  + '使用安全软件（如Authenticator）扫描下方的二维码以添加</span>'
+                  + '<span class="totp-qr">' + svg + '</span>'
+                  + '<span class="totp-manual">扫描不了？手动输入：<code>' + escapeHtml(data.secret) + '</code></span>'
+                  + '<span class="totp-warn">二维码只显示这一次，请先妥善保存</span>',
+                confirmText: '确认',
+                /* 绑定必须**先验一次码**: 以前点确认不带码, 扫错或者没存好的人照样能绑上,
+                   那一刻起他就过不了敏感操作的验证了。
+                   流程: 填 6 位数字 → liveCheck 只验不改 → 通过了确认键才变亮 →
+                   点一下变「确认绑定？」→ 再点才真绑 */
+                confirmArmedText: '确认绑定？',
+                liveCheckIdle: '在此填写扫描后软件显示的6位数字',
+                fields: [{
+                  name: 'code', label: '动态令牌', placeholder: '6 位数字',
+                  maxlength: 6, required: true
+                }],
+                liveCheck: async (values) => {
+                  const code = String((values && values.code) || '').trim();
+                  if (!/^\d{6}$/.test(code)) return { ok: false, hint: '请输入 6 位数字' };
+                  try {
+                    await apiPost('/api/totp/check', { code });
+                    return { ok: true, hint: '验证通过' };
+                  } catch (error) {
+                    return { ok: false, hint: error.message || '动态令牌错误' };
+                  }
+                },
+                onConfirm: async (values) => {
+                  try {
+                    await apiPost('/api/totp/enable', { code: String((values && values.code) || '').trim() });
+                    if (currentUser) currentUser.totp_enabled = true;
+                    renderOauthBind(currentUser || {});
+                    showToast('动态令牌已启用', 'ok');
+                    return true;
+                  } catch (error) {
+                    showToast(error.message || '启用失败', 'error');
+                    return false;
+                  }
+                }
+              });
+            }
+
+            function showProfileStatus(text, kind) {
+              // 状态不再占页面位置, 统一走底部 Toast
+              showToast(text, kind === 'ok' ? 'ok' : kind === 'warn' ? 'warn' : 'error');
+            }
+
+            async function saveProfileField(payload, okText) {
+              // 资料类字段统一走这一条: 昵称 / 简介 / 自定义信息
+              try {
+                const response = await fetch('/api/profile', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(payload),
+                  cache: 'no-store'
+                });
+                const result = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(result.error || '更新失败');
+                if (currentUser) Object.assign(currentUser, payload);
+                if (okText) showProfileStatus(okText, 'ok'); // 空串 = 不弹文字 (交给按钮自己反馈)
+                return true;
+              } catch (error) {
+                showProfileStatus(error.message, 'error');
+                return false;
+              }
+            }
+
+            /* 资料表单
+                  头像 / 昵称 / 简介 / 邮箱 / 位置 / 其他信息 一起交。「保存更改」在「没改动」或
+                  「改回原样」时都是禁用状态, 所以拿一份 baseline 做对比, 存成功后再把 baseline 换成新值。
+                  邮箱存在 users.email (账号邮箱), 位置仍存在 profiles.other 的「标签: 内容」行 */
+            const OTHER_FIELDS = [
+              { key: 'location', label: '位置', el: 'extra-location' }
+            ];
+
+            // 老数据在 profiles.other 里留过「邮箱: xxx」(现在归 users.email 管) 与「链接: xxx」
+            // —— 读到就丢掉, 下次保存 other 时顺手从库里清掉, 不用专程跑迁移
+            const LEGACY_OTHER_LABELS = ['邮箱', '链接'];
+
+            /* 个性化那两张卡片的状态 (与表单一起「保存更改」/「取消」): { bg_image, bg_blur, chat_bg, chat_blur },
+                  空串 = 没设置。
+                  它们是卡片 (不是输入框), 所以单独存一份, readProfileForm() 会把它并进去 */
+            const CUSTOM_BLUR_MAX_PX = 24; // 模糊度 100 对应 24px
+            let customState = { bg_image: '', bg_blur: 0, chat_bg: '', chat_blur: 0 };
+
+            // 0~100 → px (背景图层用; 缩略图与真背景共用同一套换算)
+            function blurPx(value) {
+              const n = Math.max(0, Math.min(100, parseInt(value, 10) || 0));
+              return (n / 100 * CUSTOM_BLUR_MAX_PX).toFixed(1) + 'px';
+            }
+
+            let profileBaseline = {
+              nickname: '', bio: '', email: '', location: '', rest: ''
+            };
+            let savedFlashTimer = null;
+
+            function splitOther(raw) {
+              // other → { location, rest }
+              const out = { location: '', rest: [] };
+              cleanOther(raw).split(/\r?\n/).forEach((line) => {
+                const text = line.trim();
+                if (!text) return;
+                const idx = text.search(/[:：]/);
+                const label = idx < 0 ? '' : text.slice(0, idx).trim();
+                const value = idx < 0 ? '' : text.slice(idx + 1).trim();
+                const hit = OTHER_FIELDS.find((f) => f.label === label);
+                if (hit) out[hit.key] = value;
+                else if (LEGACY_OTHER_LABELS.indexOf(label) >= 0) return; // 旧邮箱行: 丢弃
+                else out.rest.push(text);
+              });
+              out.rest = out.rest.join('\n');
+              return out;
+            }
+
+            function composeOther(form) {
+              // 专属字段在前, 自由行在后 (空的不写)
+              const lines = [];
+              OTHER_FIELDS.forEach((f) => {
+                if (form[f.key]) lines.push(f.label + '：' + form[f.key]);
+              });
+              form.rest.split(/\r?\n/).forEach((line) => {
+                if (line.trim()) lines.push(line.trim());
+              });
+              return lines.join('\n');
+            }
+
+            function readProfileForm() {
+              const emailEl = document.getElementById('email-input');
+              // 已验证的邮箱是 readonly, 不参与表单对比与提交
+              const emailLocked = emailEl.readOnly;
+              const form = {
+                nickname: document.getElementById('nickname-input').value.trim(),
+                bio: document.getElementById('bio-input').value.trim(),
+                email: emailLocked ? '' : emailEl.value.trim(),
+                rest: document.getElementById('other-input').value
+              };
+              OTHER_FIELDS.forEach((f) => { form[f.key] = document.getElementById(f.el).value.trim(); });
+              // 个性化那四个字段不在这里 —— 它们已经搬去「个性化」页签, 改完立刻存
+              //    (见 saveCustomFields), 不参与这个表单的脏检查
+              return form;
+            }
+
+            function sameProfileForm(a, b) {
+              return a.nickname === b.nickname && a.bio === b.bio && a.rest === b.rest
+                && a.email === b.email
+                && OTHER_FIELDS.every((f) => a[f.key] === b[f.key]);
+            }
+
+            function refreshProfileSaveState() {
+              const now = readProfileForm();
+              const changed = !sameProfileForm(now, profileBaseline);
+              const save = document.getElementById('profile-save');
+              const cancel = document.getElementById('profile-cancel');
+              // 有改动就把「已保存」的灰按钮换回「保存更改」
+              if (changed) resetSaveButton();
+              // 「取消」只在真有改动时出现 (存完就会自己消失)
+              if (cancel) cancel.hidden = !changed;
+              // 昵称不能空: 空着不给存 (后端也会拦, 但没必要跑一趟)
+              if (!now.nickname) {
+                save.disabled = true;
+                return;
+              }
+              save.disabled = !changed || save.classList.contains('is-saved');
+            }
+
+            function cancelProfileChanges() {
+              // 把表单整体退回上一次保存的样子 (回到 baseline)
+              document.getElementById('nickname-input').value = profileBaseline.nickname;
+              document.getElementById('bio-input').value = profileBaseline.bio;
+              document.getElementById('other-input').value = profileBaseline.rest;
+              // 已验证的邮箱在 baseline 里是空串 (那是为了让脏检查干净), 直接写回去
+              // 就会把框清空、只留一行占位符
+              document.getElementById('email-input').value = profileBaseline.email
+                || (currentUser && currentUser.email) || '';
+              OTHER_FIELDS.forEach((f) => { document.getElementById(f.el).value = profileBaseline[f.key]; });
+              // 个性化不在这里回退 (它不归这个表单管, 改完就已经存下去了)
+              autoGrow(document.getElementById('bio-input'));
+              autoGrow(document.getElementById('other-input'));
+              resetSaveButton();
+              refreshProfileSaveState();
+              renderEmailAction(currentUser);
+            }
+
+            function resetSaveButton() {
+              const save = document.getElementById('profile-save');
+              clearTimeout(savedFlashTimer);
+              save.classList.remove('is-saved');
+              save.dataset.i18n = 'opt.save-changes'
+              save.textContent = '保存更改';
+            }
+
+            function showSavedState() {
+              // 存完的反馈: 按钮变成灰底「已保存」, 下次一有改动就变回去
+              const save = document.getElementById('profile-save');
+              clearTimeout(savedFlashTimer);
+              save.classList.add('is-saved');
+              save.innerHTML = ICONS.check + '<span>' + I18N.t('opt.saved-changes') +'</span>';
+              save.disabled = true;
+              savedFlashTimer = setTimeout(() => {
+                resetSaveButton();
+                refreshProfileSaveState();
+              }, 2600);
+            }
+
+            function fillProfileForm(user) {
+              const other = splitOther(user.other);
+              profileBaseline = {
+                nickname: user.nickname || user.username || '',
+                bio: user.bio || '',
+                // 邮箱一律只读: 验证前不给改, 验证后也只能换绑
+                // → baseline 永远记空串, 脏检查永远不会因为邮箱而变脏
+                email: '',
+                location: other.location,
+                rest: other.rest
+              };
+              // 个性化 (归「个性化」页签管, 不进 baseline)
+              customState = {
+                bg_image: user.bg_image || '',
+                bg_blur: user.bg_blur || 0,
+                chat_bg: user.chat_bg || '',
+                chat_blur: user.chat_blur || 0
+              };
+              // 字体 (同上): 三个偏好值, 画成三组单选框 (服务端没传 = 默认字体)
+              customFonts = {
+                chat: normalizeFontValue(user.font_chat),
+                forum: normalizeFontValue(user.font_forum),
+                article: normalizeFontValue(user.font_article)
+              };
+              renderLanguageSelect();
+              renderFontChoices();
+              initCtxCapture();
+              initRainSound();
+              initDevTools();
+              initTermQuoteKey();
+              document.getElementById('nickname-input').value = profileBaseline.nickname;
+              document.getElementById('bio-input').value = profileBaseline.bio;
+              document.getElementById('other-input').value = profileBaseline.rest;
+              // 但框里要显示真实邮箱 (baseline 记空串只是为了让脏检查干净)
+              document.getElementById('email-input').value = profileBaseline.email || (user.email || '');
+              OTHER_FIELDS.forEach((f) => { document.getElementById(f.el).value = profileBaseline[f.key]; });
+              renderCustomState();
+              // 填完再量一次高度 (textarea 换行要自己长高)
+              autoGrow(document.getElementById('bio-input'));
+              autoGrow(document.getElementById('other-input'));
+              resetSaveButton();
+              refreshProfileSaveState();
+            }
+
+            /* 默认一行高, 有换行就自动长高 (用 scrollHeight 量, 再把边框补回去 —— box-sizing 是 border-box,
+               不加这 4px 每次都会少一截)。
+               空值时要交回给 rows="1" —— Chrome 会把换行的 placeholder 也算进 scrollHeight */
+            function autoGrow(elm) {
+              if (!elm.value) {
+                elm.style.height = '';
+                return;
+              }
+              elm.style.height = 'auto';
+              const border = elm.offsetHeight - elm.clientHeight;
+              elm.style.height = (elm.scrollHeight + border) + 'px';
+            }
+
+            /* 个性化: 主页背景 / 聊天背景
+                  两张卡片: 主页背景 (别人看得到) + 聊天背景 (只有自己看得到), 住在独立的一页「个性化 › 背景」里。
+                  图片存在桶里的 img/user/<用户名>/profile-image 与 chat-image (换图覆盖同一个对象),
+                  地址落在 profiles 的四个列上。
+                  它不走资料那个表单的保存按钮 —— 上传 / 移除 / 松开滑条就立刻写库
+                  (以前跟表单一起交, 只上传不点保存就等于没存) */
+
+            let customSaveTimer = null;
+
+            /* 个性化: 字体
+                  三行 (聊天 / 论坛 / 文章) × 两个单选 (默认字体 / 想念是枫糖海盐味)。值只存在自己那份 profiles 里,
+                  由 core.js 写成 <html data-font-*>, 字体栈在 main.css —— 所以别人看到的一直是他们自己选的那套。
+                  与背景那两块一样立刻存 (不走资料表单的保存键)。
+                  选项清单用 core.js 的 FONT_CHOICES (与 worker.js 的 FONT_VALUES 对齐), 这里不另抄一份 */
+            let customFonts = { chat: '', forum: '', article: '' };
+            const FONT_SCOPE_LABELS = { chat: '聊天', forum: '论坛', article: '文章' };
+
+            /* 全局接替右键: 开关状态存在本机, 开关本身只负责写回去。
+                  真正的拦截在 ui.js 的 document contextmenu 里 (那里才有全局视野) */
+            /* 开发者功能开关 (仅站长, 默认开)
+                  关掉就藏起 D1 / R2 页签与星点卡片的「重新指定 ID」。
+                  存在本机 (localStorage) —— 这是「这台设备要不要看这些」的习惯, 不跨设备 */
+            const DEV_KEY = 'foraine.dev.tools';
+
+            function devToolsOn() {
+              try { return localStorage.getItem(DEV_KEY) !== '0'; } catch (err) { return true; }
+            }
+
+            function applyDevTools() {
+              const on = devToolsOn();
+              /* 这里只看了「开关」没看身份 —— 开关默认是开的, 于是非站长也有这两个页签 (但切不进去)。
+                    开关只管站长自己要不要看, 身份那关单独算 */
+              const isOwner = !!(currentUser && (currentUser.permissions || []).indexOf('dev.access') >= 0);
+              const show = on && isOwner;
+              const d1Tab = document.getElementById('profile-tab-d1');
+              const r2Tab = document.getElementById('profile-tab-r2');
+              const siteTab = document.getElementById('profile-tab-site');
+              if (d1Tab) d1Tab.hidden = !show;
+              if (r2Tab) r2Tab.hidden = !show;
+              if (siteTab) siteTab.hidden = !show;
+              // 正停在被藏起来的页签上 → 退回「资料」
+              const active = document.querySelector('.profile-tab.is-active');
+              if (!show && active && (active.dataset.tab === 'd1' || active.dataset.tab === 'r2' || active.dataset.tab === 'site')) {
+                switchProfileTab('profile');
+              } else {
+                moveTabIndicator();
+              }
+            }
+
+            function initDevTools() {
+              const box = document.getElementById('dev-tools');
+              if (box) {
+                box.checked = devToolsOn();
+                box.onchange = () => {
+                  try { localStorage.setItem(DEV_KEY, box.checked ? '1' : '0'); } catch (err) { /* 无痕模式 */ }
+                  applyDevTools();
+                  showToast(I18N.t(box.checked ? 'target.activated': 'target.deactivated', {target: I18N.t('name.advanced.devtools')}), 'info');
+                };
+              }
+              applyDevTools();
+            }
+
+            /* 终端文章面板的 QuoteKey 开关 (只有持有 terminal.keyviewer 的人有这张卡; 只影响本机) */
+            const TERM_KEY_STORE = 'foraine.term.quoteKey';
+
+            function termQuoteKeyOn() {
+              try { return localStorage.getItem(TERM_KEY_STORE) === '1'; } catch (err) { return false; }
+            }
+
+            function initTermQuoteKey() {
+              const card = document.getElementById('card-term-quotekey');
+              const box = document.getElementById('term-quotekey');
+              if (!card || !box) return;
+              const can = !!(currentUser && (currentUser.permissions || []).indexOf('terminal.keyviewer') >= 0);
+              card.hidden = !can;
+              if (!can) return;
+              box.checked = termQuoteKeyOn();
+              box.onchange = () => {
+                try { localStorage.setItem(TERM_KEY_STORE, box.checked ? '1' : '0'); } catch (err) { /* 无痕模式 */ }
+                showToast(I18N.t(box.checked ? 'target.activated' : 'target.deactivated', { target: I18N.t('name.terminal.quotekey') }), 'info');
+              };
+            }
+
+            function initCtxCapture() {
+              const box = document.getElementById('ctx-capture');
+              if (!box) return;
+              box.checked = typeof ctxCaptureOn === 'function' ? ctxCaptureOn() : false;
+              box.onchange = () => {
+                if (typeof setCtxCapture === 'function') setCtxCapture(box.checked);
+                showToast(box.checked ? '已接管本页的右键' : '已交还浏览器右键', 'ok');
+              };
+            }
+
+            /* 雨声: 真正的播放在 ui.js 的雨声模块里 (全站共用), 这里只切开关;
+                  开的那一刻要顺手叫它开始播 (用户就在点它, 这是最好的时机) */
+            function initRainSound() {
+              const box = document.getElementById('rain-sound');
+              if (!box) return;
+              const on = typeof rainSoundOn === 'function' ? rainSoundOn() : false;
+              box.checked = on;
+              box.onchange = () => {
+                if (typeof setRainSound === 'function') setRainSound(box.checked);
+                showToast(box.checked ? '雨声已开启（此刻起全站循环）' : '雨声已关闭', 'ok');
+              };
+            }
+
+            /* 语言下拉: 选项来自 i18n.js 的清单, 切了就换设备偏好并重载 (文案散在页面与脚本里, 重载最一致) */
+            function renderLanguageSelect() {
+              const sel = document.getElementById('site-language');
+              if (!sel || !window.I18N) return;
+              sel.innerHTML = '';
+              I18N.LANGS.forEach((item) => {
+                const opt = document.createElement('option');
+                opt.value = item.code;
+                opt.textContent = item.label;
+                sel.appendChild(opt);
+              });
+              sel.value = I18N.lang;
+              sel.addEventListener('change', () => I18N.setLang(sel.value));
+            }
+
+            function renderFontChoices() {
+              const box = document.getElementById('font-choices');
+              if (!box) return; // 看别人主页时这一页整块被删掉了
+              box.innerHTML = '';
+              FONT_SCOPES.forEach((scope) => {
+                const row = el('div', 'font-row');
+                row.appendChild(el('span', 'font-row-label', FONT_SCOPE_LABELS[scope] || scope));
+                const options = el('div', 'font-options');
+                FONT_CHOICES.forEach((choice) => {
+                  const option = el('label', 'font-option');
+                  const input = document.createElement('input');
+                  input.type = 'radio';
+                  input.name = 'font-' + scope; // 同名 = 同组, 浏览器自己管互斥
+                  input.value = choice.value;
+                  input.checked = normalizeFontValue(customFonts[scope]) === choice.value;
+                  input.addEventListener('change', () => {
+                    if (input.checked) saveUserFont(scope, choice.value);
+                  });
+                  option.appendChild(input);
+                  // 选项文字用它自己的字体画 —— 「想念是枫糖海盐味」那项本身就是预览
+                  option.appendChild(el('span', choice.value ? 'font-hand' : '', choice.label));
+                  options.appendChild(option);
+                });
+                row.appendChild(options);
+                box.appendChild(row);
+              });
+            }
+
+            async function saveUserFont(scope, value) {
+              customFonts = Object.assign({}, customFonts, { [scope]: value });
+              // 先当场生效 (不用等接口回来), 再写库; 成功后不要重画单选框 (会丢焦点, 状态本来就对)
+              setUserFonts(customFonts);
+              try {
+                await apiPost('/api/profile', {
+                  font_chat: customFonts.chat,
+                  font_forum: customFonts.forum,
+                  font_article: customFonts.article
+                });
+                if (currentUser) {
+                  currentUser.font_chat = customFonts.chat;
+                  currentUser.font_forum = customFonts.forum;
+                  currentUser.font_article = customFonts.article;
+                }
+                showProfileStatus('字体已保存', 'ok');
+              } catch (err) {
+                showProfileStatus(err.message || '保存失败，请稍后再试', 'error');
+              }
+            }
+
+            /* 只把四个字段发过去, 服务端看到别的字段没传就不动它们。
+                  滑条拖的是 input 事件 (实时预览), 真正发请求的是 change ——
+                  不然拖一下就是几十个请求 */
+            async function saveCustomFields(quiet) {
+              clearTimeout(customSaveTimer);
+              try {
+                await apiPost('/api/profile', {
+                  bg_image: customState.bg_image || '',
+                  bg_blur: customState.bg_blur,
+                  chat_bg: customState.chat_bg || '',
+                  chat_blur: customState.chat_blur
+                });
+                // 顺手把自己那份会话缓存也更新一下 (别的地方要看 chat_bg)
+                if (currentUser) {
+                  currentUser.bg_image = customState.bg_image || null;
+                  currentUser.bg_blur = customState.bg_blur;
+                  currentUser.chat_bg = customState.chat_bg || null;
+                  currentUser.chat_blur = customState.chat_blur;
+                }
+                showProfileStatus(quiet ? '已保存' : '背景已保存', 'ok');
+              } catch (err) {
+                showProfileStatus(err.message || '保存失败，请稍后再试', 'error');
+              }
+            }
+
+            // 把 customState 画到两张卡片上 (缩略图 / 移除键 / 模糊度滑条)
+            function renderCustomState() {              ['profile', 'chat'].forEach((kind) => {
+                const key = kind === 'profile' ? 'bg_image' : 'chat_bg';
+                const blurKey = kind === 'profile' ? 'bg_blur' : 'chat_blur';
+                const url = customState[key] || '';
+                const blur = customState[blurKey] || 0;
+
+                const thumb = document.getElementById('thumb-' + kind + '-bg');
+                if (thumb) {
+                  thumb.innerHTML = '';
+                  if (url) {
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.alt = '';
+                    img.style.filter = 'blur(' + blurPx(blur) + ')';
+                    thumb.appendChild(img);
+                  } else {
+                    thumb.appendChild(el('span', 'custom-thumb-empty', I18N.t('opt.NotSet')));
+                  }
+                }
+                const clear = document.getElementById('clear-' + kind + '-bg');
+                if (clear) clear.hidden = !url;
+                const slider = document.getElementById('blur-' + kind);
+                if (slider) {
+                  slider.value = String(blur);
+                  slider.style.setProperty('--fill', blur + '%');   // 滑条已抵达段的比例
+                }
+                /* 没设图: 整张卡片收起缩略图 */
+                const card = document.getElementById('card-' + kind + '-bg');
+                if (card) card.classList.toggle('is-empty', !url);
+                const value = document.getElementById('blur-' + kind + '-value');
+                if (value) value.textContent = String(blur);
+                /* 模糊度横条只在有图的时候展开, 而且展开/收起要有动画 —— 所以不用 hidden, 改加 .is-on,
+                      由 page-profile.css 的 max-height + opacity 过渡负责动 (上传后 / 移除后都会跑) */
+                const blurRow = document.getElementById('blur-row-' + kind);
+                if (blurRow) blurRow.classList.toggle('is-on', !!url);
+              });
+              applyBackgrounds();
+            }
+
+            // 看别人主页时拿到的公开背景 (bg_image / bg_blur); 自己的页面不用它
+            let viewedUserBg = null;
+
+            /* 背景落地: 主页背景 → html.has-bg-image, body::before 那层紫色柔光换成图片;
+                  聊天背景 → html.has-chat-bg, .chat-body 底下的伪元素铺图 (样式在 main.css, 私信页也用)。
+                  两者都立刻生效 (选完图不保存也能先看到效果), 保存后才是别人的事 */
+            function applyBackgrounds(skipLayerSync) {
+              const root = document.documentElement;
+              // 自己的资料页用表单里那份; 别人的主页用 /api/user 拿回来的公开背景
+              const bgImage = isPublicView ? ((viewedUserBg && viewedUserBg.bg_image) || '') : customState.bg_image;
+              const bgBlur = isPublicView ? ((viewedUserBg && viewedUserBg.bg_blur) || 0) : customState.bg_blur;
+              if (bgImage) {
+                root.style.setProperty('--bg-img', 'url("' + bgImage.replace(/"/g, '%22') + '")');
+                root.style.setProperty('--bg-blur', blurPx(bgBlur));
+                /* 只有真的模糊了才给 --bg-filter: blur(0px) 也不是空操作 —— 它会把图层提成独立纹理,
+                      在缩放/重采样下边缘会成一条 1px 细线 */
+                root.style.setProperty('--bg-filter', bgBlur > 0 ? 'blur(' + blurPx(bgBlur) + ')' : 'none');
+                root.classList.add('has-bg-image');
+              } else {
+                root.classList.remove('has-bg-image');
+                root.style.removeProperty('--bg-img');
+                root.style.removeProperty('--bg-blur');
+                root.style.removeProperty('--bg-filter');
+              }
+              // 聊天背景是私密项: 别人的主页上不该套上「我的」聊天背景
+              if (!isPublicView && customState.chat_bg) {
+                root.style.setProperty('--chat-img', 'url("' + customState.chat_bg.replace(/"/g, '%22') + '")');
+                root.style.setProperty('--chat-blur', blurPx(customState.chat_blur));
+                root.classList.add('has-chat-bg');
+              } else {
+                root.classList.remove('has-chat-bg');
+                root.style.removeProperty('--chat-img');
+                root.style.removeProperty('--chat-blur');
+              }
+              // 图层高度要按新的内容量重算一次 (拖模糊滑条时跳过 —— 模糊不影响高度,
+              // 而量高度会强制回流)
+              if (!skipLayerSync) syncBgLayer();
+            }
+
+            /* 背景画布 / 可见高度
+                  --bg-fade-h 画布高 (一屏 + 200px, 只跟视口有关 → 渐变几何恒定) / --bg-visible-h 实际显示多高
+                  (跟着页脚位置走 = 「裁剪」那一下) / --bg-img-size 图片 cover 到固定画布后的尺寸。
+                  不能靠 clip-path 裁 (它只裁绘制, 不减可滚动区域, 元素高过内容照样撑出滚动条); 内容高要自己算
+                  (页脚底边 + 下外边距), 不能读 scrollHeight (图层 absolute;top:0 比内容高就会把它顶上去 → 自激);
+                  拖模糊滑条时不要调它 (量高度会强制回流, 滑条会掉手感)。
+                  长页面上只剩顶上 ~600px 有图, 是被接受的行为 (别再改回铺满整屏那种横幅效果) */
+            const BG_TAIL_PX = 0;    // 裁到哪: 0 = 正好停在页脚上沿
+            const BG_EXTRA_VH = 200; // 画布 = 一屏 + 这么多
+            let bgProbeUrl = '';
+            let bgProbeW = 0;
+            let bgProbeH = 0;
+            let bgCanvasKey = ''; // 画布尺寸指纹: 同一个画布不用重算
+
+            /* 把「cover 到固定画布」的尺寸算出来写进 --bg-img-size。
+                  为什么要自己算: 元素高会随裁剪变小, 直接用 cover 会跟着换比例尺 (看着像缩放)。
+                  图片可能跨域, 这里只看 naturalWidth/Height (不用 canvas, 不受 CORS 限制) */
+            function syncBgImageSize(url, fadeH) {
+              if (!url) return;
+              const root = document.documentElement;
+              const apply = () => {
+                if (!bgProbeW || !bgProbeH) return;
+                // 用 innerWidth 而不是 clientWidth —— 竖向滚动条出现/消失会让 clientWidth 跳 7~15px,
+                // 而滚动条又取决于当前页签的内容多少, 那就会变成「切页签图微微缩放」。
+                // innerWidth 不随内容变, 于是画布宽恒定 (图稍微宽一点没关系, 反正会被裁)
+                const canvasW = Math.max(root.clientWidth, window.innerWidth);
+                const key = canvasW + 'x' + Math.round(fadeH);
+                if (key === bgCanvasKey) return;
+                bgCanvasKey = key;
+                const scale = Math.max(canvasW / bgProbeW, fadeH / bgProbeH);
+                root.style.setProperty('--bg-img-size',
+                  Math.round(bgProbeW * scale) + 'px ' + Math.round(bgProbeH * scale) + 'px');
+              };
+              if (url !== bgProbeUrl) {
+                bgProbeUrl = url;
+                bgProbeW = 0;
+                bgProbeH = 0;
+                bgCanvasKey = '';
+                const probe = new Image();
+                probe.onload = () => {
+                  bgProbeW = probe.naturalWidth;
+                  bgProbeH = probe.naturalHeight;
+                  apply();
+                };
+                probe.onerror = () => { /* 取不到尺寸就退化成 CSS 里的兜底值 */ };
+                probe.src = url;
+                return;
+              }
+              apply();
+            }
+
+            function syncBgLayer() {
+              const root = document.documentElement;
+              if (!root.classList.contains('has-bg-image')) return;
+              const footer = document.querySelector('.site-footer');
+              if (!footer) return; // layout.js 还没把页脚挂上
+              const vh = root.clientHeight;
+              // 画布: 只跟视口有关 —— 这条要是变了, 切页签背景就会「像缩放」
+              const fadeH = vh + BG_EXTRA_VH;
+              const rect = footer.getBoundingClientRect();
+              const marginBottom = parseFloat(getComputedStyle(footer).marginBottom) || 0;
+              const footTop = rect.top + window.scrollY;
+              const contentH = rect.bottom + window.scrollY + marginBottom;
+              /* 显示到哪: 正好到页脚上沿, 再给 80% 画布高的下限兜底, 最多到画布底。
+                    不写 max(vh, …): 那个「至少铺满一屏」会把裁剪点顶到折线。
+                    下限必须到 80% —— 渐变的纯底色停点在画布 80% 处 (见 page-profile.css 那串 gradient),
+                    页脚比它靠上时图层会在「渐变还没到底色」的地方被硬砍一刀 (= 贯穿全页的 1px 细线)。
+                    0.8 必须与 page-profile.css 的 var(--c-page-bg) 80% 一致, 改一边要改两边 */
+              const BG_SOLID_FRACTION = 0.8;
+              const visible = Math.min(fadeH, Math.max(240, footTop + BG_TAIL_PX, fadeH * BG_SOLID_FRACTION));
+
+              const setVar = (name, value) => {
+                if (root.style.getPropertyValue(name) !== value) root.style.setProperty(name, value);
+              };
+              /* 图层底边要落在整数设备像素上 (设备像素 = css px × devicePixelRatio × 浏览器缩放)。
+                    非整数设备像素的那一行会被抗锯齿混出一层, 就是「1px 细线」。
+                    +1 是再往下多铺 1 个设备像素: 那一行本来就是纯页面底色, 这样边缘既不落在半像素上,
+                    也不怕图片 / 渐变有亚像素偏移 */
+              const devFactor = window.devicePixelRatio || 1;
+              const snapDevice = (v) => (Math.ceil(v * devFactor) + 1) / devFactor;
+              setVar('--bg-fade-h', Math.round(fadeH) + 'px');
+              setVar('--bg-visible-h', snapDevice(visible) + 'px');
+              // 图尺寸依赖画布宽高, 一起更新 (画布变了会自动重算)
+              const url = String(root.style.getPropertyValue('--bg-img') || '')
+                .replace(/^url\(["']?/, '').replace(/["']?\)$/, '');
+              syncBgImageSize(url, fadeH);
+              // 调试用: 内容高 / 可见高
+              root.dataset.bgContentH = String(Math.round(contentH));
+              root.dataset.bgVisibleH = String(Math.round(visible));
+            }
+
+            /* 内容量会变（数据回来、头像图加载、折行、切页签），所以不能只量一次 */
+            let bgLayerRaf = 0;
+            function queueBgLayerSync() {
+              if (bgLayerRaf) return;
+              bgLayerRaf = requestAnimationFrame(() => {
+                bgLayerRaf = 0;
+                syncBgLayer();
+              });
+            }
+
+            function bindBgLayerSync() {
+              window.addEventListener('resize', queueBgLayerSync);
+              window.addEventListener('load', queueBgLayerSync);
+              if (window.ResizeObserver) {
+                const ro = new ResizeObserver(queueBgLayerSync);
+                // 盯住内容那一块（背景图层是 body 的伪元素, 不影响它的高度 → 不会自激）
+                ro.observe(document.querySelector('.page-layout') || document.body);
+              }
+              if (document.fonts && document.fonts.ready) {
+                document.fonts.ready.then(queueBgLayerSync).catch(() => {});
+              }
+            }
+
+            /* 上传背景图: 和文章编辑器的「插入图片」一套 —— 桌面先弹框 (拖放区 + 点选 + 预览),
+                  选好点「使用这张」才真的换上; 手机没有拖放这回事, 直接开系统选择器。
+                  上传与「换上」是两步 —— 文件先传进桶 (URL 放进 pendingCustomImage),
+                  点确认才写进 customState + 存档, 这样中途关掉弹窗不会把旧图换掉 */
+            const PROFILE_TOUCH_ONLY = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+            const IMG_UPLOAD_HINT = '也可以点这里选本地文件 · PNG / JPG / WebP / GIF · 20 MB 以内';
+            let pendingCustomImage = null; // { kind, url, name }
+
+            function formatFileSize(bytes) {
+              if (!bytes && bytes !== 0) return '';
+              if (bytes < 1024) return bytes + ' B';
+              if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+              return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+            }
+
+            /* 这次「选文件」是为了什么: { kind: 'profile'|'chat', preview: bool }
+                  以前这个意图存在 picker.dataset.preview 上, 而 change 处理器一进来就把它清成 '' ——
+                  只要有一次没走完 (对话框被取消 / 连着点两下), 下一次就会掉进「选完立刻换上」那条路,
+                  表现就是「第一次没反应、第二次才生效」。改成普通变量, 只有 change 那一次读它 */
+            let customImageIntent = null;
+
+            function pickCustomImage(kind) {
+              const picker = document.getElementById('custom-image-file');
+              if (!picker) return;
+              picker.dataset.kind = kind;
+              picker.value = ''; // 同一张图连选两次也要能触发 change
+              if (PROFILE_TOUCH_ONLY) {
+                customImageIntent = { kind, preview: false }; // 手机: 没有拖放这回事, 选完直接换上
+                picker.click();
+                return;
+              }
+              customImageIntent = { kind, preview: true }; // 桌面: 选完只上传+预览, 等「使用」
+
+              pendingCustomImage = null;
+              showMessage(
+                '<p class="modal-preview-title">上传' + (kind === 'chat' ? '聊天背景' : '主页背景') + '</p>' +
+                '<div class="img-drop" id="custom-img-drop">' +
+                  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+                    '<path d="M12 16V4"></path><path d="m7.5 8.5 4.5-4.5 4.5 4.5"></path>' +
+                    '<path d="M4 16v2.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V16"></path>' +
+                  '</svg>' +
+                  '<p class="img-drop-title">把图片拖到这里</p>' +
+                  '<p class="img-drop-hint">' + IMG_UPLOAD_HINT + '</p>' +
+                '</div>' +
+                '<div class="img-picked" id="custom-img-picked" hidden>' +
+                  '<img id="custom-img-picked-img" alt="">' +
+                  '<p class="img-picked-meta" id="custom-img-meta"></p>' +
+                '</div>' +
+                /* 上传中: 传完之前先把拖放区换成这一块, 不然选完文件看着就是「什么都没发生」。 */
+                '<div class="img-picked" id="custom-img-busy" hidden>' +
+                  '<div class="busy-spinner"></div>' +
+                  '<p class="img-picked-meta" id="custom-img-busy-text">上传中…</p>' +
+                '</div>' +
+                '<div class="confirm-actions">' +
+                  '<button type="button" class="btn" id="custom-img-confirm" disabled>使用</button>' +
+                  '<button type="button" class="btn-outline" onclick="closeModal()">取消</button>' +
+                '</div>'
+              );
+
+              const drop = document.getElementById('custom-img-drop');
+              const confirm = document.getElementById('custom-img-confirm');
+              if (drop) {
+                drop.addEventListener('click', () => { picker.value = ''; picker.click(); });
+                ['dragenter', 'dragover'].forEach((evt) => drop.addEventListener(evt, (e) => {
+                  e.preventDefault();
+                  drop.classList.add('is-over');
+                }));
+                ['dragleave', 'dragend'].forEach((evt) => drop.addEventListener(evt, () => drop.classList.remove('is-over')));
+                drop.addEventListener('drop', (e) => {
+                  e.preventDefault();
+                  drop.classList.remove('is-over');
+                  const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+                  if (file) uploadCustomImage(file, kind, { previewOnly: true });
+                  else showToast('未接收到文件', 'warn');
+                });
+              }
+              if (confirm) confirm.addEventListener('click', usePickedCustomImage);
+            }
+
+            // 弹窗里那颗「使用」: 把已经传好的 URL 真的换上 (传完不自动换, 就是等这一下)
+            async function usePickedCustomImage() {
+              if (!pendingCustomImage) return;
+              const { kind, url } = pendingCustomImage;
+              pendingCustomImage = null;
+              if (kind === 'profile') customState.bg_image = url;
+              else customState.chat_bg = url;
+              renderCustomState();
+              applyBackgrounds();   // 缩略图之外, 页面/聊天背景也要立刻换
+              closeModal();
+              await saveCustomFields();
+              showProfileStatus('背景已更新', 'ok');
+            }
+
+            async function uploadCustomImage(file, kind, options) {
+              const previewOnly = !!(options && options.previewOnly);
+              if (file.size > 5 * 1024 * 1024) {
+                showProfileStatus('背景图不能超过 5 MB', 'warn');
+                return;
+              }
+              const meta = document.getElementById('custom-img-meta');
+              const dropZone = document.getElementById('custom-img-drop');
+              const busyBox = document.getElementById('custom-img-busy');
+              const busyText = document.getElementById('custom-img-busy-text');
+              const info = (file.name || '图片') + ' · ' + formatFileSize(file.size);
+              /* 上传中必须有看得见的反馈 (以前只有一行藏在 hidden 里的字, 看起来就是没反应)。
+                    桌面这条路不能弹 showBusyModal —— 它会把上传弹窗的内容整个换掉, 预览图和「使用」就都没了;
+                    所以改成在上传弹窗内部换成「上传中…」, 并把拖放区收起 (传完之前不能再选文件) */
+              if (previewOnly) {
+                if (dropZone) dropZone.hidden = true;
+                if (busyBox) busyBox.hidden = false;
+                if (busyText) busyText.textContent = info + ' · 上传中…';
+              }
+              const busy = previewOnly ? null : showForaineToast({ text: I18N.t('foraine-toast.loading'), block: true });
+              try {
+                const form = new FormData();
+                form.append('file', file);
+                form.append('kind', kind); // profile | chat → 服务端存成 img/<用户名>/profile-image.*
+                const res = await fetch('/api/image', { method: 'POST', body: form });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(data.error || '上传失败');
+
+                if (previewOnly) {
+                  /* 传完就只预览: 拖放区收起 (它已经没用了), 露出预览 + 「使用」——
+                        真的要换上得用户自己点那一下 */
+                  pendingCustomImage = { kind, url: data.url, name: file.name || '' };
+                  const img = document.getElementById('custom-img-picked-img');
+                  const box = document.getElementById('custom-img-picked');
+                  const drop = document.getElementById('custom-img-drop');
+                  const btn = document.getElementById('custom-img-confirm');
+                  if (busyBox) busyBox.hidden = true;
+                  if (img) img.src = data.url;
+                  if (box) box.hidden = false;
+                  if (drop) drop.hidden = true;
+                  if (meta) meta.textContent = (file.name || '图片') + ' · ' + formatFileSize(file.size) + ' · 已上传，点「使用」换上';
+                  if (btn) btn.disabled = false;
+                  return;
+                }
+
+                if (kind === 'profile') customState.bg_image = data.url;
+                else customState.chat_bg = data.url;
+                renderCustomState();
+                await saveCustomFields(); // 上传完立刻存 (不靠下面那个保存按钮)
+              } catch (err) {
+                // 失败要把拖放区放回来, 不然弹窗里只剩一块「上传中…」
+                if (previewOnly) {
+                  if (busyBox) busyBox.hidden = true;
+                  if (dropZone) dropZone.hidden = false;
+                }
+                showProfileStatus(err.message, 'error');
+              } finally {
+                if (busy) busy.close();
+              }
+            }
+
+            function removeCustomImage(kind) {
+              if (kind === 'profile') {
+                customState.bg_image = '';
+                customState.bg_blur = 0;
+              } else {
+                customState.chat_bg = '';
+                customState.chat_blur = 0;
+              }
+              renderCustomState();
+              saveCustomFields(); // 移除也是立刻生效
+            }
+
+            // 位置栏的「定位」: 浏览器经纬度 → 服务端转 Nominatim → 填回输入框
+            function locateMe() {
+              const btn = document.getElementById('profile-locate');
+              const input = document.getElementById('extra-location');
+              if (!navigator.geolocation) {
+                showProfileStatus('这个浏览器不支持定位', 'warn');
+                return;
+              }
+              const label = btn.textContent;
+              btn.disabled = true;
+              btn.dataset.i18n = 'opt.locate.processing'
+              btn.textContent = '定位中…';
+              const done = () => {
+                btn.disabled = false;
+                btn.textContent = label;
+              };
+              navigator.geolocation.getCurrentPosition(async (pos) => {
+                try {
+                  const res = await fetch('/api/geo/reverse?lat=' + pos.coords.latitude
+                    + '&lon=' + pos.coords.longitude, { cache: 'no-store' });
+                  const data = await res.json().catch(() => ({}));
+                  if (!res.ok) throw new Error(data.error || '定位失败');
+                  input.value = data.label;
+                  refreshProfileSaveState();
+                  showProfileStatus(I18N.t('target.filledIn', '已填入：{value}', { value: data.label }), 'ok');
+                } catch (err) {
+                  showProfileStatus(err.message, 'error');
+                } finally {
+                  done();
+                }
+              }, () => {
+                done();
+                showProfileStatus(I18N.t('locate.error-Unable2Get'), 'error');
+              }, { timeout: 10000, maximumAge: 600000 });
+            }
+
+            function bindProfileForm() {
+              const ids = ['nickname-input', 'bio-input', 'other-input', 'email-input']
+                .concat(OTHER_FIELDS.map((f) => f.el));
+              ids.forEach((id) => {
+                document.getElementById(id).addEventListener('input', refreshProfileSaveState);
+              });
+              // 邮箱框一改动, 「验证邮箱」按钮的显隐也要跟着变 (合规才出现)
+              document.getElementById('email-input').addEventListener('input', () => renderEmailAction(currentUser));
+              ['bio-input', 'other-input'].forEach((id) => {
+                const elm = document.getElementById(id);
+                elm.addEventListener('input', () => autoGrow(elm));
+                autoGrow(elm);
+              });
+
+              // 个性化: 两张卡片的模糊度滑条 + 共用的文件选择器
+              ['profile', 'chat'].forEach((kind) => {
+                const slider = document.getElementById('blur-' + kind);
+                if (!slider) return;
+                // 拖的时候只做预览 (缩略图 + 真背景), 松手 (change) 才发请求
+                slider.addEventListener('input', () => {
+                  const n = Math.max(0, Math.min(100, parseInt(slider.value, 10) || 0));
+                  if (kind === 'profile') customState.bg_blur = n;
+                  else customState.chat_blur = n;
+                  // 只更新这两个小字与预览, 不整块重画 (拖滑条时重建 DOM 会掉手感)
+                  const value = document.getElementById('blur-' + kind + '-value');
+                  if (value) value.textContent = String(n);
+                  slider.style.setProperty('--fill', n + '%');
+                  const thumb = document.querySelector('#thumb-' + kind + '-bg img');
+                  if (thumb) thumb.style.filter = 'blur(' + blurPx(n) + ')';
+                  applyBackgrounds(true); // true = 别量高度, 拖的时候要跟手
+                });
+                slider.addEventListener('change', () => saveCustomFields(true));
+              });
+              const picker = document.getElementById('custom-image-file');
+              if (picker) {
+                picker.addEventListener('change', () => {
+                  const file = picker.files && picker.files[0];
+                  /* 意图读完不能清 —— 上传没完之前又选了一次文件时, 第二次 change 就查不到意图,
+                        掉进「传完直接换上」那条老路 (连预览都跳过)。
+                        它由 pickCustomImage 在每次开弹窗时重写, 不在这里清 */
+                  const intent = customImageIntent;
+                  if (!file) return;   // 对话框被取消: 什么都不做 (以前这里会误清预览标记)
+                  const kind = (intent && intent.kind) || (picker.dataset.kind === 'chat' ? 'chat' : 'profile');
+                  // 兜底: 没有意图时也按「桌面=先预览 / 触屏=传完直接换上」走, 不走老路
+                  const previewOnly = intent ? !!intent.preview : !PROFILE_TOUCH_ONLY;
+                  uploadCustomImage(file, kind, { previewOnly });
+                });
+              }
+            }
+
+            // Ctrl/Cmd + S 保存修改: 没改动(按钮还是禁用的)就什么也不做,
+            // 有改动就顶掉浏览器自带的「保存网页」(不再弹下载框)
+            function bindProfileShortcuts() {
+              document.addEventListener('keydown', (e) => {
+                if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+                if (e.key.toLowerCase() !== 's') return;
+                e.preventDefault();
+                const save = document.getElementById('profile-save');
+                if (save && !save.disabled) saveProfileChanges();
+              });
+            }
+
+            async function saveProfileChanges() {
+              // 点下去先挂一块「保存进度...」牌子 (1 秒), 不封屏幕
+              showForaineToast({ text: I18N.t('foraine-toast.saveProgress'), duration: 1500 });
+              const form = readProfileForm();
+              if (!form.nickname) {
+                showProfileStatus(I18N.t('profile.pf.nickname.toast-error-empty-nickname'), 'error');
+                return false;
+              }
+              // 没绑邮箱的人直接点「保存更改」也要过这一关 (服务端也会验, 但别让人白跑一趟)
+              if (form.email && !isValidEmailAddress(form.email)) {
+                showProfileStatus(I18N.t('email.error-NameNotSuitable'), 'error');
+                document.getElementById('email-input').focus();
+                return false;
+              }
+              const payload = {
+                nickname: form.nickname,
+                bio: form.bio,
+                other: composeOther(form)
+              };
+              /* 邮箱平时不提交 —— 有邮箱时它是只读的, 换邮箱只能走「换绑」
+                    (服务端 handleSaveProfile 会把「想改已存在的邮箱」的请求拒掉)。
+                    只有一种情况要带上它: 从来没绑过邮箱 (form.email 有值) */
+              if (form.email) payload.email = form.email;
+              // 成功不弹文字提示 (提示交给按钮自己的「已保存」)
+              if (!(await saveProfileField(payload, ''))) return false;
+
+              // 绑定邮箱
+              if (form.email && currentUser) {
+                currentUser.email = form.email;
+                currentUser.email_verified = false;
+                applyEmailState(currentUser);
+                showToast(I18N.t('toast.email.ok-bindingCompleted'), 'ok');
+                showForaineToast({ text: I18N.t('foraine-toast.foraineWouldRemember'), duration: 3000 });
+              }
+
+              profileBaseline = form; // 新基线: 按钮回到禁用
+              resetSaveButton();
+              refreshProfileSaveState();
+              showSavedState();
+              document.getElementById('profile-nickname').textContent = form.nickname;
+              document.getElementById('profile-bio').textContent = form.bio || '无，所以无穷';
+              renderProfileSide(currentUser);
+              renderEmailAction(currentUser);
+              return true;
+            }
+
+            /* 账号邮箱 (验证 / 换绑)
+                  邮箱存在 users.email。规矩: 注册时必填, 验证前后都不给直接改 (框子一直只读);
+                  想换就走「换绑」: 验密码 → 旧邮箱收确认信 → 点开链接回到本页 → 立刻填新邮箱才真的换掉。
+                  为什么这么严: 邮箱是身份凭证 (注销要验证码、改密要收链接), 谁能随手换邮箱谁就能注销别人的号 */
+            function emailIsVerified(user) {
+              return Boolean(user && user.email_verified && user.email);
+            }
+
+            // 站点还没配 Resend 密钥: 先告诉用户, 别让人白输一次密码
+            function mailServiceReady() {
+              if (currentUser && currentUser.mail_ready === false) {
+                showProfileStatus(I18N.t('email.error-NoService'), 'error');
+                return false;
+              }
+              return true;
+            }
+
+            function applyEmailState(user) {
+              /* 从没绑过邮箱 (users.email 为空) 的账号, 框是可编辑的, 面板会催他填 + 保存即绑定
+                    (服务端只允许这种一次性绑定); 一旦有值就一律只读 —— 换邮箱只有「换绑」一条路 */
+              const input = document.getElementById('email-input');
+              const email = (user && user.email) || '';
+              input.readOnly = !!email;
+              input.classList.toggle('is-locked', !!email);
+              input.title = !email
+                ? '填好邮箱后点「保存更改」——一旦保存就不可再更改'
+                : (emailIsVerified(user)
+                  ? '已验证的邮箱不能直接更改，请「换绑邮箱」'
+                  : '邮箱在验证前不能修改，请「验证邮箱」');
+              input.value = email;
+              renderEmailNotice(user);
+            }
+
+            /* 邮箱提示面板: 没绑 → 红边 + [绑定邮箱]; 绑了没验证 → 黄边 + [验证邮箱]; 已验证 → 整块收起。
+                  面板里那两句话是定死的文案, 别改写 */
+            function renderEmailNotice(user) {
+              const box = document.getElementById('email-notice');
+              if (!box) return;
+              const btn = document.getElementById('email-notice-btn');
+              const text = document.getElementById('email-notice-text');
+              const email = (user && user.email) || '';
+              if (emailIsVerified(user)) { box.hidden = true; return; }
+              box.hidden = false;
+              const fresh = !email;   // 从来没绑过
+              box.classList.toggle('is-danger', fresh);
+              box.classList.toggle('is-warn', !fresh);
+              if (fresh) {
+                btn.dataset.i18n = 'opt.bind'
+                btn.onclick = () => {
+                  const input = document.getElementById('email-input');
+                  if (!input) return;
+                  const value = input.value.trim();
+                  if (!value) {
+                    showProfileStatus(I18N.t('email.warn-EmptyAddress'), 'warn');
+                    input.focus();
+                    return;
+                  }
+                  if (!isValidEmailAddress(value)) {
+                    showProfileStatus(I18N.t('email.error-NameNotSuitable'), 'error');
+                    input.focus();
+                    return;
+                  }
+                  saveProfileChanges();
+                };
+                text.dataset.i18n = 'profile.pf.email.notice.unbound';
+              } else {
+                btn.dataset.i18n = 'opt.verify'
+                btn.onclick = () => verifyEmail();
+                text.dataset.i18n = 'profile.pf.email.notice.unverified';
+              }
+            }
+
+
+            /* 注销按钮什么时候该灰: 已经提交过注销 / 取消注销还在 7 天冷静期里 */
+            function renderAccountGates(user) {
+              const btn = document.getElementById('account-delete');
+              if (!btn) return;
+              const pending = user && user.pending_delete;
+              const cooldown = user && user.delete_cooldown;
+              btn.disabled = !!(pending || cooldown);
+              btn.title = pending
+                ? I18N.t('hint.accountAlreadyInDeactivated')
+                : (cooldown ? I18N.t('hint.accountDeletionRequestOverflow', {value: cooldown.daysLeft}) : '');
+            }
+
+            function renderEmailAction(user) {
+              // 两个动作按钮互斥: 已验证 → 「换绑邮箱」; 未验证 → 有邮箱就能「验证邮箱」。
+              const verifyBtn = document.getElementById('email-verify');
+              const rebindBtn = document.getElementById('email-rebind');
+              if (!verifyBtn || !rebindBtn) return;
+
+              if (emailIsVerified(user)) {
+                verifyBtn.hidden = true;
+                rebindBtn.hidden = false;
+                return;
+              }
+              rebindBtn.hidden = true;
+              verifyBtn.hidden = !isValidEmailAddress(currentEmailInput());
+            }
+
+            function currentEmailInput() {
+              // 邮箱框永远是只读的, 所以“当前邮箱”就是服务端给的那个
+              const input = document.getElementById('email-input');
+              return (input && input.value.trim()) || (currentUser && currentUser.email) || '';
+            }
+
+            // 邮箱格式校验现在是 core.js 里的 isValidEmailAddress() (注册页 / 个人页共用一份)
+            // —— 与 worker.js 的 isValidEmail 保持一致, 别在这里再写一份
+
+            async function verifyEmail() {
+              if (!currentUser) return;
+              if (!mailServiceReady()) return;
+              const email = currentUser.email || '';
+              if (!email) {
+                return;
+              }
+              try {
+                const res = await apiPost('/api/email/verify', {});
+                // 有效期由服务端给 (链接能活多久只有它知道)
+                showProfileStatus(I18N.t('target.emailSent', {
+                  target: (res && res.email) || email,
+                  value: (res && res.ttl_minutes) || 30
+                }), 'ok');
+              } catch (error) {
+                showProfileStatus(error.message, 'error');
+              }
+            }
+
+            /* 换绑邮箱 */
+            async function rebindEmailStart() {
+              if (!currentUser) return;
+              if (!mailServiceReady()) return;
+              const go = await confirmAction({
+                title: I18N.t('ops.changeEmail'),
+                message: I18N.t('ops.changeEmail.a-ctn'),
+                confirmText: I18N.t('opt.continue'),
+                warning: ''
+              });
+              if (!go) return;
+
+              const busy = showForaineToast({ text: I18N.t('foraine-toast.loading'), block: true });
+              try {
+                await apiPost('/api/email/unbind', {});
+              } catch (error) {
+                showProfileStatus(error.message || I18N.t('toast.email.error-Failed2SentEmail'), 'error');
+                return;
+              } finally {
+                busy.close();
+              }
+              showProfileStatus(I18N.t('target.emailSent', {target: currentUser.email, value: 5}), 'ok');
+
+              let pass = '';
+              const verified = await confirmAction({
+                title: I18N.t('opt.verify'),
+                message: I18N.t('ops.changeEmail.b-ctn', {value: 6}),
+                confirmText: I18N.t('opt.continue'),
+                warning: '',
+                lock: true,
+                fields: [{ name: 'code', placeholder: I18N.t('value.digit', {value:6}), required: true, maxlength: 6 }],
+                onConfirm: async (value, api) => {
+                  const typed = String(value.code || '').trim();
+                  if (!/^\d{6}$/.test(typed)) {
+                    api.setError(I18N.t('toast.error-WrongCode'));
+                    return false;
+                  }
+                  try {
+                    const r = await apiPost('/api/email/unbind/verify', { code: typed });
+                    pass = r.pass || '';
+                  } catch (error) {
+                    api.setError(error.message || I18N.t('toast.error-WrongCode'));
+                    return false;
+                  }
+                  return true;
+                }
+              });
+              if (!verified || !pass) return;
+              await openRebindDialog(pass);
+            }
+
+            async function openRebindDialog(pass) {
+              if (!pass) return;
+              if (!currentUser) return;
+
+              let next = '';
+              const ok = await confirmAction({
+                title: I18N.t('ops.changeEmail'),
+                message: I18N.t('ops.changeEmail.c-ctn'),
+                confirmText: I18N.t('opt.continue'),
+                warning: '',
+                lock: true,
+                fields: [
+                  { name: 'email', placeholder: 'your-email@example.com', maxlength: 120, required: true }
+                ],
+                onConfirm: async (value, api) => {
+                  const email = String(value.email || '').trim();
+                  if (!isValidEmailAddress(email)) {
+                    api.setError(I18N.t('email.error-NameNotSuitable'));
+                    return false;
+                  }
+                  try {
+                    const sent = await apiPost('/api/email/rebind', { pass, email });
+                    next = sent.email || email;
+                  } catch (error) {
+                    api.setError(error.message || I18N.t('hint.operation.failed'));
+                    return false;
+                  }
+                  return true;
+                }
+              });
+              if (!ok) return;
+            
+              const done = await confirmAction({
+                title: I18N.t('opt.verify'),
+                message: I18N.t('target.emailSent', {target: next, value: 10}),
+                confirmText: I18N.t('opt.confirm'),
+                warning: '',
+                lock: true,
+                fields: [
+                  { name: 'code', placeholder: I18N.t('value.digit', {value:6}), required: true, maxlength: 6 }
+                ],
+                onConfirm: async (value, api) => {
+                  const typed = String(value.code || '').trim();
+                  if (!/^\d{6}$/.test(typed)) {
+                    api.setError(I18N.t('toast.error-WrongCode'));
+                    return false;
+                  }
+                  try {
+                    await apiPost('/api/email/rebind/confirm', { code: typed });
+                  } catch (error) {
+                    api.setError(error.message || I18N.t('toast.error-WrongCode'));
+                    return false;
+                  }
+                  return true;
+                }
+              });
+              if (!done) return;
+
+              showProfileStatus(I18N.t('toast.email.ok-reboundSuccessful'), 'ok');
+              showForaineToast({ text: I18N.t('foraine-toast.foraineWouldRemember'), duration: 3000 });
+              try {
+                currentUser = await getCurrentUser();
+                fillProfileForm(currentUser);
+                renderProfileSide(currentUser);
+                applyEmailState(currentUser);
+                renderEmailAction(currentUser);
+              } catch (error) { }
+            }
+
+            /* 重置密码 */
+            async function resetPassword() {
+              if (!currentUser) return;
+              const go = await confirmAction({
+                title: I18N.t('account.resetPassword'),
+                message: I18N.t('ops.resetPassword.a-ctn'),
+                confirmText: I18N.t('opt.continue'),
+                warning: ''
+              });
+              if (!go) return;
+
+              const busy = showForaineToast({ text: I18N.t('foraine-toast.loading'), block: true });
+              let busyGone = false;
+              const dropBusy = () => { if (!busyGone) { busyGone = true; busy.close(); } };
+              let verified;
+              try {
+                verified = await window.verifyIdentity({ methods: ['totp', 'email'], lock: true, leftCancel: true, beforeWait: dropBusy });
+              } finally {
+                dropBusy();
+              }
+              if (!verified || !verified.pass) return;
+
+              const done = await confirmAction({
+                title: I18N.t('account.resetPassword'),
+                message: I18N.t('ops.resetPassword.b-ctn'),
+                confirmText: I18N.t('opt.set'),
+                warning: '',
+                lock: true,
+                fields: [
+                  { name: 'password', type: 'password', placeholder: I18N.t('label.newPassword'), required: true, maxlength: 200 },
+                  { name: 'password2', type: 'password', placeholder: I18N.t('label.confirmPassword'), required: true, maxlength: 200 }
+                ],
+                onConfirm: async (values, api) => {
+                  if (String(values.password || '').length < 6) {
+                    api.setError(I18N.t('toast.resetPassword.warn-AtLeastChar', {value:6}));
+                    return false;
+                  }
+                  if (values.password !== values.password2) {
+                    api.setError(I18N.t('toast.resetPassword.error-DoesNotMatch'));
+                    return false;
+                  }
+                  try {
+                    await apiPost('/api/password/set', { pass: verified.pass, password: values.password });
+                  } catch (error) {
+                    api.setError(error.message || I18N.t('hint.operation.failed'));
+                    return false;
+                  }
+                  return true;
+                }
+              });
+              if (!done) return;
+              showProfileStatus(I18N.t('toast.resetPassword.success'), 'ok');
+              showForaineToast({ text: I18N.t('foraine-toast.foraineWouldRemember'), duration: 3000 });
+            }
+            
+            /* 退出登录 */
+            async function logout() {
+              const yes = await confirmAction({
+                title: I18N.t('account.logOut'),
+                message: I18N.t('ops.logOut.ctn'),
+                confirmText: I18N.t('opt.confirm'),
+                danger: true,
+                warning: ''
+              });
+              if (!yes) return;
+              await fetch('/api/logout', { method: 'POST', cache: 'no-store' }).catch(() => {});
+              try { localStorage.removeItem('foraine.lang'); } catch (err) {}
+              pageTransitionTo('/index.html');
+            }
+
+            /* 删除账户 */
+            async function deleteAccount() {
+              if (!currentUser) return;
+              if (currentUser.pending_delete) {
+                showProfileStatus(I18N.t('hint.accountAlreadyInDeactivated'), 'warn');
+                return;
+              }
+              if (currentUser.delete_cooldown) {
+                showProfileStatus(I18N.t('hint.accountDeletionRequestOverflow', {value: currentUser.delete_cooldown.daysLeft}), 'warn');
+                return;
+              }
+              if (!emailIsVerified(currentUser)) {
+                showProfileStatus(I18N.t('toast.deleteAccount.warn-emailVerificationNeeded'), 'warn');
+                return;
+              }
+
+              // 注销框 #1
+              const go = await confirmAction({
+                title: I18N.t('account.deleteAccount'),
+                message: I18N.t('ops.deleteAccount.a-ctn'),
+                warning: '',
+                confirmText: I18N.t('opt.continue'),
+                danger: true
+              });
+              if (!go) return;
+
+              // 调用VerifyIdentity
+              const busy = showForaineToast({ text: I18N.t('foraine-toast.loading'), block: true });
+              let busyGone = false;
+              const dropBusy = () => { if (!busyGone) { busyGone = true; busy.close(); } };
+              let verified;
+              try {
+                verified = await window.verifyIdentity({ methods: ['totp', 'email'], lock: true, leftCancel: true, beforeWait: dropBusy });
+              } finally {
+                dropBusy();
+              }
+              if (!verified || !verified.pass) return;
+
+              // 注销框 #2: 最终确认
+              const yes = await confirmAction({
+                title: I18N.t('ops.deleteAccount.b-title'),
+                message: I18N.t('ops.deleteAccount.b-ctn'),
+                warning: '',
+                lock: true,
+                requireText: currentUser.username,
+                requireTextIgnoreCase: true,
+                actions: [
+                  { id: 'stay', text: I18N.t('label.stay') },
+                  { id: 'leave', text: I18N.t('label.MadeMyMind'), danger: true }
+                ]
+              });
+              if (!yes || yes.id !== 'leave') return;
+
+              let deleteAt = 0;
+              const busyDelete = showForaineToast({ text: I18N.t('foraine-toast.loading'), block: true });
+              try {
+                const result = await apiPost('/api/account/delete', {
+                  confirm: currentUser.username,
+                  pass: verified.pass
+                });
+                deleteAt = result.delete_at || (Date.now() + 7 * 86400000);
+              } catch (error) {
+                showProfileStatus(error.message, 'error');
+                return;
+              } finally {
+                busyDelete.close();
+              }
+
+              // 注销框 #3: 再见宣言~
+              await confirmAction({
+                title: I18N.t('label.goodble') + '!',
+                message: I18N.t('ops.deleteAccount.c-ctn'),
+                warning: '',
+                actions: [{ id: 'ok', text: I18N.t('opt.confirm') }]
+              });
+
+              try {
+                currentUser = await getCurrentUser();
+                renderPendingBanner(currentUser);
+                renderAccountGates(currentUser);
+              } catch (error) {}
+              showProfileStatus(I18N.t('toast.deleteAccout.ok-requestSubmitted', {value: formatDate(deleteAt)}), 'warn');
+              showForaineToast({ text: I18N.t('foraine-toast.foraineWouldRemember'), duration: 3000 });
+            }
+
+            /* 注销提示横幅 */
+            function renderPendingBanner(user) {
+              const box = document.getElementById('pending-banner');
+              if (!box) return;
+              const pending = user && user.pending_delete;
+              if (!pending) {
+                box.hidden = true;
+                return;
+              }
+              box.innerHTML = '';
+              box.appendChild(el('p', 'pending-banner-title', I18N.t('notice.deleteAccount.title', {value: pending.daysLeft})));
+              box.appendChild(el('p', 'pending-banner-text',
+                I18N.t('notice.deleteAccount.ctn', {value: formatDate(pending.deleteAt)})));
+              const row = el('div', 'pending-banner-actions');
+              const btn = el('button', 'btn-acrylic', I18N.t('label.cancelAccountDeletion'));
+              btn.type = 'button';
+              btn.onclick = cancelDeletion;
+              row.appendChild(btn);
+              box.appendChild(row);
+              box.hidden = false;
+            }
+            
+            /* 取消注销 */
+            async function cancelDeletion() {
+              const ok = await confirmAction({
+                title: I18N.t('label.cancelAccountDeletion'),
+                message: I18N.t('ops.cancelAccountDeletion.ctn'),
+                confirmText: I18N.t('label.cancelAccountDeletion')
+              });
+              if (!ok) return;
+              try {
+                await withLoading(() => apiPost('/api/account/cancel-deletion', {}));
+                currentUser = await getCurrentUser();
+                renderPendingBanner(currentUser);
+                renderAccountGates(currentUser);
+                showProfileStatus(I18N.t('toast.cancelAccountDeletion.ok-confirmed'), 'ok');
+              } catch (error) {
+                showProfileStatus(error.message, 'error');
+              }
+            }
+        </script>
+    </body>
+</html>

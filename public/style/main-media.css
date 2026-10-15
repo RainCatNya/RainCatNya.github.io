@@ -1,0 +1,596 @@
+/* ==================== main-media.css ==================== */
+/* 窄屏 (≤900px) 专用样式, 按 matchMedia 在加载时注入 (宽屏下连请求都不发); 加载在主样式之后, 同特异性会覆盖 main.css */
+
+/* ==================== 窄屏的控件尺寸 ==================== */
+/* 把按钮令牌与输入框的字号/内边距整体降一档, 不用逐页去改 (同特异性的 :root 会覆盖 main.css) */
+@media (max-width: 900px) {
+  :root {
+    --btn-py: 6px;
+    --btn-px: var(--sp-4); /* 16px */
+    --btn-fs: var(--fs-18);
+  }
+  input, textarea, select {
+    font-size: var(--fs-18);
+    padding: 6px var(--sp-3);
+  }
+  /* 正文小一档; 只改 .article-body 不够 —— 全局 p { font-size } 会压过继承, 那一组元素要一起写 */
+  .article-body {
+    font-size: var(--fs-18);
+  }
+  .article-body :is(p, li, dt, dd, th, td, blockquote, figcaption) {
+    font-size: var(--fs-18);
+  }
+  /* 那三个令牌只管得到 .btn* 那一族, 没走令牌的按钮要单独收一档 */
+  button {
+    font-size: var(--fs-18); /* 裸按钮本来是继承 body 的 20px */
+  }
+  .site-nav button {
+    font-size: var(--fs-18); /* 导航自带 20px (特异性比上面那条高), 得再写一遍 */
+  }
+  /* 右下角那组悬浮圆钮 (目录 / 标签 / 回到顶部): 48 → 44, 仍够手指点 */
+  .action-btn {
+    width: 44px;
+    height: 44px;
+  }
+  /* 页脚那两条让位规则用的还是 48px, 留多点无所谓, 别改小 */
+}
+
+@media (max-width: 640px) {
+  /* 手机上页脚也保持一行: 左边版权、右边 GitHub 图标 */
+  .site-footer {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3);
+    text-align: left;
+  }
+  /* 给右下角那组悬浮圆钮横向让位 (它 position: fixed, 滚到底会压住 GitHub 图标); 别用底距抬整行, 那样页脚会离底一大截 */
+  body:has(.action-buttons) .site-footer {
+    /* 一颗钮 44px + 距右 --sp-4 + 一点间隙 */
+    padding-right: calc(44px + var(--sp-4) + var(--sp-2));
+  }
+}
+
+@media (max-width: 640px) {
+  /* 列表项右上角 #编号 窄屏收一档, 位置不变 */
+  .article-item .article-id {
+    font-size: var(--fs-14);
+  }
+}
+
+@media (max-width: 640px) {
+  .auth-layout {
+    /* 移动端表单直接铺在页面上, 左右只留一点边 */
+    padding: var(--page-top) var(--sp-4) var(--sp-6);
+  }
+  .auth-card {
+    /* 撤掉卡片外壳: 框 / 背景 / 圆角 / 毛玻璃 / 裁切都不留 */
+    flex-direction: column;
+    background: none;
+    border: none;
+    border-radius: 0;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    overflow: visible;
+  }
+  .auth-brand {
+    /* 顶部图像带: 图留着, 但它不再是面板里的一栏 */
+    flex: none;
+    min-height: 200px;
+    padding: var(--sp-6);
+    border-radius: var(--radius-md);
+  }
+  .auth-logo {
+    height: 48px;
+  }
+  .auth-title {
+    font-size: var(--fs-28);
+  }
+  .auth-form {
+    /* 表单区跟着去掉底色与分隔线, 输入框平铺 */
+    padding: var(--sp-6) 0 0;
+    background: none;
+    border-left: none;
+    border-top: none;
+  }
+  .auth-form-foot {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--sp-3);
+  }
+  .auth-actions {
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 640px) {
+  .site-bar {
+    top: var(--sp-8);                 /* 手机端离顶部更远 */
+    --nav-h: 63px;                    /* 框体加厚, 返回按钮跟着变 63×63 */
+    width: calc(100% - var(--sp-4));
+  }
+  .site-bar.not-top {
+    width: calc(100% - var(--sp-6));
+  }
+  .site-header {
+    padding: var(--sp-3) var(--sp-4); /* 加厚框体 */
+  }
+  /* 返回按钮自己就是正方形, 要改尺寸就改 .site-bar 的 --nav-h */
+  .site-brand span {
+    display: none; /* 窄屏只留图标 (点图标即回首页) */
+  }
+  .site-nav {
+    --icon-size: 30px;
+  }
+}
+
+@media (max-width: 900px) {
+  /* 左右留白收一档 (24 → 16), 配上下面 .panel-wide 铺满 */
+  .page-layout {
+    padding-left: var(--sp-4);
+    padding-right: var(--sp-4);
+  }
+  /* 文章页编辑面板: 窄屏不再额外让出 20px, 只留 .page-layout 那层留白 */
+  .panel-wide {
+    width: 100%;
+  }
+}
+
+@media (max-width: 900px) {
+  .article-layout {
+    width: 100%;
+  }
+  /* 首页面板在窄屏也照样居中 (居中算式在 page-home.css, 不在这里覆盖) */
+  /* 窄屏目录入口常驻, 不用先滚一下才出现 (桌面靠 sticky 侧栏) */
+  .action-buttons {
+    transform: translateY(0);
+  }
+  /* 侧边目录变抽屉 (抽屉自带底色, 否则透出页面背景) */
+  .article-toc {
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100vh;
+    width: min(75vw, 300px);
+    max-height: none;
+    padding: var(--sp-8) var(--sp-4) var(--sp-4);
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-radius: 0;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    z-index: 110;
+  }
+  .article-toc.show {
+    transform: translateX(0);
+  }
+  /* 关闭键只在抽屉形态下出现 */
+  .article-toc-close {
+    display: flex;
+  }
+  .toc-toggle {
+    display: flex;
+  }
+}
+
+@media (max-width: 900px) {
+  /* 窄屏收掉导航栏的返回键 (手机有系统/手势返回, 它还占 63px) */
+  .site-back {
+    display: none;
+  }
+  /* 文章头那三个动作 (已编辑 / 编辑 / 删除): 窄屏单独占一行靠左; 只写 margin-left: 0 不够, 要 flex-basis: 100% 才真的另起一行 */
+  .article-meta .meta-actions {
+    flex-basis: 100%;
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 900px) {
+  /* 个人页: 左右分栏改纵向堆叠, 头像收小并居中 (GitHub 手机的排法) */
+  .profile-layout {
+    flex-direction: column;
+    gap: var(--sp-5);
+    /* 纵向堆叠后 align-items 管横向, 必须 stretch: flex-start 会让内容列按内容宽度收缩 */
+    align-items: stretch;
+  }
+  .profile-side {
+    flex: none;
+    width: 100%;
+    text-align: center;
+  }
+  .profile-side .profile-avatar {
+    width: 160px;
+    margin: 0 auto;
+  }
+  .profile-side .profile-info {
+    margin-top: var(--sp-4);
+    text-align: left; /* 图标列表左对齐才好读 */
+  }
+  .profile-side .profile-stat {
+    justify-content: center;
+  }
+  /* 关注 / 私聊: 窄屏整栅居中, 跟着上面的统计行走 */
+  .profile-side .profile-actions {
+    justify-content: center;
+  }
+  /* 设置项: 标签挪到上面, 免得把输入框挤成一条缝 */
+  .profile-field {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--sp-2);
+  }
+  .profile-field-label {
+    flex: none;
+    min-height: 0; /* 竖排后标签自己就是一行, 不必撑成控件那么高 */
+  }
+  .profile-field-icon {
+    flex: none;
+    justify-content: flex-start;
+  }
+  .profile-field-icon svg {
+    display: none; /* 窄屏一行放不下图标 + 输入框, 先让位给内容 */
+  }
+}
+
+@media (max-width: 900px) {
+  /* ==================== 窄屏统一「缩放」 ==================== */
+  /* 各页面原来各写各的宽度, 现在统一成「可用宽度 = 屏宽 - 16×2」 */
+
+  /* 面板 / 标题行 / 计数行 / 列表网格 / 页脚: 一律吃满 */
+  .panel,
+  .list-top,
+  .list-head,
+  .list-grid,
+  .site-footer,
+  /* 首页 / 统计 / 星历的页脚是 body 直接子元素, main.css 的 body > .site-footer 特异性更高, 要一起列 */
+  body > .site-footer {
+    width: 100%;
+    max-width: 100%;
+  }
+  /* 首页 / 统计 / 星历 / 拒绝访问: 面板直接挂在 body 上, 给 body 补上与 .page-layout 相同的留白 */
+  body:has(> .panel) {
+    padding-left: var(--sp-4);
+    padding-right: var(--sp-4);
+  }
+  /* 登录页: 卡片在 .auth-layout、页脚挂在 body 上, 两边都要写才对齐 */
+  body:has(> .auth-layout) {
+    padding-left: var(--sp-4);
+    padding-right: var(--sp-4);
+  }
+  .auth-layout {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  /* ---------- 文章列表: 右栏标签收进右下角那个按钮 + 抽屉 ---------- */
+  .list-grid {
+    grid-template-columns: 1fr;
+    gap: var(--sp-4);
+  }
+  .tag-side {
+    display: none;
+  }
+  .tag-toggle {
+    display: flex;
+  }
+  /* 「创建」: 右栏那份跟着侧栏一起收起, 换成计数行里那份 */
+  .list-create-side {
+    display: none;
+  }
+  .list-create-mobile {
+    display: block;
+  }
+  /* ---------- 编辑器按钮拆三行 ---------- 宽屏靠 .editor-group { display: contents } 在同一行里流, 这里只改窄屏 */
+  .editor-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--sp-3);
+  }
+  .editor-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-2);
+  }
+  .editor-md-help {
+    margin-left: 0; /* 窄屏这一行左对齐, 不靠右 */
+  }
+  /* 缩进下拉框只桌面端可见 */
+  .editor-indent {
+    display: none;
+  }
+  /* 抽屉形态: 与文章页的目录抽屉同参数 (右侧滑入 + 常驻 DOM 才有过渡) */
+  .tag-drawer {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100vh;
+    width: min(75vw, 300px);
+    padding: var(--sp-8) var(--sp-4) var(--sp-4);
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    z-index: 110;
+    overflow-y: auto;
+  }
+  .tag-drawer.show {
+    transform: translateX(0);
+  }
+
+  /* ---------- D1 控制台 ---------- 窄屏工具行排不下, 拆两行: 第一行只放 SQL 输入框, 第二行放剩下的按钮; 字号要 >16px, 否则 iOS 聚焦时自动缩放 */
+  .d1-toolbar {
+    flex-wrap: wrap;
+  }
+  .d1-sql {
+    flex: 1 1 100%;
+    order: -1; /* 提到最前面 → 独占第一行 */
+    font-size: var(--fs-18);
+  }
+  .d1-limit {
+    font-size: var(--fs-18);
+  }
+  /* 运行 / 导出 留在 page-d1.css 的 14px (18px + 2px 描边在这一行太臃肿); 太窄时它们紧跟输入框, 行数下拉掉第三行 */
+  .d1-toolbar .btn,
+  .d1-export {
+    align-self: center;
+    order: -1;
+  }
+  /* 概览的表卡片: 窄屏两列 */
+  .d1-table-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  /* 结果网格矮一点, 别把页面顶到很长; 横向照旧可以滑 */
+  .d1-grid-wrap {
+    max-height: 52vh;
+  }
+  .d1-grid td {
+    max-width: 200px;
+  }
+  /* ---------- 评论区 (文章页): 头像 / 缩进一并收小, 否则正文被挤成一条窄柱 ---------- */
+  .comment-section {
+    margin-top: var(--sp-8);
+    padding-top: var(--sp-6);
+  }
+  .comment-face {
+    width: 36px;
+    height: 36px;
+  }
+  .comment-item.is-reply .comment-face {
+    width: 28px;
+    height: 28px;
+  }
+  .comment-replies {
+    margin-left: 44px; /* = 顶层头像 36 + 间距 */
+    padding-left: var(--sp-3);
+  }
+  .comment-form {
+    gap: var(--sp-2);
+  }
+  .comment-form textarea,
+  .comment-text {
+    font-size: var(--fs-18);
+  }
+  /* 「插入图片」: 窄屏只留图标 (带文字时会把输入框挤成一条), 位置与动画不变 */
+  .comment-image-btn {
+    padding: var(--sp-2);
+  }
+  .comment-image-btn span {
+    display: none;
+  }
+
+  /* ---------- 私信: 消息头像小一档 ---------- 尺寸跟单行气泡高度挂钩 (main.css 的 --chat-avatar-size), 别写死值 */
+  .chat-msg {
+    max-width: 92%;
+    gap: var(--sp-2);
+  }
+  .d1-picker {
+    width: min(320px, calc(100vw - var(--sp-8)));
+  }
+}
+
+/* ==================== 手机上的弹窗 ==================== */
+/* 桌面 .modal-panel 的 80vw + 32px 内边距在 390px 屏上只剩 ~248px 可用宽, 这里统一成「可用宽度 = 屏宽 - 16×2」 */
+@media (max-width: 640px) {
+  .modal-overlay {
+    padding: var(--sp-4);
+  }
+  .modal-panel {
+    width: 100%;
+    max-width: 100%;
+    max-height: 82vh;
+    padding: var(--sp-5) var(--sp-4);
+    /* 移动端弹窗圆角加大 (12 → 20) */
+    border-radius: var(--radius-xl);
+    font-size: var(--fs-20);
+  }
+  /* 长文档 (用户协议) 跟着再降一档, 手机上 20px 的长段落太挤 */
+  .modal-doc {
+    font-size: var(--fs-18);
+  }
+  /* 确认弹窗: 桌面的 min-width 380px 在手机上会把弹窗撑到贴边 */
+  .confirm-dialog {
+    min-width: 0;
+    width: 100%;
+  }
+  .confirm-title,
+  .modal-title-lg {
+    font-size: var(--fs-22);
+  }
+  .confirm-message {
+    margin-top: var(--sp-2);
+  }
+  /* 按钮平分宽度、不换行 */
+  .confirm-actions {
+    margin-top: var(--sp-5);
+  }
+  .confirm-actions .btn,
+  .confirm-actions .btn-outline,
+  .confirm-actions .btn-acrylic,
+  .confirm-actions .btn-danger {
+    flex: 1;
+    min-width: 0;
+  }
+  /* 私聊弹窗: 跟着面板那套走, 按 80vw 算会把发送键切掉 */
+  .modal-panel:has(.chat-modal) {
+    width: 100%;
+    padding: var(--sp-4);
+  }
+  .modal-panel:has(.chat-modal) .chat-body {
+    height: min(50vh, 340px);
+  }
+}
+
+/* ==================== 聊天背景只在桌面端 ==================== */
+/* 窄屏把两层都关掉: 个性化里那张卡片不显示, 已设过的背景也不叠上去 (移动端的聊天背景还不稳定) */
+@media (max-width: 900px) {
+  #card-chat-bg {
+    display: none !important;
+  }
+  /* 「默认缩放」那张设置卡连同整个缩放功能一起删了 */
+  html.has-chat-bg :is(.chat-thread-pane, .chat-modal)::before {
+    content: none;
+  }
+  /* 移动端不要输入框左上角的悬浮标签 (占位符里已经写着了), 全站生效 */
+  .field label {
+    display: none;
+  }
+}
+
+/* ==================== 「无框」简介弹窗 (移动端) ==================== */
+/* 首页的「简介」弹窗 (showMessage(html, {plain:true})) 不画面板, 文案直接浮在模糊层上; 只认 .is-plain 这个开关, 别让用户协议 / 确认框跟着变无框 */
+@media (max-width: 900px) {
+  .modal-overlay.is-plain {
+    /* 没有面板兜底了, 模糊再厚一档、底色再深一点, 文字才浮得出来 */
+    background: rgba(0, 0, 0, 0.38);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  .modal-overlay.is-plain .modal-panel {
+    width: 100%;
+    max-width: 100%;
+    background: none;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    text-align: center;
+    cursor: pointer; /* 点哪都能关 */
+  }
+}
+
+/* ==================== 转场那个圆形图标 ==================== */
+/* 桌面那份在 main.css 保持 288px; 窄屏缩到 288 × 0.7 ≈ 202px, 否则几乎盖满整页 */
+@media (max-width: 900px) {
+  .transition-icon {
+    height: 202px;
+  }
+}
+
+/* ==================== 资源详情两栏 -> 一栏 ==================== */
+/* 源码次序是「组头 -> 防盗 -> 文件面板」, 塌成一栏后防盗正好落在资源上面, 不用 order 搬; grid-column / grid-row 那四条必须显式清掉, 否则还按两栏摆 */
+@media (max-width: 900px) {
+  .resource-detail-wrap {
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+  }
+  .resource-detail-head,
+  .resource-detail-col,
+  .resource-side {
+    grid-column: auto;
+    grid-row: auto;
+  }
+}
+
+/* ==================== 上传工作台: 两栏 -> 一栏 ==================== */
+/* 窄屏先给拖选框再是队列 (队列空时先看到空白很莫名其妙), 用 order 搬, 不重排 DOM */
+@media (max-width: 900px) {
+  .resource-workbench {
+    width: 100%;
+  }
+  .rw-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .rw-queue-col {
+    order: 2;
+  }
+  .rw-form-col {
+    order: 1;
+  }
+}
+
+/* ==================== 星历: 6 列 -> 5 列 ==================== */
+/* 30 天怎么排都铺得满, 窄屏 5 列 × 6 行格子更矮更好点 */
+@media (max-width: 900px) {
+  .aceris-card {
+    padding: var(--sp-4);
+  }
+  .aceris-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+  .aceris-cell {
+    min-height: 60px;
+  }
+  .aceris-cell-day {
+    font-size: var(--fs-18);
+  }
+  .aceris-month {
+    font-size: var(--fs-28);
+  }
+  .aceris-day {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: var(--sp-4);
+  }
+  .aceris-day-side {
+    text-align: left;
+  }
+}
+
+/* ==================== 翻译页: 页签与网格收紧 ==================== */
+/* 窄屏放不下两列等宽, 词条列压到 46% 并把字号收一档 */
+@media (max-width: 900px) {
+  .lang-head-bar,
+  .lang-main {
+    width: calc(100% - var(--sp-5));
+  }
+  .lang-title {
+    font-size: var(--fs-28);
+  }
+  .lang-tab {
+    font-size: var(--fs-18);
+  }
+  .lang-col-key {
+    width: 46%;
+  }
+  .lang-grid td,
+  .lang-grid th {
+    padding: 6px var(--sp-2);
+  }
+  .lang-grid-wrap {
+    max-height: 56vh;
+  }
+  /* 审核工作台: 两栏 -> 一栏 (左栏清单在上, 右栏判定在下) */
+  .ln-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* 一栏时清单不许自己按右栏的高度撑出一层滞报条, 改成定高自己滚 (与桌面同一套观感) */
+  .ln-list {
+    flex: none;
+    max-height: 42vh;
+    overflow-y: auto;
+  }
+  .ln-item-val {
+    white-space: normal;
+  }
+  .ln-row {
+    flex-direction: column;
+    gap: var(--sp-1);
+  }
+  .ln-row-key {
+    width: auto;
+  }
+}

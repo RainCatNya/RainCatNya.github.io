@@ -1,0 +1,244 @@
+{
+  /* zh.jsonc为翻译文件的蓝本 */
+
+  /* 通用文本 */
+  "hint.loading": "読み込み中…",
+  "hint.loading.failed": "読み込みに失敗しました",
+  "hint.operation.failed": "操作に失敗しました",
+
+  /* 操作文本 */
+  "opt.cancel": "キャンセル",
+  "opt.confirm": "確認",
+  "opt.continue": "続行",
+  "opt.save-changes": "変更を保存",
+  "opt.discard-changes": "変更を破棄",
+  "opt.discarded-changes": "未保存の変更を破棄しました",
+  "opt.saved-changes": "保存しました",
+  "opt.set": "設定",
+  "opt.NotSet": "未設定",
+  "opt.verify": "認証",
+  "opt.bind": "連携",
+  "opt.upload": "アップロード",
+  "opt.uploading": "",
+  "opt.remove": "削除",
+  "opt.download": "ダウンロード",
+  "opt.copy": "コピー",
+  "opt.review": "審査",
+  "opt.run": "実行",
+  "opt.reflesh": "更新",
+  "opt.open": "開く",
+  "opt.loadMore": "もっと読み込む",
+  "opt.submit": "送信",
+  "opt.submitting": "送信中…",
+
+  /* 名称 */
+  "name.totp": "ワンタイムパスワード",
+  "name.email": "メールアドレス",
+  "name.password": "パスワード",
+  "name.token": "トークン",
+  "name.account": "アカウント",
+  "name.advanced.devtools": "開発者ツール",
+  "name.terminal.quotekey": "",
+  "name.blur": "ぼかし",
+  "name.verificationCode": "認証コード",
+  "name.article": "記事",
+  "name.resource": "リソース",
+  "name.avatar": "アバター",
+  "name.narra": "",
+  "term.max": "最大値",
+  "term.global": "グローバル",
+  "term.unknown": "不明",
+  "term.none": "なし",
+  
+  /* 状态&数值语句 */
+  "target.activated": "{target} が有効化されました",
+  "target.deactivated": "{target} が無効化されました",
+  "target.link": "{target} を連携",
+  "target.linked": "{target} を連携済み",
+  "target.emailSent": "認証メールを{target}に送信しました。{value}分間有効です",
+  "target.filledIn": "入力しました：{value}",
+  "value.digit": "{value} 桁の数字",
+  "value.lines": "{value} 行",
+  "value.theDayJoinFoarine": "Foraine に参加して {value} 日",
+  "value.lastLogin": "最終ログイン：{value}",
+  "value.articleNumber": "{value} 件の記事",
+  "value.resourceNumber": "{value} 件のリソース",
+  "value.NotYet": "",
+  "value.TooLarge-mb": "",
+
+  /* Meta */
+  "meta.profile": "Foraine · Profile",
+
+  /* 主页 */
+  "home.welcome.title": "Foraine へようこそ！",
+  "home.welcome.description": "ここであなたの創造性を発揮しましょう",
+
+  /* Profile页面  */
+  "profile.tab.profile": "プロフィール",
+  "profile.tab.custom": "カスタマイズ",
+  "profile.tab.works": "作品",
+  "profile.tab.members": "連携星点",
+  "profile.tab.inbox": "受信トレイ",
+  "profile.tab.d1": "データベース",
+  "profile.tab.r2": "リソースライブラリ",
+  "profile.tab.foraine": "サイト",
+  "profile.pf.avatar.btn-upload": "アバターをアップロード",
+  "profile.pf.nickname": "ニックネーム",
+  "profile.pf.nickname.input.placeholder": "星々の煌めきの名",
+  "profile.pf.bio": "自己紹介",
+  "profile.pf.bio.input.placeholder": "果てなき星々の一つとしての簡単な紹介～",
+  "profile.pf.bio.ph": "自己紹介はありません",
+  "profile.pf.email.notice.unbound": "サイト建設のため、Foraine はあなたに直ちにメールアドレスの登録を求めています。\n保存後は変更できません。",
+  "toast.email.ok-bindingCompleted": "メールアドレスを連携しました。できるだけ早く認証を完了してください。",
+  "profile.pf.email.notice.unverified": "セキュリティのため、早めのメールアドレス認証をおすすめします。\nメールアドレスに誤りがある場合は、サイト管理者にお問い合わせください。",
+  "profile.pf.location": "場所",
+  "profile.pf.location.input.placeholder": "Foraine 宇宙における座標",
+  "profile.pf.other": "その他",
+  "profile.pf.other.input.placeholder": "例：「会社：Maybe foraine Inc.」",
+  "profile.pf.connection": "アカウント連携",
+  "profile.pf.advanced": "詳細設定",
+  "profile.pf.advanced.devtools.description": "データベースやリソースライブラリの高度な操作が含まれます。この機能は慎重に有効にしてください。",
+  "profile.cst.display": "表示",
+  "profile.cst.display.label": "プロフィール背景は全員に表示されます。画像のアップロード、削除、ぼかしの変更はすぐに保存されます。",
+  "profile.cst.display.profileBackgound": "プロフィール背景",
+  "profile.cst.display.chatBackgound": "チャット背景",
+  "profile.cst.display.quotekey.description": "",
+  "profile.cst.char": "文字",
+  "profile.cst.char.language": "言語",
+  "profile.cst.char.language.description": "Foraine 全体で表示する言語を切り替えます",
+  "profile.cst.char.font": "フォント",
+  "profile.cst.char.font.notice": "フォント設定はあなた自身の表示にのみ影響します",
+  "profile.cst.interact": "操作",
+  "notice.EffectToYourOwnDeviceOnly": "このデバイス上での動作のみを変更します",
+  "profile.cst.sound": "サウンド",
+  "opt.MarkAll-Read": "すべて既読",
+  "opt.sendInbox": "メッセージを送信",
+
+  /* Toggle功能文本 */
+  "ctrl.cst.sound.pluviophile": "土砂降り",
+  "ctrl.cst.sound.pluviophile.description": "Foraine のすべてのページで雨音を再生します",
+  "ctrl.cst.interact.rightclick-override": "右クリックを全体で置き換え",
+  "ctrl.cst.interact.rightclick-override.description": "このサイト上のすべての右クリックイベントを捕捉します。指定がない場合は何も発生しません",
+  
+  /* Foraine 相关 */
+  "foraine.DownstreamTrafficControl": "下りトラフィック制御",
+  "foraine.DownstreamTrafficControl.description": "段階的にダウンロード同時接続数を制御",
+  "foraine.MaximumResourcesLimit": "最大リソースアップロード量",
+  "foraine.MaximumResourcesLimit.description": "容量制限のあるクラウドストレージ",
+
+  /* 位置相关 */
+  "opt.locate": "位置情報を取得",
+  "opt.locate.processing": "取得中…",
+  "locate.error-Unable2Get": "位置情報を取得できません",
+
+  /* 邮件相关 */
+  "email.warn-EmptyAddress": "メールアドレスは空にできません",
+  "email.error-NameNotSuitable": "メールアドレスの形式が正しくありません",
+  "email.error-NoService": "メールサービスがオフラインです",
+  "email.input.placeholder": "your-email@example.com",
+  "toast.email.ok-verifySuccessful": "メールアドレスの認証に成功しました",
+  "toast.email.ok-unboundSuccessful": "メールアドレスの連携を解除しました",
+  "toast.email.ok-reboundSuccessful": "メールアドレスの変更に成功しました",
+  "toast.email.warn-VerificationTakenByOther": "このメールアドレスは別のアカウントで認証済みです",
+  "toast.email.error-Failed2SentEmail": "認証メールの送信に失敗しました",
+  "toast.email.error-LinkExpired": "認証リンクの有効期限が切れています",
+  "toast.email.error-LinkDead4EmailChanged": "メールアドレスが変更されたため、認証リンクは無効です",
+  "toast.email.error-LinkInvalid": "無効なリンクです",
+
+  /* 账号相关 */
+  "account.resetPassword": "パスワードをリセット",
+  "account.verifyEmail": "メールアドレスを認証",
+  "account.changeEmail": "メールアドレスを変更",
+  "account.logOut": "ログアウト",
+  "account.deleteAccount": "アカウントを削除",
+
+  /* 密码相关 */
+  "label.newPassword": "新しいパスワード",
+  "label.confirmPassword": "パスワードの確認",
+  "toast.resetPassword.warn-AtLeastChar": "パスワードは {value} 文字以上である必要があります",
+  "toast.resetPassword.error-DoesNotMatch": "入力されたパスワードが一致しません",
+  "toast.resetPassword.success": "パスワードを再設定しました。他のデバイスのログイン状態はすべて無効になりました",
+
+  /* Toast */
+  // 注意: 此类的键必须足够通用, 最好是使用情景较多的完整语句
+  "toast.error-WrongCode": "認証コードが正しくありません",
+  "toast.error-WrongPassword": "パスワードが正しくありません",
+
+  /* Foraine-Toast */
+  "foraine-toast.foraineWouldRemember": "Foraine は覚えている..",
+  "foraine-toast.saveProgress": "進行状況を保存..",
+  "foraine-toast.loading": "読み込み中..",
+  "foraine-toast.processing": "処理中...",
+
+  /* OSS相关 */
+  "toast.oss.error-NoService": "オブジェクトストレージサービスがオフラインです",
+
+  /* 模态框 */
+  // 警告文本
+  "modal.warning.CannotbeUndone": "この操作は取り消せません",
+
+  /* 流程 */
+  // 退出登录
+  "ops.logOut.ctn": "ログアウトしてもよろしいですか？", // title使用account.LogOut
+  // 重置密码
+  "ops.resetPassword.a-ctn": "パスワードを再設定してもよろしいですか？",
+  "ops.resetPassword.b-ctn": "新しいパスワードを入力してください",
+  // 注销账户
+  "ops.deleteAccount.a-ctn": "アカウントを削除してもよろしいですか？",
+  "toast.deleteAccount.warn-emailVerificationNeeded": "アカウント削除には先にメールアドレスの認証が必要です",
+  "ops.deleteAccount.b-title": "本当に削除しますか..？",
+  "ops.deleteAccount.b-ctn": "本当に Foraine 宇宙から離れますか？あなたが去れば、宇宙の星が一つ少なくなります..\n\nここで、最後にもう一度情報を入力して続行してください。",
+  "label.MadeMyMind": "決意しました",
+  "label.stay": "残る",
+  "label.goodble": "さようなら",
+  "ops.deleteAccount.c-ctn": "あなたの Foraine アカウントは削除されました。より大きな宇宙で、より美しい風景を見つけられますように！\nまだ Foraine に未練があるなら、7 日以内にいつでもログインして削除をキャンセルできます。",
+  "hint.accountAlreadyInDeactivated": "このアカウントはすでに削除手続き中です。キャンセルするには上の「削除をキャンセル」をクリックしてください",
+  "toast.deleteAccout.ok-requestSubmitted": "削除申請を送信しました。アカウントは {value} 日以内に削除されます",
+  "notice.deleteAccount.title": "アカウント削除を申請しました（{value} 日後に削除）",
+  "notice.deleteAccount.ctn": "あなたのアカウントは {value} に削除され、名前はその後他の人が使用できるようになります。\n削除をキャンセルしたい場合は、下の「削除をキャンセル」をクリックしてください。",
+  // 取消注销账户
+  "label.cancelAccountDeletion": "削除をキャンセル",
+  "ops.cancelAccountDeletion.ctn": "アカウントは通常に戻り、7 日間の保留期間はすぐに終了します。\nこの削除申請をキャンセルしてもよろしいですか？",
+  "toast.cancelAccountDeletion.ok-confirmed": "削除申請をキャンセルしました",
+  "hint.accountDeletionRequestOverflow": "削除をキャンセルした後、{value} 日以内は再申請できません",
+  // 换绑邮箱
+  "ops.changeEmail": "メールアドレスを変更",
+  "ops.changeEmail.a-ctn": "メールアドレスを変更してもよろしいですか？",
+  "ops.changeEmail.b-ctn": "Foraine は本人確認のため、あなたのメールアドレスに認証メールを送信しました。\nメールに記載された {value} 桁の数字を入力して続行してください",
+  "ops.changeEmail.c-ctn": "旧メールアドレスの認証が完了しました。新しいメールアドレスを認証すると、Foraine の連携が完了します。\n新しいメールアドレスを入力してください",
+  // 验证身份
+  "ops.verifyIdentity.title": "あなたは慎重を要する操作を実行しています。Foraine はあなたの本人確認を必要としています。\n続行する方法を選択してください", // title使用opt.verify
+  "hint.2FANotEnabled": "このアカウントではワンタイムパスワード認証が有効になっていません",
+  "hint.emailNotVerified": "このアカウントのメールアドレスはまだ認証されていません",
+  "toast.verifyIdentity.warn-MethodNotAvailable": "この方法は現在利用できません",
+  "ops.verifyIdentity.token.ctn": "認証アプリを開き、現在表示されている {value} 桁の数字を入力してください",
+  "ops.verifyIdentity.password.ctn": "続行するにはここにパスワードを入力してください",
+  "ops.verifyIdentity.email.ctn": "メールに表示された {value} 桁の数字を入力してください",
+
+  /* 终端相关 */
+  "terminal.title": "",
+  "terminal.home": "",
+  "terminal.system": "",
+  "terminal.denied": "",
+  "terminal.quest": "",
+  "terminal.needKey": "",
+  "terminal.submit": "",
+  "terminal.permission.unlocked": "",
+  "narra.button": "",
+  "narra.key": "",
+  "narra.hint": "",
+  "narra.create": "",
+  "terminal.article.error": "",
+  "terminal.article.empty": "",
+
+  /* 导航栏相关 */
+  // tooltip
+  "nav.home": "Foraine ホーム",
+  "nav.resource": "リソース",
+  "nav.articles": "記事",
+  "nav.chat": "ダイレクトメッセージ",
+  "nav.top": "トップへ戻る",
+  "nav.back": "戻る",
+  "nav.login": "ログイン",
+  "nav.profile": "プロフィール"
+}

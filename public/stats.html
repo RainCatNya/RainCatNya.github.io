@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+
+<html lang="zh">
+    <head>
+        <!-- 元数据定义 -->
+        <meta charset="utf-8">
+        <meta content="width=device-width, initial-scale=0.8" name="viewport">
+        <base href="/">
+        <title>Foraine 访客统计</title>
+
+        <!-- 加载资源 -->
+        <link rel="icon" type="image/x-icon" href="assets/Icon/foraine-icon-v2.png">
+        <link rel="stylesheet" href="/style/main.css?v=40">
+        <link rel="stylesheet" href="/style/page-stats.css?v=40">
+        <!-- 右下角的「加载中」牌子 (showBusyNote) -->
+        <link rel="stylesheet" href="/style/page-foraine-toast.css?v=40">
+        <!-- 窄屏样式按需加载: 宽屏下连请求都不发 (只写 <link media> 的 Chrome 仍会下载, 所以用脚本判断) -->
+        <script>
+            /* 桌面端默认缩放已整体删除 (配套的 foraine_zoom 标记 / ui-zoom-off 也一并没了), 别加回来 */
+            if (matchMedia('(max-width: 900px)').matches) {
+                const mediaLink = document.createElement('link');
+                mediaLink.rel = 'stylesheet';
+                mediaLink.href = '/style/main-media.css';
+                document.head.appendChild(mediaLink);
+            }
+        </script>
+        <script src="/script/i18n.js?v=40" defer></script>
+        <script src="/script/core.js?v=40" defer></script>
+        <script src="/script/ui.js?v=40" defer></script>
+        <script src="/script/transition.js?v=40" defer></script>
+        <script src="/script/header.js?v=40" defer></script>
+        <script src="/script/layout.js?v=40" defer></script>
+        <script src="/script/rain-sound.js?v=40" defer></script>
+    </head>
+
+    <!-- page-stats: 去掉 body::before 那层紫色柔光 (这一页要纯底色) -->
+    <body class="page-stats">
+        <div class="page-top-space"></div>
+
+        <!-- 左上角页名: 全站只留主页那一个 foraine 图标, 这里写「统计」 -->
+        <header class="stats-head-bar">
+            <h1 class="stats-title">统计</h1>
+        </header>
+
+        <!-- 总览: 独一访问 + 趋势 -->
+        <section class="panel stats-main No-slc" data-anim>
+            <div class="stats-head">
+                <p class="stats-number" id="stat-total">…</p>
+                <p class="stats-label">总独一访问
+                    <span class="stats-sub" id="stat-range"></span>
+                </p>
+            </div>
+            <div class="stats-meta" id="stat-meta"></div>
+            <div class="stats-chart" id="stat-chart"></div>
+        </section>
+
+        <div class="spacer"></div>
+
+        <!-- 地区 -->
+        <section class="panel stats-main No-slc" data-anim>
+            <h2>来自的地区</h2>
+            <div class="stats-bars" id="stat-countries"></div>
+            <p class="stats-note" id="stat-country-note"></p>
+        </section>
+
+        <div class="spacer"></div>
+
+        <!-- 数据库用量 (只有站长拿得到数据) -->
+        <section class="panel stats-main No-slc" id="stat-d1-panel" data-anim hidden>
+            <h2>数据库用量</h2>
+            <div class="stats-cards" id="stat-d1-cards"></div>
+            <div class="stats-chart" id="stat-d1-chart"></div>
+            <p class="stats-note" id="stat-d1-note">Cloudflare D1 的每日查询次数</p>
+        </section>
+
+        <!-- 弹性留白: 内容不满一屏时由它吃掉多余空间, 把页脚压到视口底部 -->
+        <div class="spacer-flex"></div>
+
+        <script>
+            /* 小工具 */
+            const num = (n) => (Number(n) || 0).toLocaleString('en-US');
+
+            // 大数字缩写 (轴标签用)
+            function shortNum(n) {
+              const v = Number(n) || 0;
+              if (v >= 1e6) return (v / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
+              if (v >= 1e4) return Math.round(v / 1e3) + 'k';
+              if (v >= 1e3) return (v / 1e3).toFixed(1).replace(/\.0$/, '') + 'k';
+              return String(v);
+            }
+
+            /* 国家代码 → 中文名 (表里没有就直接显示代码, 不猜名字) */
+            const COUNTRY_NAMES = {
+              US: '美国', CN: '中国', JP: '日本', KR: '韩国', HK: '中国香港', TW: '中国台湾',
+              SG: '新加坡', MY: '马来西亚', TH: '泰国', VN: '越南', ID: '印度尼西亚', PH: '菲律宾',
+              IN: '印度', AU: '澳大利亚', NZ: '新西兰',
+              GB: '英国', IE: '爱尔兰', FR: '法国', DE: '德国', NL: '荷兰', BE: '比利时',
+              LU: '卢森堡', CH: '瑞士', AT: '奥地利', IT: '意大利', ES: '西班牙', PT: '葡萄牙',
+              GR: '希腊', SE: '瑞典', NO: '挪威', FI: '芬兰', DK: '丹麦', IS: '冰岛',
+              PL: '波兰', CZ: '捷克', SK: '斯洛伐克', HU: '匈牙利', RO: '罗马尼亚', BG: '保加利亚',
+              HR: '克罗地亚', RS: '塞尔维亚', SI: '斯洛文尼亚', LT: '立陶宛', LV: '拉脱维亚',
+              EE: '爱沙尼亚', UA: '乌克兰', RU: '俄罗斯', BY: '白俄罗斯', TR: '土耳其',
+              IL: '以色列', AE: '阿联酋', SA: '沙特阿拉伯', QA: '卡塔尔', IR: '伊朗',
+              EG: '埃及', ZA: '南非', NG: '尼日利亚', KE: '肯尼亚', MA: '摩洛哥',
+              CA: '加拿大', MX: '墨西哥', BR: '巴西', AR: '阿根廷', CL: '智利', CO: '哥伦比亚',
+              PE: '秘鲁', VE: '委内瑞拉', UY: '乌拉圭', EC: '厄瓜多尔'
+            };
+            const countryLabel = (code) => {
+              const name = COUNTRY_NAMES[code];
+              return name ? name + ' (' + code + ')' : code;
+            };
+
+            /* 折线图: 自己画内联 SVG (面积 + 折线 + 三条横网格 + 首尾日期) */
+            // viewBox 宽度用容器实测宽度: SVG 等比缩放, 固定宽度会把轴上的字压小或放大
+            // 点数太多 (一年 365 个) 不做逐点 hover 命中区
+            function chartSvg(points, opts) {
+              const options = opts || {};
+              const key = options.key || 'uniques';
+              const host = options.host;
+              const n = points.length;
+              if (!n) return '<p class="stats-empty">暂无数据</p>';
+              const W = Math.max(280, Math.round((host && host.clientWidth) || 900));
+              const H = W < 520 ? 170 : 220;
+              const gradId = 'statsArea-' + key;
+              const padL = 6, padR = 6, padT = 18, padB = 24;
+              const vals = points.map((p) => Number(p[key]) || 0);
+              const max = Math.max(1, ...vals);
+              const innerW = W - padL - padR;
+              const innerH = H - padT - padB;
+              const at = (i) => (n === 1 ? padL + innerW / 2 : padL + (i / (n - 1)) * innerW);
+              const ay = (v) => padT + innerH - (v / max) * innerH;
+              const path = points.map((p, i) => (i ? 'L' : 'M') + at(i).toFixed(1) + ',' + ay(vals[i]).toFixed(1)).join(' ');
+              const area = path + ' L' + at(n - 1).toFixed(1) + ',' + (padT + innerH)
+                + ' L' + at(0).toFixed(1) + ',' + (padT + innerH) + ' Z';
+
+              // 横线与纵轴的数字要分开攒, 数字必须画在面积之后, 否则会被那层半透明紫色面积盖住
+              let gridLines = '';
+              let axisLabels = '';
+              [0, 0.5, 1].forEach((f) => {
+                const y = padT + innerH - f * innerH;
+                gridLines += '<line class="stats-grid" x1="' + padL + '" y1="' + y.toFixed(1) + '" x2="' + (W - padR) + '" y2="' + y.toFixed(1) + '"/>';
+                axisLabels += '<text class="stats-axis" x="' + padL + '" y="' + (y - 5).toFixed(1) + '">' + shortNum(Math.round(max * f)) + '</text>';
+              });
+
+              // hover: 每个点一个透明命中区 (点少时才挂)
+              let hits = '';
+              if (n > 1 && n <= 120) {
+                const slot = innerW / (n - 1);
+                points.forEach((p, i) => {
+                  hits += '<rect class="stats-hit" x="' + (at(i) - slot / 2).toFixed(1) + '" y="' + padT
+                    + '" width="' + slot.toFixed(1) + '" height="' + innerH + '">'
+                    + '<title>' + escapeHtml(p.date + '：' + num(vals[i])) + '</title></rect>';
+                });
+              }
+
+              const first = String(points[0].date || '').slice(5);
+              const last = String(points[n - 1].date || '').slice(5);
+              return '<svg class="stats-svg" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="每日趋势">'
+                + '<defs><linearGradient id="' + gradId + '" x1="0" y1="0" x2="0" y2="1">'
+                + '<stop offset="0%" stop-color="rgba(148,94,236,0.42)"/>'
+                + '<stop offset="100%" stop-color="rgba(148,94,236,0)"/>'
+                + '</linearGradient></defs>'
+                + gridLines
+                + '<path class="stats-area" d="' + area + '" fill="url(#' + gradId + ')"/>'
+                + '<path class="stats-line" d="' + path + '"/>'
+                + axisLabels
+                + '<text class="stats-axis stats-axis-x" x="' + padL + '" y="' + (H - 6) + '">' + escapeHtml(first) + '</text>'
+                + '<text class="stats-axis stats-axis-x" x="' + (W - padR) + '" y="' + (H - 6) + '" text-anchor="end">' + escapeHtml(last) + '</text>'
+                + hits
+                + '</svg>';
+            }
+
+            /* 各块渲染 */
+            // 总览: 总独一访问 + 区间 + 峰值与请求数的 chip + 折线图
+            function renderOverview(data) {
+              const totalEl = document.getElementById('stat-total');
+              if (totalEl) totalEl.textContent = num(data.uniques);
+              const days = data.days || 0;
+              const range = data.range || {};
+              const rangeEl = document.getElementById('stat-range');
+              if (rangeEl) {
+                rangeEl.textContent = days
+                  ? '（' + (range.from || '') + ' ~ ' + (range.to || '') + '，共 ' + days + ' 天）'
+                  : '（暂无数据）';
+              }
+
+              const series = data.series || [];
+              let peak = null;
+              series.forEach((row) => { if (!peak || row.uniques > peak.uniques) peak = row; });
+              const metaEl = document.getElementById('stat-meta');
+              if (metaEl) {
+                metaEl.innerHTML =
+                  '<span class="stats-chip">总请求 <b>' + num(data.requests) + '</b></span>'
+                  + '<span class="stats-chip">有访问的天数 <b>' + days + '</b></span>'
+                  + (peak ? '<span class="stats-chip">单日峰值 <b>' + num(peak.uniques) + '</b>（'
+                    + escapeHtml(String(peak.date).slice(5)) + '）</span>' : '');
+              }
+              const chartEl = document.getElementById('stat-chart');
+              if (chartEl) chartEl.innerHTML = chartSvg(series, { key: 'uniques', host: chartEl });
+            }
+
+            // 地区: 前 12 名横条 (剩下的只报个数)
+            function renderCountries(data) {
+              const box = document.getElementById('stat-countries');
+              if (!box) return;
+              const all = data.countries || [];
+              const list = all.slice(0, 12);
+              if (!list.length) {
+                box.innerHTML = '<p class="stats-empty">暂无数据</p>';
+                return;
+              }
+              const shown = list.reduce((acc, c) => acc + c.requests, 0);
+              const top = list[0].requests || 1;
+              box.innerHTML = list.map((c) => {
+                const pct = shown ? Math.round((c.requests / shown) * 100) : 0;
+                const width = Math.max(2, (c.requests / top) * 100).toFixed(1);
+                return '<p class="stats-bar">'
+                  + '<span class="stats-bar-name">' + escapeHtml(countryLabel(c.code)) + '</span>'
+                  + '<span class="stats-bar-track"><span class="stats-bar-fill" style="width:' + width + '%"></span></span>'
+                  + '<span class="stats-bar-count">' + num(c.requests) + '<span class="stats-bar-pct">' + pct + '%</span></span>'
+                  + '</p>';
+              }).join('');
+              const rest = all.length - list.length;
+              const noteEl = document.getElementById('stat-country-note');
+              if (noteEl) {
+                noteEl.textContent = (rest > 0 ? '有 ' + rest + ' 个地区未展示 · 按请求数排序' : '');
+              }
+            }
+
+            // D1 用量: 拿不到就整块不显示
+            function renderD1(data) {
+              const panel = document.getElementById('stat-d1-panel');
+              if (!panel) return;
+              // 只有站长会拿到 d1 这块; 拿不到就整块不显示
+              if (!data.d1) { panel.hidden = true; return; }
+              panel.hidden = false;
+              const t = data.d1.totals || {};
+              const cards = document.getElementById('stat-d1-cards');
+              if (cards) {
+                cards.innerHTML =
+                  '<p class="stats-card"><span class="stats-card-label">查询次数</span><span class="stats-card-value">' + num(t.queries) + '</span></p>'
+                  + '<p class="stats-card"><span class="stats-card-label">读取行数</span><span class="stats-card-value">' + num(t.rowsRead) + '</span></p>'
+                  + '<p class="stats-card"><span class="stats-card-label">写入行数</span><span class="stats-card-value">' + num(t.rowsWritten) + '</span></p>';
+              }
+              const chart = document.getElementById('stat-d1-chart');
+              if (chart) chart.innerHTML = chartSvg(data.d1.series || [], { key: 'queries', host: chart });
+              const noteEl = document.getElementById('stat-d1-note');
+              if (noteEl) {
+                noteEl.textContent = 'Cloudflare D1 的每日查询次数，共 ' + (data.d1.days || 0)
+                  + ' 天';
+              }
+            }
+
+            /* 取数 */
+            /* asyfunc 拉访客统计并渲染三块 */
+            async function loadStats() {
+              // 数据都是加载完才有的 → 重播一次入场动画
+              const panels = Array.prototype.slice.call(document.querySelectorAll('body > .panel[data-anim]'));
+              try {
+                const response = await fetch('/api/stats', { cache: 'no-store' });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok || !data.ok) throw new Error(data.error || ('HTTP ' + response.status));
+                renderOverview(data);
+                renderCountries(data);
+                renderD1(data);
+              } catch (error) {
+                console.error('加载访客统计失败：', error);
+                showToast('访客统计加载失败，请稍后再试', 'error');
+                const totalEl = document.getElementById('stat-total');
+                if (totalEl) totalEl.textContent = '—';
+                const empty = '<p class="stats-empty">暂时拿不到数据</p>';
+                ['stat-chart', 'stat-countries'].forEach((id) => {
+                  const el = document.getElementById(id);
+                  if (el) el.innerHTML = empty;
+                });
+              } finally {
+                panels.forEach((panel) => replayEnterAnim(panel));
+              }
+            }
+
+            // 等共享脚本(defer)加载完成后再执行
+            document.addEventListener('DOMContentLoaded', loadStats);
+        </script>
+    </body>
+</html>

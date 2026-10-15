@@ -1,0 +1,39 @@
+/* ==================== 存储概览 (个人页 R2 页签里的「概览」子页签, 仅站长) ==================== */
+/* 四张数字卡; 数据来自 D1 聚合 (resource / resource_group / upload_usage), 不去列 OSS 对象 */
+/* 样式只用令牌, 外壳与 D1 / R2 那两套共用 .d1-* */
+
+.r2-overview {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4);
+}
+
+.r2-overview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: var(--sp-3);
+}
+
+.r2-overview-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    padding: var(--sp-4);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-lg);
+    background: rgba(0, 0, 0, 0.35);
+}
+
+.r2-overview-label {
+    font-size: var(--fs-14);
+    color: var(--c-text-dim);
+}
+
+/* 数字要一眼看清: 用等宽字 + 大一号 */
+.r2-overview-value {
+    font-family: var(--font-mono);
+    font-size: var(--fs-28);
+    line-height: 1.2;
+    color: var(--c-text);
+    word-break: break-all;
+}

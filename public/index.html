@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+    <head>
+        <!-- 元数据定义 -->
+        <meta charset="utf-8">
+        <meta content="width=device-width, initial-scale=1.0" name="viewport">
+        <meta name="description" content="A field full of stars and dreams">
+        <meta name="theme-color" content="#985bc4">
+        <title>Foraine Universe</title>
+
+        <!-- 加载资源 -->
+        <link rel="icon" type="image/x-icon" href="/assets/Icon/foraine-icon-v2.png">
+        <link rel="stylesheet" href="/style/main.css?v=40">
+        <link rel="stylesheet" href="/style/page-home.css?v=40">
+        <link rel="stylesheet" href="/style/page-foraine-toast.css?v=40">
+        <script>
+            if (matchMedia('(max-width: 900px)').matches) {
+                const mediaLink = document.createElement('link');
+                mediaLink.rel = 'stylesheet';
+                mediaLink.href = '/style/main-media.css';
+                document.head.appendChild(mediaLink);
+            }
+        </script>
+        <script src="/script/i18n.js?v=40" defer></script>
+        <script src="/script/core.js?v=40" defer></script>
+        <script src="/script/ui.js?v=40" defer></script>
+        <script src="/script/transition.js?v=40" defer></script>
+        <script src="/script/header.js?v=40" defer></script>
+        <script src="/script/layout.js?v=40" defer></script>
+        <script src="/script/rain.js?v=40" defer></script>
+        <script src="/script/rain-sound.js?v=40" defer></script>
+        <script src="/script/terminal.js?v=40" defer></script>
+    </head>
+
+    <body class="page-home">
+        <div class="page-top-space"></div>
+
+        <!-- foraine 欢迎图标 -->
+        <div class="panel panel-bare No-slc" align="center" data-anim>
+            <img src="assets/Icon/foraine-icon-v2.png" class="hero-icon" alt="Icon">
+            <h1 class="hero-title" data-i18n="home.welcome.title">欢迎来到 foraine !</h1>
+            <p data-i18n="home.welcome.description">在这里发挥你的创意</p>
+        </div>
+
+        <!-- 弹性留白 -->
+        <div class="spacer-flex"></div>
+
+        <!-- 首页菜单 -->
+        <div class="home-menu No-slc" data-anim>
+            <button type="button" class="home-menu-btn" onclick="pageTransitionTo('/stats.html')" title="统计" aria-label="统计">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V4"></path><path d="M4 20h16"></path><path d="M8 20v-6M12.7 20V9M17.3 20v-9"></path></svg>
+            </button>
+            <button type="button" class="home-menu-btn" onclick="goIfLoggedIn('/chat/')" title="聊天" aria-label="聊天">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9.3 9.3 0 0 1-3.2-.6L3.5 21l1.7-4.6A8.3 8.3 0 0 1 4 11.5a8.4 8.4 0 0 1 8.5-8.4A8.4 8.4 0 0 1 21 11.5z"></path><path d="M8.6 11.6h.01M12 11.6h.01M15.4 11.6h.01"></path></svg>
+            </button>
+            <button type="button" class="home-menu-btn" onclick="pageTransitionTo('/aceris/')" title="星历" aria-label="星历">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"></rect><path d="M8 3v3M16 3v3"></path><path d="M12 9.8l1.1 3.2 3.2 1.1-3.2 1.1-1.1 3.2-1.1-3.2-3.2-1.1 3.2-1.1z"></path></svg>
+            </button>
+            <button type="button" class="home-menu-btn" onclick="openingTerminal('/terminal/')" title="终端" aria-label="终端" data-i18n-title="terminal.title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="4" width="19" height="16" rx="2.5"></rect><path d="m7 9.5 3 3-3 3"></path><path d="M13 15.5h4"></path></svg>
+            </button>
+        </div>
+        <div class="spacer"></div>
+    </body>
+</html>

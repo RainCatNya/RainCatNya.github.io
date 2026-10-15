@@ -1,0 +1,244 @@
+{
+  /* zh.jsonc为翻译文件的蓝本 */
+
+  /* 通用文本 */
+  "hint.loading": "",
+  "hint.loading.failed": "",
+  "hint.operation.failed": "",
+
+  /* 操作文本 */
+  "opt.cancel": "",
+  "opt.confirm": "",
+  "opt.continue": "",
+  "opt.save-changes": "",
+  "opt.discard-changes": "",
+  "opt.discarded-changes": "",
+  "opt.saved-changes": "",
+  "opt.set": "",
+  "opt.NotSet": "",
+  "opt.verify": "",
+  "opt.bind": "",
+  "opt.upload": "",
+  "opt.uploading": "",
+  "opt.remove": "",
+  "opt.download": "",
+  "opt.copy": "",
+  "opt.review": "",
+  "opt.run": "",
+  "opt.reflesh": "",
+  "opt.open": "",
+  "opt.loadMore": "",
+  "opt.submit": "",
+  "opt.submitting": "",
+
+  /* 名称 */
+  "name.totp": "",
+  "name.email": "",
+  "name.password": "",
+  "name.token": "",
+  "name.account": "",
+  "name.advanced.devtools": "",
+  "name.terminal.quotekey": "",
+  "name.blur": "",
+  "name.verificationCode": "",
+  "name.article": "",
+  "name.resource": "",
+  "name.avatar": "",
+  "name.narra": "",
+  "term.max": "",
+  "term.global": "",
+  "term.unknown": "",
+  "term.none": "",
+  
+  /* 状态&数值语句 */
+  "target.activated": "",
+  "target.deactivated": "",
+  "target.link": "",
+  "target.linked": "",
+  "target.emailSent": "",
+  "target.filledIn": "",
+  "value.digit": "",
+  "value.lines": "",
+  "value.theDayJoinFoarine": "",
+  "value.lastLogin": "",
+  "value.articleNumber": "",
+  "value.resourceNumber": "",
+  "value.NotYet": "",
+  "value.TooLarge-mb": "",
+
+  /* Meta */
+  "meta.profile": "",
+
+  /* 主页 */
+  "home.welcome.title": "",
+  "home.welcome.description": "",
+
+  /* Profile页面  */
+  "profile.tab.profile": "",
+  "profile.tab.custom": "",
+  "profile.tab.works": "",
+  "profile.tab.members": "",
+  "profile.tab.inbox": "",
+  "profile.tab.d1": "",
+  "profile.tab.r2": "",
+  "profile.tab.foraine": "",
+  "profile.pf.avatar.btn-upload": "",
+  "profile.pf.nickname": "",
+  "profile.pf.nickname.input.placeholder": "",
+  "profile.pf.bio": "",
+  "profile.pf.bio.input.placeholder": "",
+  "profile.pf.bio.ph": "",
+  "profile.pf.email.notice.unbound": "",
+  "toast.email.ok-bindingCompleted": "",
+  "profile.pf.email.notice.unverified": "",
+  "profile.pf.location": "",
+  "profile.pf.location.input.placeholder": "",
+  "profile.pf.other": "",
+  "profile.pf.other.input.placeholder": "",
+  "profile.pf.connection": "",
+  "profile.pf.advanced": "",
+  "profile.pf.advanced.devtools.description": "",
+  "profile.cst.display": "",
+  "profile.cst.display.label": "",
+  "profile.cst.display.profileBackgound": "",
+  "profile.cst.display.chatBackgound": "",
+  "profile.cst.display.quotekey.description": "",
+  "profile.cst.char": "",
+  "profile.cst.char.language": "",
+  "profile.cst.char.language.description": "",
+  "profile.cst.char.font": "",
+  "profile.cst.char.font.notice": "",
+  "profile.cst.interact": "",
+  "notice.EffectToYourOwnDeviceOnly": "",
+  "profile.cst.sound": "",
+  "opt.MarkAll-Read": "",
+  "opt.sendInbox": "",
+
+  /* Toggle功能文本 */
+  "ctrl.cst.sound.pluviophile": "",
+  "ctrl.cst.sound.pluviophile.description": "",
+  "ctrl.cst.interact.rightclick-override": "",
+  "ctrl.cst.interact.rightclick-override.description": "",
+  
+  /* Foraine 相关 */
+  "foraine.DownstreamTrafficControl": "",
+  "foraine.DownstreamTrafficControl.description": "",
+  "foraine.MaximumResourcesLimit": "",
+  "foraine.MaximumResourcesLimit.description": "",
+
+  /* 位置相关 */
+  "opt.locate": "",
+  "opt.locate.processing": "",
+  "locate.error-Unable2Get": "",
+
+  /* 邮件相关 */
+  "email.warn-EmptyAddress": "",
+  "email.error-NameNotSuitable": "",
+  "email.error-NoService": "",
+  "email.input.placeholder": "",
+  "toast.email.ok-verifySuccessful": "",
+  "toast.email.ok-unboundSuccessful": "",
+  "toast.email.ok-reboundSuccessful": "",
+  "toast.email.warn-VerificationTakenByOther": "",
+  "toast.email.error-Failed2SentEmail": "",
+  "toast.email.error-LinkExpired": "",
+  "toast.email.error-LinkDead4EmailChanged": "",
+  "toast.email.error-LinkInvalid": "",
+
+  /* 账号相关 */
+  "account.resetPassword": "",
+  "account.verifyEmail": "",
+  "account.changeEmail": "",
+  "account.logOut": "",
+  "account.deleteAccount": "",
+
+  /* 密码相关 */
+  "label.newPassword": "",
+  "label.confirmPassword": "",
+  "toast.resetPassword.warn-AtLeastChar": "",
+  "toast.resetPassword.error-DoesNotMatch": "",
+  "toast.resetPassword.success": "",
+
+  /* Toast */
+  // 注意: 此类的键必须足够通用, 最好是使用情景较多的完整语句
+  "toast.error-WrongCode": "",
+  "toast.error-WrongPassword": "",
+
+  /* Foraine-Toast */
+  "foraine-toast.foraineWouldRemember": "",
+  "foraine-toast.saveProgress": "",
+  "foraine-toast.loading": "",
+  "foraine-toast.processing": "",
+
+  /* OSS相关 */
+  "toast.oss.error-NoService": "",
+
+  /* 模态框 */
+  // 警告文本
+  "modal.warning.CannotbeUndone": "",
+
+  /* 流程 */
+  // 退出登录
+  "ops.logOut.ctn": "", // title使用account.LogOut
+  // 重置密码
+  "ops.resetPassword.a-ctn": "",
+  "ops.resetPassword.b-ctn": "",
+  // 注销账户
+  "ops.deleteAccount.a-ctn": "",
+  "toast.deleteAccount.warn-emailVerificationNeeded": "",
+  "ops.deleteAccount.b-title": "",
+  "ops.deleteAccount.b-ctn": "",
+  "label.MadeMyMind": "",
+  "label.stay": "",
+  "label.goodble": "",
+  "ops.deleteAccount.c-ctn": "",
+  "hint.accountAlreadyInDeactivated": "",
+  "toast.deleteAccout.ok-requestSubmitted": "",
+  "notice.deleteAccount.title": "",
+  "notice.deleteAccount.ctn": "",
+  // 取消注销账户
+  "label.cancelAccountDeletion": "",
+  "ops.cancelAccountDeletion.ctn": "",
+  "toast.cancelAccountDeletion.ok-confirmed": "",
+  "hint.accountDeletionRequestOverflow": "",
+  // 换绑邮箱
+  "ops.changeEmail": "",
+  "ops.changeEmail.a-ctn": "",
+  "ops.changeEmail.b-ctn": "",
+  "ops.changeEmail.c-ctn": "",
+  // 验证身份
+  "ops.verifyIdentity.title": "", // title使用opt.verify
+  "hint.2FANotEnabled": "",
+  "hint.emailNotVerified": "",
+  "toast.verifyIdentity.warn-MethodNotAvailable": "",
+  "ops.verifyIdentity.token.ctn": "",
+  "ops.verifyIdentity.password.ctn": "",
+  "ops.verifyIdentity.email.ctn": "",
+
+  /* 终端相关 */
+  "terminal.title": "",
+  "terminal.home": "",
+  "terminal.system": "",
+  "terminal.denied": "",
+  "terminal.quest": "",
+  "terminal.needKey": "",
+  "terminal.submit": "",
+  "terminal.permission.unlocked": "",
+  "narra.button": "",
+  "narra.key": "",
+  "narra.hint": "",
+  "narra.create": "",
+  "terminal.article.error": "",
+  "terminal.article.empty": "",
+
+  /* 导航栏相关 */
+  // tooltip
+  "nav.home": "",
+  "nav.resource": "",
+  "nav.articles": "",
+  "nav.chat": "",
+  "nav.top": "",
+  "nav.back": "",
+  "nav.login": "",
+  "nav.profile": ""
+}

@@ -1,0 +1,2132 @@
+<!DOCTYPE html>
+
+<html lang="zh">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <base href="/">
+        <title>Foraine 资源</title>
+
+        <link rel="icon" type="image/x-icon" href="assets/Icon/foraine-icon-v2.png">
+        <link rel="stylesheet" href="/style/main.css?v=40">
+        <link rel="stylesheet" href="/style/page-list.css?v=40">
+        <link rel="stylesheet" href="/style/page-resource.css?v=40">
+        <!-- 右下角的「加载中」牌子 (showBusyNote) -->
+        <link rel="stylesheet" href="/style/page-foraine-toast.css?v=40">
+        <script>
+            // 窄屏样式按需加载 (与文章列表页同一套)
+            if (matchMedia('(max-width: 900px)').matches) {
+                const mediaLink = document.createElement('link');
+                mediaLink.rel = 'stylesheet';
+                mediaLink.href = '/style/main-media.css';
+                document.head.appendChild(mediaLink);
+            }
+        </script>
+        <script src="/script/i18n.js?v=40" defer></script>
+        <script src="/script/core.js?v=40" defer></script>
+        <script src="/script/ui.js?v=40" defer></script>
+        <script src="/script/transition.js?v=40" defer></script>
+        <script src="/script/header.js?v=40" defer></script>
+        <script src="/script/layout.js?v=40" defer></script>
+        <script src="/script/rain-sound.js?v=40" defer></script>
+    </head>
+
+    <body class="page-resource">
+
+        <!-- 列表视图: 不带 ?id= 时的形态; 版式照文章列表页 (page-list.css) -->
+        <div class="page-layout" id="list-view">
+
+            <div class="list-top">
+                <h1 class="list-title No-slc" data-anim>资源</h1>
+                <button class="btn-acrylic list-create list-create-mobile" onclick="startUpload()">上传</button>
+            </div>
+
+            <div class="list-grid">
+
+                <!-- 计数行: 搜索框夹在「第 N 页」与排序按钮中间 (窄屏自己占一行) -->
+                <div class="list-head No-slc">
+                    <span class="list-count" id="list-count">…</span>
+                    <input class="resource-search" id="resource-search" type="search" placeholder="搜索资源" autocomplete="off" aria-label="搜索资源">
+                    <button type="button" class="sort-toggle" id="sort-toggle" onclick="toggleSort()" title="切换排序方式">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16"></path><path d="m3 8 4-4 4 4"></path><path d="M17 20V4"></path><path d="m13 16 4 4 4-4"></path></svg>
+                        <span id="sort-label">按时间排序</span>
+                    </button>
+                </div>
+
+                <section class="list-main" data-anim>
+                    <div class="article-list" id="resource-list">
+                        <div class="page-state"><div class="page-state-spinner"></div><p class="page-state-text">直达星辰..</p></div>
+                    </div>
+                    <div class="pager" id="pager"></div>
+                </section>
+
+                <!-- 右栏三块: 类型 (胶囊) / 上传者 (下拉) / 存储统计; 窄屏整块收起, 类型换成右下角的抽屉 -->
+                <aside class="tag-side No-slc" data-anim>
+                    <h2 class="tag-side-title">Narratize..</h2>
+                    <button class="btn-acrylic list-create list-create-side" onclick="startUpload()">上传</button>
+
+                    <h2 class="tag-side-title">类型</h2>
+                    <div class="tag-row" id="kind-row"></div>
+
+                    <h2 class="tag-side-title">上传者</h2>
+                    <select id="uploader-select" aria-label="按上传者筛选">
+                        <option value="">全部</option>
+                    </select>
+
+                    <h2 class="tag-side-title">存储</h2>
+                    <div class="resource-stats" id="resource-stats"></div>
+                </aside>
+
+            </div>
+
+            <div class="spacer-flex"></div>
+
+        </div>
+
+        <!-- 详情视图: 带 ?id= 时整块换上 (不另开 HTML 文件, 服务端那份 OG 也按同一路径分流) -->
+        <div class="page-layout" id="detail-view" hidden></div>
+
+        <!-- 窄屏: 右下角「类型」悬浮按钮 + 抽屉 -->
+        <div class="action-buttons">
+            <button class="action-btn tag-toggle No-slc" id="tag-toggle" hidden aria-label="类型" title="类型">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0l-7.2-7.2A2 2 0 0 1 2.8 12V4.8A2 2 0 0 1 4.8 2.8H12a2 2 0 0 1 1.4.6l7.2 7.2a2 2 0 0 1 0 2.8z"></path><circle cx="7.6" cy="7.6" r="1.2"></circle></svg>
+            </button>
+        </div>
+        <aside class="tag-drawer No-slc" id="tag-drawer">
+            <div class="tag-drawer-head">
+                <p class="tag-side-title">类型</p>
+                <button type="button" class="tag-drawer-close" onclick="closeTagDrawer()" aria-label="关闭类型" title="关闭">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+                </button>
+            </div>
+            <div class="tag-row tag-drawer-row" id="kind-drawer-row"></div>
+        </aside>
+        <div class="tag-shade" id="tag-shade" onclick="closeTagDrawer()"></div>
+
+        <script>
+            /* resource/index.html 资源中心 */
+            /*
+              内容: 列表 (搜索 / 类型 / 上传者 / 排序 / 分页) + 详情 (文件面板 / 防盗链 / 公开编辑) + 上传工作台
+              依赖: core.js / ui.js / 接口 /api/resources, /api/resource/*
+              列表公开 (游客也能看能下); resource 表里 scope='chat' 的私聊附件不归这一页
+            */
+
+            const RES_PAGE_SIZE = 20;
+            /* 中转与直传的分界线, 与 worker 的 24MB 判断和 ui.js 的 CHAT_INLINE_MAX 是同一个数 */
+            const RES_INLINE_MAX = 24 * 1024 * 1024;
+            const RES_MAX_GB = 5;   // 与服务端的 RES_MAX_BYTES 对齐
+            const RES_MAX_BYTES = RES_MAX_GB * 1024 * 1024 * 1024;
+            /* 一批 (一次上传的所有文件) 的上限, 与服务端的 RES_BATCH_MAX_BYTES 对齐 */
+            const RES_BATCH_GB = 10;
+            const RES_BATCH_MAX_BYTES = RES_BATCH_GB * 1024 * 1024 * 1024;
+            /* 有效期档位必须与服务端 resource.js 的 RES_EXPIRE_OPTIONS 对得上 */
+            const RES_EXPIRE_CHOICES = [
+              { value: 'never', label: '永久' },
+              { value: '24h', label: '24 小时后过期' },
+              { value: '72h', label: '72 小时后过期' },
+              { value: '7', label: '7 天后过期' },
+              { value: '30', label: '30 天后过期' }
+            ];
+            /* 编辑组时要把「这一组还剩多少小时」折回上面几档, 所以另记一份小时数 */
+            const RES_EXPIRE_HOURS = [['24h', 24], ['72h', 72], ['7', 24 * 7], ['30', 24 * 30]];
+            const RES_SORTS = [
+              { key: 'time', label: '按时间排序' },
+              { key: 'name', label: '按名称排序' },
+              { key: 'size', label: '按大小排序' }
+            ];
+            const ARROW_SVG = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>';
+            const UPLOAD_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+              + '<path d="M12 16V4"></path><path d="m7.5 8.5 4.5-4.5 4.5 4.5"></path>'
+              + '<path d="M4 16v2.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V16"></path></svg>';
+
+            const state = { page: 1, q: '', kind: '', uploader: '', sort: 'time' };
+            /* 详情页当前选中的文件 (0 = 没选中 -> 右栏那个防盗按钮对整个组生效);
+               放模块级而不是渲染闭包里: 开关一次防盗要重画详情, 选中状态得活下来 */
+            let pickedFileId = 0;
+            let detailData = null;
+            /* 页脚元素要自己留着: 挪进 #detail-view 之后, 下次 innerHTML = '' 会把它从文档里摘下来,
+               那时 document.querySelector('.site-footer') 就是 null 了, 页脚再也挂不回去 */
+            let siteFooterEl = null;
+
+            function currentQuery() {
+              const params = new URLSearchParams();
+              params.set('page', state.page);
+              params.set('size', RES_PAGE_SIZE);
+              if (state.q) params.set('q', state.q);
+              if (state.kind) params.set('kind', state.kind);
+              if (state.uploader) params.set('uploader', state.uploader);
+              if (state.sort !== 'time') params.set('sort', state.sort);
+              return params.toString();
+            }
+
+            /* 筛选一变就回第 1 页, 只重渲染列表 (不整页跳); 地址栏跟着写 —— 搜索词与筛选是能分享的 */
+            function reload() {
+              const params = new URLSearchParams();
+              if (state.q) params.set('q', state.q);
+              if (state.kind) params.set('kind', state.kind);
+              if (state.uploader) params.set('uploader', state.uploader);
+              const query = params.toString();
+              history.replaceState(null, '', query ? '/resource/?' + query : '/resource/');
+              loadResources(1);
+            }
+
+            function toggleSort() {
+              const index = RES_SORTS.findIndex((item) => item.key === state.sort);
+              state.sort = RES_SORTS[(index + 1) % RES_SORTS.length].key;
+              const label = document.getElementById('sort-label');
+              if (label) label.textContent = RES_SORTS.find((item) => item.key === state.sort).label;
+              reload();
+            }
+
+            async function loadResources(page) {
+              state.page = page || 1;
+              const list = document.getElementById('resource-list');
+              list.innerHTML = '';
+              list.appendChild(loadingState());
+
+              try {
+                const response = await fetch('/api/resources?' + currentQuery(), { cache: 'no-store' });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || '加载失败');
+
+                const rows = data.resources || [];
+                const filtered = !!(state.q || state.kind || state.uploader);
+                list.innerHTML = '';
+
+                const countBox = document.getElementById('list-count');
+                if (countBox) {
+                  /* 只报总数: 空的时候写「资源中心还是空的」会跟列表中间那块大提示重复, 页码交给分页条 */
+                  countBox.textContent = '共 ' + (data.total || 0) + ' 项';
+                }
+
+                if (rows.length === 0) {
+                  list.appendChild(emptyState(filtered
+                    ? { icon: 'search', title: '无结果', text: '没找到东西呐..' }
+                    : { icon: 'book', title: '一片虚空', text: '点击「上传」发布第一个资源' }));
+                }
+
+                rows.forEach((row) => list.appendChild(resourceCard(row)));
+                renderPager(data);
+                renderKinds(data.kinds || []);
+                renderUploaders(data.uploaders || []);
+                renderStats(data.stats);
+                replayItems(list, '.article-item');
+              } catch (error) {
+                showToast(error.message, 'error');
+                list.innerHTML = '';
+                list.appendChild(el('p', 'editor-hint', '暂时无法获取资源'));
+              }
+            }
+
+            /* 一张组卡片: 左边编号角标, 中间日期 + 组标题 / 简介 / 元信息, 右边箭头。
+               一组 = 一次上传, 卡片上报的是「几个文件 + 总量 + 都有哪些类型」; 整块可点 = 进详情 */
+            /* 上传者一律写成「头像 + 用户名」: 与文章列表那张卡同一套 (.meta-author-avatar);
+               昵称会改、用户名才是身份。注销的账号没有 username, 退化成不可点的文字 */
+            function uploaderItem(row) {
+              const username = row.uploader_username;
+              const wrap = el(username ? 'a' : 'span', 'meta-item meta-author');
+              if (username) wrap.href = '/u/' + encodeURIComponent(username);
+              const face = document.createElement('img');
+              face.className = 'meta-author-avatar';
+              face.alt = '';
+              face.loading = 'lazy';
+              // 先挂监听再设 src: 缓存命中时不会触发 error, 但裂图那次一定会
+              face.addEventListener('error', () => { face.src = '/assets/Icon/foraine-icon-v2.png'; });
+              face.src = row.uploader_avatar || '/assets/Icon/foraine-icon-v2.png';
+              wrap.appendChild(face);
+              wrap.appendChild(el('span', null, username || row.uploader || '已注销'));
+              return wrap;
+            }
+
+            function resourceCard(row) {
+              const item = el('div', 'article-item');
+              item.appendChild(el('div', 'article-id', '#' + row.id));
+
+              const body = el('div', 'article-body-col');
+              const head = el('div', 'article-item-head');
+              head.appendChild(el('span', 'article-date', formatDate(row.created_at)));
+              head.appendChild(el('span', 'article-title', row.title || '未命名'));
+              body.appendChild(head);
+
+              if (row.description) body.appendChild(el('p', 'article-summary', row.description));
+
+              const meta = el('div', 'article-meta');
+              // 组里可能有几种类型: 各给一枚小标, 超过三枚就把剩下的折成 +N
+              const kinds = row.kinds || [];
+              kinds.slice(0, 3).forEach((k) => {
+                meta.appendChild(el('span', 'resource-tag is-' + k.key,
+                  k.label + (k.count > 1 ? ' ' + k.count : '')));
+              });
+              if (kinds.length > 3) meta.appendChild(el('span', 'resource-tag', '+' + (kinds.length - 3)));
+              meta.appendChild(el('span', 'resource-size', row.file_count + ' 个文件 · ' + formatFileSize(row.total_size)));
+              const who = uploaderItem(row);
+              // 卡片本身就是「点开资源」: 别让点作者又变成开资源
+              who.addEventListener('click', (event) => event.stopPropagation());
+              meta.appendChild(who);
+              // 会过期的那些要说出来 (默认是永久, 所以只标例外)
+              if (row.expires_at) meta.appendChild(el('span', 'meta-item', '到期 ' + formatDate(row.expires_at)));
+              body.appendChild(meta);
+              item.appendChild(body);
+
+              const arrow = el('div', 'article-arrow');
+              arrow.innerHTML = ARROW_SVG;
+              item.appendChild(arrow);
+
+              item.onclick = () => goPage('/resource/?id=' + row.id);
+              return item;
+            }
+
+            function renderPager(data) {
+              const pager = document.getElementById('pager');
+              pager.innerHTML = '';
+              const totalPages = Math.max(1, Math.ceil((data.total || 0) / (data.size || RES_PAGE_SIZE)));
+              if (totalPages <= 1) return;
+
+              const prev = el('button', 'btn-outline', '上一页');
+              prev.disabled = state.page <= 1;
+              prev.onclick = () => loadResources(state.page - 1);
+
+              const next = el('button', 'btn-outline', '下一页');
+              next.disabled = !data.hasMore;
+              next.onclick = () => loadResources(state.page + 1);
+
+              pager.appendChild(prev);
+              pager.appendChild(el('span', null, '第 ' + state.page + ' / ' + totalPages + ' 页'));
+              pager.appendChild(next);
+            }
+
+            /* 类型胶囊: 侧栏与窄屏抽屉各画一份 (同一屏里只会有一份是可见的) */
+            function renderKinds(kinds) {
+              const boxes = [document.getElementById('kind-row'), document.getElementById('kind-drawer-row')];
+              const toggle = document.getElementById('tag-toggle');
+              boxes.forEach((box) => {
+                if (!box) return;
+                box.innerHTML = '';
+                if (!kinds.length) {
+                  box.appendChild(el('span', 'editor-hint', '无标签'));
+                  return;
+                }
+                const all = el('button', 'tag-chip' + (state.kind === '' ? ' active' : ''), '全部');
+                all.onclick = () => { state.kind = ''; reload(); closeTagDrawer(); };
+                box.appendChild(all);
+
+                kinds.forEach((kind) => {
+                  const chip = el('button', 'tag-chip' + (state.kind === kind.key ? ' active' : ''), kind.label);
+                  chip.appendChild(el('span', 'tag-count', String(kind.count)));
+                  // 再点一下就是取消筛选 (胶囊本来就是开关)
+                  chip.onclick = () => {
+                    state.kind = state.kind === kind.key ? '' : kind.key;
+                    reload();
+                    closeTagDrawer();
+                  };
+                  box.appendChild(chip);
+                });
+              });
+              if (toggle) toggle.hidden = !kinds.length;
+              replayItems(document.getElementById('kind-row'), '.tag-chip');
+            }
+
+            function renderUploaders(uploaders) {
+              const select = document.getElementById('uploader-select');
+              if (!select) return;
+              select.innerHTML = '';
+              const all = document.createElement('option');
+              all.value = '';
+              all.textContent = '全部';
+              select.appendChild(all);
+
+              uploaders.forEach((item) => {
+                const option = document.createElement('option');
+                option.value = item.username || '';
+                option.textContent = (item.nickname || '已注销') + '（' + item.count + '）';
+                select.appendChild(option);
+              });
+              // 被选的那个人可能已经把自己最后一份资源删了 -> 退回「全部」
+              select.value = state.uploader;
+              if (select.value !== state.uploader) select.value = '';
+            }
+
+            function renderStats(stats) {
+              const box = document.getElementById('resource-stats');
+              if (!box || !stats) return;
+              box.innerHTML = '';
+              [['总数', stats.count + ' 个'], ['总大小', formatFileSize(stats.bytes)], ['本月新增', stats.month + ' 个']]
+                .forEach((pair) => {
+                  const line = el('div', 'resource-stat');
+                  line.appendChild(el('span', 'resource-stat-key', pair[0]));
+                  line.appendChild(el('span', 'resource-stat-value', pair[1]));
+                  box.appendChild(line);
+                });
+            }
+
+            /* 窄屏的类型抽屉 (与文章列表页的标签抽屉同一套) */
+            function openTagDrawer() {
+              document.getElementById('tag-drawer').classList.add('show');
+              document.getElementById('tag-shade').classList.add('show');
+            }
+
+            function closeTagDrawer() {
+              document.getElementById('tag-drawer').classList.remove('show');
+              document.getElementById('tag-shade').classList.remove('show');
+            }
+
+            function toggleTagDrawer() {
+              if (document.getElementById('tag-drawer').classList.contains('show')) closeTagDrawer();
+              else openTagDrawer();
+            }
+
+            /* 详情 */
+
+            async function showDetail(id) {
+              const listView = document.getElementById('list-view');
+              const detail = document.getElementById('detail-view');
+              if (listView) listView.hidden = true;
+              if (!detail) return;
+              detail.hidden = false;
+              detail.innerHTML = '';
+              detail.appendChild(loadingState());
+
+              try {
+                const response = await fetch('/api/resource/detail?id=' + id, { cache: 'no-store' });
+                const data = await response.json();
+                if (!response.ok) {
+                  const error = new Error(data.error || '加载失败');
+                  error.status = response.status;
+                  throw error;
+                }
+                renderDetail(data);
+              } catch (error) {
+                /* 资源没了 (404 已被清理 / 410 已过期) 就走全站那张「页面不存在」页 ——
+                   与 Worker 的 serveNotFound 同一个落点 (/access-denied.html?reason=404),
+                   不在详情里自己摆一块「这个资源打不开」。
+                   用 replace 而不是 href: 别把那串打不开的地址留在历史里, 返回键会一直踢回来;
+                   其它错误 (500 / 断网) 仍然就地报错, 那种刷一下可能就好了 */
+                if (error.status === 404 || error.status === 410) {
+                  location.replace('/access-denied.html?reason=404');
+                  return;
+                }
+                detail.innerHTML = '';
+                detail.appendChild(emptyState({ icon: 'search', title: '无法打开资源', text: error.message }));
+                const back = el('button', 'btn-outline', '返回资源中心');
+                back.onclick = () => goPage('/resource/');
+                detail.appendChild(back);
+              }
+            }
+
+            /* 详情 = 组头 + 每个文件一块面板 + 右栏那块防盗/公开编辑。
+               组头横跨两栏; 窄屏塌成一栏时右栏落在文件面板上面 (见 page-resource.css);
+               组头那个删整组, 每个文件面板里那个删单个文件 */
+            function renderDetail(data) {
+              const group = data.group || {};
+              detailData = data;
+              const box = document.getElementById('detail-view');
+              box.innerHTML = '';
+
+              // 上次选中的文件可能已经不在这一组里了 (删掉了/换了组) -> 退回「整组」
+              if (!(data.files || []).some((file) => file.id === pickedFileId)) pickedFileId = 0;
+
+              const wrap = el('div', 'resource-detail-wrap');
+
+              const card = el('div', 'resource-detail resource-detail-head');
+              card.appendChild(el('h1', 'resource-detail-title', group.title || '未命名'));
+
+              const meta = el('div', 'article-meta resource-detail-meta');
+              meta.appendChild(el('span', 'meta-item', (group.file_count || 0) + ' 个文件'));
+              meta.appendChild(el('span', 'meta-item', formatFileSize(group.total_size || 0)));
+              meta.appendChild(el('span', 'meta-item', formatDate(group.created_at)));
+              // 详情上把有效期说全: 两个日期挨着不带说明的话分不清谁是谁
+              meta.appendChild(el('span', 'meta-item', group.expires_at ? '有效期至 ' + formatDate(group.expires_at) : '永久有效'));
+              if (group.guard) meta.appendChild(el('span', 'meta-item', '防盗已开启'));
+              /* 这一组开了「公开编辑」的话要说出来 (开关就在右栏那块面板上, 切的时候就地改这一行) */
+              const allowMeta = el('span', 'meta-item', '允许他人编辑');
+              allowMeta.style.display = group.allow_edit ? '' : 'none';
+              meta.appendChild(allowMeta);
+              meta.appendChild(uploaderItem(group));
+              card.appendChild(meta);
+
+              if (group.description) card.appendChild(el('p', 'resource-detail-desc', group.description));
+
+              const actions = el('div', 'resource-detail-actions');
+              const copyLink = el('button', 'btn-outline', '复制链接');
+              copyLink.onclick = () => copyResourceText(location.origin + '/resource/?id=' + group.id, '已复制链接');
+              actions.appendChild(copyLink);
+              // 「编辑组」= 弹同一个「准备上传文件」工作台, 只是把这一组现有的文件预填进去
+              // id <= 0 是加组之前的老单文件资源 (它没有组行可改), 不摆这个按钮
+              // can_edit 由服务端算好: 上传者 / 站长 / 开了「允许其他人编辑」且我邮箱验证过
+              if (data.can_edit && group.id > 0) {
+                const editGroup = el('button', 'btn-outline', '编辑组');
+                editGroup.onclick = () => openUploadModal(data);
+                actions.appendChild(editGroup);
+              }
+              /* 删整组只有一条入口:「编辑组 -> 把文件列表清空 -> 保存」, 那一下会弹验密码的框;
+                 单个文件的删除仍在每个文件面板里 (带理由那条管理员规矩不变) */
+              card.appendChild(actions);
+              wrap.appendChild(card);
+
+              /* 防盗与「公开编辑」两块在源码里排在文件前面: 窄屏塌成一栏时它们正好落在资源上面;
+                 没权限改、也还没开防盗的人不显示防盗块 (不摆一个自己点不动的开关) */
+              const guardCard = resourceGuardCard(group, data);
+              const allowCard = resourceAllowCard(group, data, allowMeta);
+              if (guardCard || allowCard) {
+                const side = el('aside', 'resource-side No-slc');
+                if (guardCard) side.appendChild(guardCard);
+                if (allowCard) side.appendChild(allowCard);
+                wrap.appendChild(side);
+              }
+
+              const col = el('div', 'resource-detail-col');
+              (data.files || []).forEach((file) => col.appendChild(resourceFilePanel(file, group, data)));
+              wrap.appendChild(col);
+
+              box.appendChild(wrap);
+              /* 页脚要跟着详情走: layout.js 挑的是「第一个 .page-layout」= #list-view, 进详情后那一棵整个隐藏,
+                 页脚就跟着没了 —— 所以把页脚挪到这一块末尾, 前面补一个和列表页同一个 .spacer-flex。
+                 必须在 renderDetail 末尾做: 上面那句 box.innerHTML = '' 会把它一起清掉,
+                 所以要靠 siteFooterEl 这个引用重新挂回去 (元素被摘下来之后是查不到的) */
+              if (!siteFooterEl) siteFooterEl = document.querySelector('.site-footer');
+              if (siteFooterEl && siteFooterEl.parentElement !== box) {
+                box.appendChild(el('div', 'spacer-flex'));
+                box.appendChild(siteFooterEl);
+              }
+              // 重画之后把选中态补回去 (防盗开关改完会重新走一遍这里)
+              if (pickedFileId) applyPicked();
+              syncGuardCard();
+            }
+
+            /* 选中 / 取消选中一个文件面板: 右栏那个防盗按钮的目标就是它。 */
+            function pickFile(id) {
+              pickedFileId = pickedFileId === id ? 0 : id;
+              applyPicked();
+              syncGuardCard();
+            }
+
+            function applyPicked() {
+              document.querySelectorAll('.resource-file').forEach((panel) => {
+                const on = Number(panel.dataset.fileId) === pickedFileId;
+                panel.classList.toggle('is-picked', on);
+              });
+            }
+
+            /* 右栏那块防盗卡。没有权限改、也没开过防盗就返回 null (不显示)。 */
+            function resourceGuardCard(group, data) {
+              const guarded = (data.group && data.group.guard_count) || 0;
+              if (!data.can_guard && !guarded) return null;
+
+              const card = el('div', 'resource-guard');
+              card.appendChild(el('h2', 'tag-side-title', '防盗链'));
+              card.appendChild(el('p', 'resource-guard-hint',
+                '开启后文件只能在站内下载，且需要登录；所有直链都将失效'));
+              card.appendChild(el('p', 'resource-guard-target', ''));
+              const btn = el('button', 'btn-acrylic resource-guard-btn', '开启防盗链');
+              if (!data.can_guard) {
+                btn.disabled = true;
+                btn.title = '只有上传者能切换此模式';
+              } else {
+                btn.onclick = () => toggleResourceGuard(group, data);
+              }
+              card.appendChild(btn);
+              return card;
+            }
+
+            /* 按钮写什么字、对谁生效 —— 每次选中变化都要重算一遍。 */
+            function syncGuardCard() {
+              const data = detailData;
+              const btn = document.querySelector('.resource-guard-btn');
+              const target = document.querySelector('.resource-guard-target');
+              if (!data || !btn || !target) return;
+
+              const file = (data.files || []).find((item) => item.id === pickedFileId) || null;
+              const on = file ? !!file.guard : !!data.group.guard;
+              btn.textContent = on ? '关闭防盗' : '开启防盗';
+              btn.className = 'resource-guard-btn ' + (on ? 'btn-outline' : 'btn-acrylic');
+              target.className = 'resource-guard-target' + (on ? ' is-on' : '');
+              const count = (data.files || []).length;
+              const guardedCount = (data.group && data.group.guard_count) || 0;
+              /* 没选中文件时说的是「整组」; 部分防盗 (文件级覆盖值造成的) 要把中间态说出来,
+                 否则「整组 2 个文件: 未防盗」跟旁边那个「已防盗」小标会互相打架 */
+              target.textContent = file
+                ? (file.title || file.name) + '：' + (on ? '已启用防盗链' : '未启用防盗链')
+                : '整组 ' + count + ' 个文件：' + (on ? '已启用防盗链' : (guardedCount ? guardedCount + ' 个已防盗' : '未防盗'));
+            }
+
+            /* 开 / 关防盗: 选了文件就只对那一个, 没选就是对整组 */
+            async function toggleResourceGuard(group, data) {
+              const file = (data.files || []).find((item) => item.id === pickedFileId) || null;
+              const on = !(file ? !!file.guard : !!data.group.guard);
+              const what = file ? ('「' + (file.title || file.name) + '」') : ('这一组的 ' + (data.files || []).length + ' 个文件');
+              await confirmAction({
+                title: on ? '开启防盗' : '关闭防盗',
+                message: on
+                  ? (what + '将只能在 Foraine 站内下载，且下载前需要登录')
+                  : (what + '将恢复成可直链下载。\n注意：边缘传播需要时间，文件将在24小时内恢复可直链下载'),
+                confirmText: on ? '开启' : '关闭',
+                danger: !on,
+                onConfirm: async () => {
+                  const payload = { id: group.id, on };
+                  if (file) payload.file_id = file.id;
+                  const result = await apiPost('/api/resource/guard', payload);
+                  if (result && result.acl_failed) {
+                    showToast('有 ' + result.acl_failed + ' 个对象更改失败，请向站长咨询错误信息', 'warn');
+                  } else {
+                    showToast(on ? '已开启防盗' : '已关闭防盗', 'ok');
+                  }
+                  showDetail(group.id);
+                }
+              });
+            }
+
+            function resourceAllowCard(group, data, allowMeta) {
+              if (!data.can_allow || !(group.id > 0)) return null;
+
+              const card = el('div', 'resource-allow');
+              card.appendChild(el('h2', 'tag-side-title', '公开编辑'));
+              card.appendChild(el('p', 'resource-allow-hint',
+                '开启后站内已验邮箱用户可以编辑此资源组'));
+
+              const row = el('label', 'resource-allow-row');
+              const sw = el('span', 'ctx-switch');
+              const input = document.createElement('input');
+              input.type = 'checkbox';
+              input.checked = !!group.allow_edit;
+              sw.appendChild(input);
+              sw.appendChild(el('span', 'ctx-switch-track'));
+              const state = el('span', 'resource-allow-state', '');
+              const paint = () => {
+                state.textContent = input.checked ? '已开启' : '已关闭';
+                state.classList.toggle('is-on', input.checked);
+              };
+              paint();
+              row.appendChild(sw);
+              row.appendChild(state);
+
+              /* 即时生效、不弹确认框: 这不是破坏性操作, 关了随时再开。
+                 失败要把开关拨回去 —— 不然它停在「已开启」而服务端没变, 下一眼就开始骗人 */
+              input.addEventListener('change', async () => {
+                const on = input.checked;
+                input.disabled = true;
+                try {
+                  await apiPost('/api/resource/allow-edit', { id: group.id, on });
+                  allowMeta.style.display = on ? '' : 'none';
+                  showToast(on ? '已开启公开编辑' : '已关闭公开编辑', 'ok');
+                } catch (error) {
+                  input.checked = !on;
+                  showToast((error && error.message) || '改公开编辑失败，请稍后再试', 'error');
+                } finally {
+                  input.disabled = false;
+                  paint();
+                }
+              });
+
+              card.appendChild(row);
+              return card;
+            }
+
+            /* 一个文件面板: 类型小标 + 标题 / 简介 / 文件名 / 大小 / 校验值 + 下载与删除, 下面接预览。
+               点面板空白处 = 选中它 (右栏防盗按钮就作用在它身上); 点链接与按钮不算选中 */
+            function resourceFilePanel(file, group, data) {
+              const panel = el('div', 'resource-file');
+              panel.dataset.fileId = String(file.id);
+
+              const head = el('div', 'resource-file-head');
+              head.appendChild(el('span', 'resource-tag is-' + (file.kind || 'other'), (file.ext || '').toUpperCase() || '文件'));
+              head.appendChild(el('h2', 'resource-file-title', file.title || file.name));
+              /* 「已启用防盗链」与「上传者」两枚标识不在这一行了: 它们挪到底部动作行的最右端 (见下面 actions)。
+                 头部行只留「类型标 + 标题 …… 选中」, 「选中」那个 margin-left: auto 自然贴右 */
+              const pick = el('button', 'resource-file-pick', pickedFileId === file.id ? '取消选中' : '选中');
+              pick.type = 'button';
+              pick.title = '选中后，右栏的防盗按钮只将作用于选中文件';
+              pick.onclick = (event) => { event.stopPropagation(); pickFile(file.id); };
+              head.appendChild(pick);
+              panel.appendChild(head);
+              panel.addEventListener('click', (event) => {
+                if (event.target.closest('a, button')) return;
+                pickFile(file.id);
+              });
+
+              if (file.description) panel.appendChild(el('p', 'resource-file-desc', file.description));
+
+              const lines = el('div', 'resource-file-lines');
+              lines.appendChild(kvLine('文件名', file.name, 'resource-file-name'));
+              lines.appendChild(kvLine('大小', formatFileSize(file.size)));
+              // 校验值: md5 是 OSS 算的 (ETag), sha256 / sha1 是上传端算的 —— 两个都存着;
+              // 标签做成按钮, 点一下在几种之间切。值本身仍旧点一下即复制
+              const hashes = [];
+              if (file.md5) hashes.push({ label: '服务端校验值（MD5）', value: file.md5 });
+              if (file.sha256) hashes.push({ label: '校验值（SHA-256）', value: file.sha256 });
+              if (file.sha1) hashes.push({ label: '校验值（SHA-1）', value: file.sha1 });
+              if (hashes.length) {
+                let hashIndex = 0;
+                const line = el('div', 'resource-detail-file');
+                const keyBtn = el('button', 'resource-stat-key resource-hash-key');
+                keyBtn.type = 'button';
+                const code = el('code', 'resource-hash');
+                const paintHash = () => {
+                  const item = hashes[hashIndex];
+                  keyBtn.textContent = item.label;
+                  keyBtn.disabled = hashes.length < 2;
+                  keyBtn.title = hashes.length < 2 ? '' : '点一下换另一种校验值';
+                  code.textContent = item.value;
+                  code.title = '点一下复制';
+                };
+                keyBtn.onclick = () => {
+                  hashIndex = (hashIndex + 1) % hashes.length;
+                  paintHash();
+                };
+                code.onclick = () => copyResourceText(hashes[hashIndex].value, '已复制校验值');
+                line.appendChild(keyBtn);
+                line.appendChild(code);
+                lines.appendChild(line);
+                paintHash();
+              }
+              panel.appendChild(lines);
+
+              const actions = el('div', 'resource-detail-actions');
+
+              /* 下载直接给桶里的地址: 对象上挂了 Content-Disposition, 点开就是「保存」, 而且字节不经过 Worker
+                 —— 大文件走 Worker 中转会很难受。服务端仍保留 /api/resource/download 那条路:
+                 私聊附件、文本预览、老消息都在用它; 三个按钮的类名保持一致 */
+              const download = el('a', 'btn-outline', '下载');
+              /* 直链还是下载接口由服务端定 (resourceFileView): 开了防盗链的文件不能挂直链 ——
+                 对象 ACL 是 private, 直链一律 403, 而那道门现在还要登录 */
+              download.href = file.download_url || ('/api/resource/download?id=' + file.id);
+              download.setAttribute('download', file.name || '');
+              /* 直链那条路 Worker 看不到字节, 所以点下去先报一条下载日志; 走下载接口的那些不用报 */
+              if (download.href.indexOf('/api/') !== 0) {
+                download.addEventListener('click', () => {
+                  fetch('/api/resource/log-download', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: file.id }), cache: 'no-store'
+                  }).catch(() => {});
+                });
+              }
+              actions.appendChild(download);
+
+              /* 「删除这个文件」按单个文件的权限判: can_delete 由服务端给 (我的文件 / 我是主人或站长) */
+              if (file.can_delete) {
+                const remove = el('button', 'btn-danger', '删除这个文件');
+                remove.onclick = () => deleteResource(group, file, !!data.must_notify);
+                actions.appendChild(remove);
+              }
+              /* 两枚标识放在这一行的最右端: 它们讲的是「这个文件什么状态、谁传的」,
+                 跟着下载按钮比压在标题后面更说得通; 上传者仍走同一个辅助函数 (头像 + 用户名) */
+              if (file.guard) actions.appendChild(el('span', 'resource-guard-chip', '已启用防盗链'));
+              if (file.uploader) {
+                const owner = uploaderItem(file);
+                owner.classList.add('resource-file-owner');
+                actions.appendChild(owner);
+              }
+              panel.appendChild(actions);
+
+              renderFilePreview(panel, file);
+              return panel;
+            }
+
+            /* 「键 —— 值」一行 (文件名 / 大小 / 校验值都用它)。
+               传了 onClick 就把值做成可点的 (校验值那条: 点一下即复制) */
+            function kvLine(key, value, codeClass, onClick) {
+              const line = el('div', 'resource-detail-file');
+              line.appendChild(el('span', 'resource-stat-key', key));
+              const shown = el(codeClass ? 'code' : 'span', codeClass || null, value);
+              if (onClick) {
+                shown.title = '点击复制';
+                shown.onclick = onClick;
+              }
+              line.appendChild(shown);
+              return line;
+            }
+
+            /* 图片 / 纯文本就地看一眼, 别的类型不给预览 (不引第三方渲染器) */
+            function renderFilePreview(panel, file) {
+              const mime = String(file.mime || '');
+              const asImage = mime.indexOf('image/') === 0;
+              const asText = mime.indexOf('text/') === 0 || mime === 'application/json';
+              if (!asImage && !asText) return;
+
+              const wrap = el('div', 'resource-preview');
+              wrap.appendChild(el('h2', 'resource-preview-title', asImage ? '预览' : '内容预览'));
+
+              if (asImage) {
+                const img = document.createElement('img');
+                // md-img 是给 ui.js 那个委派的: 点一下放大 (就是文章里那套灯箱)
+                img.className = 'resource-preview-img md-img';
+                img.alt = file.name || '';
+                img.loading = 'lazy';
+                // 公共读直链: 图片吃得到 Cloudflare 缓存。桶的跨域规则只放 PUT,
+                // 所以下面那段取文本必须绕 Worker (防盗的图 url 本身就是下载接口)
+                img.src = file.url;
+                wrap.appendChild(img);
+              } else {
+                const pre = el('pre', 'resource-preview-text', '读取中…');
+                wrap.appendChild(pre);
+                fetch('/api/resource/download?id=' + file.id + '&inline=1', { cache: 'no-store' })
+                  .then((response) => (response.ok ? response.text() : Promise.reject(new Error('读不到'))))
+                  .then((text) => { pre.textContent = text.slice(0, 20000); })
+                  .catch(() => { pre.textContent = '无法读取'; });
+              }
+              panel.appendChild(wrap);
+            }
+
+            async function copyResourceText(text, okText) {
+              try {
+                await navigator.clipboard.writeText(text);
+                showToast(okText, 'ok');
+              } catch (error) {
+                // 权限被拒时别静默失败: 替他选中, 让他自己按一下
+                const helper = document.createElement('input');
+                helper.value = text;
+                helper.className = 'resource-copy-helper';
+                document.body.appendChild(helper);
+                helper.select();
+                showToast('自动复制失败，按 Ctrl / ⌘ + C 复制', 'warn');
+                setTimeout(() => helper.remove(), 4000);
+              }
+            }
+
+            /* 删自己那份直接删; 管理员那份要先写理由, 那句理由会被原样发给上传者
+               (服务端 handleResourceDelete 也是这么判的, 前端这层只是别让人白填)。
+               file 传 null = 删整组; 传一个文件 = 只删这一个。
+               删整组要多一道验密码: 一次删掉一堆东西, 手滑的代价比删单个文件大得多;
+               那串密码会原样发给服务端再验一次 (前端弹窗只是体验, 门在服务端), 单个文件不验 */
+            async function deleteResource(group, file, mustNotify) {
+              let password = '';
+              if (!file) {
+                const identity = await verifyIdentity({ methods: ['password'] });
+                if (!identity) return false;
+                password = identity.password || '';
+              }
+              await confirmAction({
+                title: file ? '删除这个文件' : '删除组',
+                message: file
+                  ? '文件记录与云端对象会被删除，文件链接都将失效！'
+                  : '警告：组内的文件会被悉数删除，所有链接都将失效！',
+                confirmText: '删除',
+                danger: true,
+                fields: mustNotify
+                  ? [{ name: 'reason', label: '理由', placeholder: '删除理由', multiline: true, required: true, maxlength: 200 }]
+                  : [],
+                onConfirm: async (values) => {
+                  const payload = {
+                    id: group.id,
+                    reason: values && values.reason ? values.reason : ''
+                  };
+                  if (file) payload.file_id = file.id;
+                  else payload.password = password;
+                  const data = await apiPost('/api/resource/delete', payload);
+                  if (data && data.object_deleted === false) {
+                    showToast('记录已删除，云端对象未成功，请向站长咨询错误信息', 'warn');
+                  } else {
+                    showToast('已删除', 'ok');
+                  }
+                  // 只删了一个文件、组里还有别的 -> 留在详情页重画; 否则回列表
+                  if (file && (group.file_count || 0) > 1) showDetail(group.id);
+                  else goPage('/resource/');
+                }
+              });
+            }
+
+            /* 上传 */
+
+            async function startUpload() {
+              /* 先挂一块锁定牌: getCurrentUser 要走一次接口, 慢的时候用户会以为按钮坏了 */
+              const busy = showForaineToast({ text: I18N.t('foraine-toast.loading'), block: true });
+              const user = await getCurrentUser();
+              busy.close();
+              if (!user) {
+                showMessage("需要登录<br><br><button class='btn' onclick=\"closeModal(); pageTransitionTo('/login.html')\">去登录</button>");
+                return;
+              }
+              if (user.ban) { showToast('账号被封禁，无法上传资源', 'warn'); return; }
+              // 邮箱是「这号是你的」唯一的锚点, 服务端也拦 (handleResourceUpload 那边同一条规矩)
+              if (!user.email) { showToast('请先在个人主页「资料」里填写邮箱，才可上传资源', 'warn'); return; }
+              openUploadModal();
+            }
+
+            /* 工作台的 Ctrl/Cmd+S: 只注册**一次**的全局监听, 真正干活的那个闭包放在 workbenchHotkey
+               里 (每开一次工作台覆盖一次), 弹窗关掉之后靠 #rw-root 还在不在来早退 —— 省得去摘监听 */
+            let workbenchHotkey = null;
+            document.addEventListener('keydown', (event) => {
+              if (!workbenchHotkey) return;
+              if (!(event.ctrlKey || event.metaKey) || String(event.key).toLowerCase() !== 's') return;
+              if (!document.getElementById('rw-root')) return;
+              event.preventDefault();   // 别让浏览器弹「另存为」
+              workbenchHotkey();
+            });
+
+            /* 工作台的 Esc: 正选中某个文件时, Esc 先「取消选择」, 再按一次才轮到弹窗自己关。
+               必须是捕获阶段 + stopImmediatePropagation: ui.js 的 Esc 关闭监听也在 document 上,
+               只 preventDefault 拦不住它 —— 同一节点上的其他监听照样会跑。
+               与 Ctrl+S 那条一样只注册一次, 真正的闭包放 workbenchEscape */
+            let workbenchEscape = null;
+            document.addEventListener('keydown', (event) => {
+              if (event.key !== 'Escape' || !workbenchEscape) return;
+              if (!document.getElementById('rw-root')) return;
+              if (!workbenchEscape()) return;   // 没选中 → 交回给弹窗自己关
+              event.stopImmediatePropagation();
+              event.preventDefault();
+            }, true);
+
+            /* edit 给了 = 「编辑组」模式 (详情页那个按钮); 不传就是纯上传。
+               edit = 详情接口那份 { group, files } 原样丢过来, 组里现有的文件先铺进队列。
+               两个模式共用同一套积木与同一个队列数组, 靠 item.kind 分家 (existing = 已经在服务器上),
+               这样「一对标题简介框」与拖放、预览那些都不用写第二遍; editGroup.id > 0 才算真组 */
+            function openUploadModal(edit) {
+              const editGroup = edit && edit.group && edit.group.id > 0 ? edit.group : null;
+              /* 是不是上传者本人 (或站长): 服务端的 can_allow 就是这个判据。
+                 「公开编辑」放进来的协作者没有它 —— 组的标题 / 简介 / 有效期他们改不了,
+                 也不能把这一组删空 */
+              const isOwner = !editGroup || !!(edit && edit.can_allow);
+              /* 上传工作台: 一次上传 = 一组文件 —— 左栏是队列 (文件名 / 大小 / 校验值 / 预览 / 移除),
+                   右栏是拖选框 + 一对标题简介框 + 底部按钮行。
+                 标题简介只有一对: 没选中文件时编辑的是「组」, 选中了就是那一个文件 (看上面那行「正在编辑…」),
+                   想改组信息就先「取消选择」。
+                 上传是串行的: 组 id 要等第一个文件回来才知道, 后面的文件靠它挂进同一个组。
+                 二次确认用「按钮点两次」(ui.js 的 armTwoStep), 不要弹确认框 —— 工作台自己就在 #modal-content 里。
+                 拼字符串别在两条串中间夹块注释 (会被解析成「串 + (+串)」, 结果多一个字面的 NaN),
+                   注释写在下一行的行首 */
+              showMessage(
+                '<div class="confirm-dialog resource-workbench No-slc" id="rw-root">'
+                + '<p class="confirm-title">' + (editGroup ? '编辑组' : '准备上传文件') + '</p>'
+                + '<div class="rw-grid">'
+                +   '<div class="rw-col rw-queue-col">'
+                +     '<div class="rw-queue-fill">'
+                +       '<p class="rw-label"><span id="rw-label-text">待传文件列表</span><span class="rw-sum" id="rw-sum"></span></p>'
+                +       '<div class="rw-queue" id="rw-queue"></div>'
+                +       '<p class="rw-empty" id="rw-empty">暂无待传文件，可拖入或点击右侧区域选择</p>'
+                +     '</div>'
+                +   '</div>'
+                +   '<div class="rw-col rw-form-col">'
+                /* 上传/保存期间这块顶掉下面的拖选框: 标题 + 总进度条 + 一行读数 */
+                +     '<div class="rw-progress" id="rw-progress" hidden>'
+                +       '<p class="rw-progress-title">' + (editGroup ? '正在保存变更' : '总上传进度') + '</p>'
+                +       '<div class="rw-progress-bar"><span class="rw-progress-fill" id="rw-progress-fill"></span></div>'
+                +       '<p class="rw-progress-text" id="rw-progress-text"></p>'
+                +     '</div>'
+                +     '<div class="img-drop resource-drop" id="resource-drop">' + UPLOAD_ICON
+                +       '<p class="attach-kind-title">上传文件</p>'
+                +       '<p class="attach-kind-hint">可拖选 · 可多选 · 单个最大 ' + RES_MAX_GB + ' GB</p>'
+                +     '</div>'
+                +     '<div class="rw-meta">'
+                +       '<p class="rw-meta-which" id="rw-meta-which">正在编辑文件组</p>'
+                +       '<input class="confirm-input" id="rw-meta-title" maxlength="80" placeholder="标题">'
+                +       '<textarea class="confirm-input" id="rw-meta-desc" rows="1" maxlength="300" placeholder="简介"></textarea>'
+                +     '</div>'
+                +   '</div>'
+                + '</div>'
+                + '<div class="confirm-actions rw-actions">'
+                +   '<button type="button" class="btn-outline" id="rw-cancel">取消</button>'
+                +   '<button type="button" class="' + (editGroup ? 'btn-ok' : 'btn') + '" id="rw-submit" disabled>'
+                +     (editGroup ? '确认变更' : '确认上传') + '</button>'
+                +   '<button type="button" class="btn-acrylic-danger" id="rw-clear-all" hidden>移除全部</button>'
+                +   '<button type="button" class="btn-outline" id="rw-clear-pick" hidden>取消选择</button>'
+                +   '<div class="rw-expire-row">'
+                +     '<span class="resource-stat-key">有效期</span>'
+                +     '<select id="rw-expire">'
+                +       RES_EXPIRE_CHOICES.map((item) => '<option value="' + item.value + '">' + item.label + '</option>').join('')
+                +     '</select>'
+                +   '</div>'
+                + '</div>'
+                + '</div>'
+              );
+
+              /* 工作台一打开就锁住: 队列是用户一个个挑出来的, Esc / 点空白误触一下就白挑了,
+                 关标签页也会拦一下。
+                 出口是「取消」/「关闭」按钮与流程结束那几条路, 它们都必须走 closeWorkbench
+                 (先解锁再关) —— 锁着的时候 closeModal() 是空操作, 见 ui.js */
+              const workbenchLock = lockModal();
+              let workbenchClosed = false;
+              const closeWorkbench = () => {
+                if (workbenchClosed) return;   // 上面那几路可能连着关两次, 只解锁一次
+                workbenchClosed = true;
+                workbenchLock.release();
+                closeModal();
+              };
+
+              const root = document.getElementById('rw-root');
+              const queueBox = document.getElementById('rw-queue');
+              const sumLine = document.getElementById('rw-sum');
+              const emptyLine = document.getElementById('rw-empty');
+              const drop = document.getElementById('resource-drop');
+              const submit = document.getElementById('rw-submit');
+              const cancel = document.getElementById('rw-cancel');
+              const metaWhich = document.getElementById('rw-meta-which');
+              const metaTitle = document.getElementById('rw-meta-title');
+              const metaDesc = document.getElementById('rw-meta-desc');
+              const clearAll = document.getElementById('rw-clear-all');
+              const clearPick = document.getElementById('rw-clear-pick');
+              const expireSelect = document.getElementById('rw-expire');
+              const labelText = document.getElementById('rw-label-text');
+              const progressBox = document.getElementById('rw-progress');
+              const progressFill = document.getElementById('rw-progress-fill');
+              const progressText = document.getElementById('rw-progress-text');
+              if (!queueBox || !submit || !root || !progressBox) return;
+
+              const queue = [];
+              /* 组那对标题与简介 (没选中文件时编辑的就是它; 选中了就编辑那个文件自己的)。 */
+              const groupMeta = { title: '', desc: '' };
+              let seqId = 0;
+              let pickedId = 0;
+              let dragFrom = -1;
+              let uploading = false;
+              /* 进编辑模式时各字段的样子: 用来判断「改没改」, 没改的请求一个也不发 */
+              const original = { title: '', desc: '', files: {} };
+              /* 有效期只在用户**真动过**那个下拉时才提交 —— 档位是离散的, 预填只能取最接近的一档,
+                 不动它就写库等于悄悄改了别人的到期时间 */
+              let expireTouched = false;
+              /* 「取消上传」的二次确认与「停下来」的标志。
+                 取消是**跑到文件边界才停**: 正在传的那个让它传完 (中途断掉会在桶里留半个对象,
+                 而且登记行也回滚不了), 剩下的不再开始 */
+              let cancelArmed = false;
+              let cancelTimer = 0;
+              let uploadCancelled = false;
+
+              if (editGroup) {
+                labelText.textContent = '文件列表';
+                groupMeta.title = editGroup.title || '';
+                groupMeta.desc = editGroup.description || '';
+                original.title = (editGroup.title || '').trim();
+                original.desc = (editGroup.description || '').trim();
+                // 组里现有的文件先铺进队列: 能改它们自己的标题简介, 也能标删
+                ((edit && edit.files) || []).forEach((file) => {
+                  seqId += 1;
+                  queue.push({
+                    id: seqId, kind: 'existing', fileId: file.id,
+                    /* 装成 File 的形状: 队列那套 (名字 / 大小 / 移除) 只读这两个字段 */
+                    file: { name: file.name || '', size: file.size || 0, type: '' },
+                    sha: file.sha256 || '',
+                    title: file.title || '', desc: file.description || '',
+                    status: 'existing', percent: 0, error: '', removed: false,
+                    sha1: file.sha1 || '',
+                    /* 不是自己的文件就锁上 (不能删、不能改标题简介)。
+                       can_edit_meta 由服务端按「这个文件是不是我的 / 我是不是主人或站长」算好 */
+                    locked: file.can_edit_meta === false,
+                    // 队列里那个「别人的文件」标记也写用户名
+                    ownerName: file.uploader_username || file.uploader || ''
+                  });
+                  original.files[file.id] = {
+                    title: String(file.title || '').trim(),
+                    desc: String(file.description || '').trim()
+                  };
+                });
+                // 预填有效期: 取最接近当前剩余时间的那一档
+                if (editGroup.expires_at) {
+                  const left = Math.max(0, editGroup.expires_at - Date.now()) / 3600000;
+                  let pick = RES_EXPIRE_HOURS[0][0];
+                  let gap = Infinity;
+                  RES_EXPIRE_HOURS.forEach((pair) => {
+                    const diff = Math.abs(pair[1] - left);
+                    if (diff < gap) { gap = diff; pick = pair[0]; }
+                  });
+                  expireSelect.value = pick;
+                }
+                expireSelect.addEventListener('change', () => {
+                  expireTouched = true;
+                  step.reset();
+                });
+              }
+
+              /* 简介框: 默认一行, 最多三行。
+                 autoGrowLines / bindAutoGrow 在 ui.js (弹窗字段那套用的就是它们) */
+              bindAutoGrow(metaDesc, 3, 1);
+
+              /* 队列里能不能就地看一眼: 图片直接显示, 纯文本读前 20000 字 (别的类型不给预览) */
+              const PREVIEW_TEXT_EXT = ['txt', 'md', 'json', 'log', 'csv', 'yml', 'yaml'];
+              const isImageFile = (file) => String(file.type || '').indexOf('image/') === 0;
+              const isTextFile = (file) => {
+                const mime = String(file.type || '');
+                if (mime.indexOf('text/') === 0 || mime === 'application/json') return true;
+                const ext = String(file.name || '').split('.').pop().toLowerCase();
+                return PREVIEW_TEXT_EXT.indexOf(ext) >= 0;
+              };
+              const canPreview = (file) => isImageFile(file) || isTextFile(file);
+              /* 对象 URL 得自己收回来, 不然一张张图会一直占着内存 */
+              const closePreview = (item) => {
+                if (item.previewUrl) { URL.revokeObjectURL(item.previewUrl); item.previewUrl = ''; }
+                item.open = false;
+              };
+              const releasePreviews = () => queue.forEach(closePreview);
+
+              const totalSize = () => queue.reduce((sum, item) => sum + item.file.size, 0);
+              const pickedItem = () => queue.find((item) => item.id === pickedId) || null;
+
+              /* Esc 优先「取消选择」。返回 true = 我处理掉了 (外层会挡住弹窗的关闭) */
+              workbenchEscape = () => {
+                if (!pickedId) return false;
+                pickedId = 0;
+                renderQueue();
+                syncMetaFields();
+                return true;
+              };
+
+              /* 上传/保存期间的整套变换: 拖选框 -> 总进度面板; 元信息框整块冻结 (两个字框与下拉框 disabled);
+                 卡片上的「移除」收起来; 「移除全部」「取消选择」收起来;
+                 「取消」-> 「取消上传」(点两次才真取消); 卡片仍可选中, 字框内容跟着变, 只是改不动 */
+
+              /* 总进度按**字节**加权: 607MB 与 82MB 平分的话, 小的那个早就满了、条子看着不动 */
+              function paintTotalProgress() {
+                const list = queue.filter((item) => item.kind !== 'existing');
+                if (!list.length) {
+                  progressFill.style.width = '100%';
+                  progressText.textContent = '没有待传文件';
+                  return;
+                }
+                const doneCount = list.filter((item) => item.status === 'done').length;
+                const bytes = list.reduce((sum, item) => sum + (item.file.size || 0), 0);
+                let done = 0;
+                list.forEach((item) => {
+                  const size = item.file.size || 0;
+                  if (item.status === 'done') done += size;
+                  else if (item.status === 'uploading' || item.status === 'failed') done += size * (item.percent || 0) / 100;
+                });
+                const percent = bytes
+                  ? Math.min(100, Math.round(done / bytes * 100))
+                  : Math.round(doneCount / list.length * 100);
+                progressFill.style.width = percent + '%';
+                const eta = etaText(bytes, done);
+                progressText.textContent = doneCount + ' / ' + list.length + ' 个 · ' + percent + '%'
+                  + (eta ? ' · 预计剩余 ' + eta : '');
+              }
+
+              /* 「预计剩余时间」: 拿平滑过的字节速率去算 ——
+                 瞬时速率跳得厉害 (一个分片头尾差好几倍), 所以做指数平滑;
+                 速率没稳下来 (不到 1 B/s, 或者隔了 4 秒没新样本 —— 比如在算哈希) 就不显示,
+                 宁可少一行字, 也不要跳来跳去的数字 */
+              let etaMark = null;
+              const resetEta = () => { etaMark = null; };
+              function etaText(bytes, done) {
+                const now = Date.now();
+                if (!etaMark || now - etaMark.at > 4000) {
+                  etaMark = { at: now, done, speed: 0 };
+                } else {
+                  const dt = (now - etaMark.at) / 1000;
+                  const grew = done - etaMark.done;
+                  if (dt >= 0.4 && grew >= 0) {
+                    const inst = grew / dt;
+                    etaMark.speed = etaMark.speed ? etaMark.speed * 0.6 + inst * 0.4 : inst;
+                    etaMark.at = now;
+                    etaMark.done = done;
+                  }
+                }
+                const left = bytes - done;
+                if (!etaMark.speed || etaMark.speed < 1 || left <= 0) return '';
+                const sec = Math.round(left / etaMark.speed);
+                if (sec < 60) return sec + ' 秒';
+                if (sec < 3600) return Math.floor(sec / 60) + ' 分 ' + (sec % 60) + ' 秒';
+                return Math.floor(sec / 3600) + ' 小时 ' + Math.floor((sec % 3600) / 60) + ' 分';
+              }
+
+              /* 编辑模式: 「确认变更」在真的改了东西之前是灰的。
+                 改了什么算「有变更」: 组标题/简介、有效期动过、标了删除、某个文件的标题简介、新加的文件 */
+              function editDirty() {
+                if (expireTouched) return true;
+                if (groupMeta.title.trim() !== original.title) return true;
+                if (groupMeta.desc.trim() !== original.desc) return true;
+                return queue.some((item) => {
+                  if (item.kind !== 'existing') return true;
+                  if (item.removed) return true;
+                  const before = original.files[item.fileId] || { title: '', desc: '' };
+                  return String(item.title || '').trim() !== before.title
+                    || String(item.desc || '').trim() !== before.desc;
+                });
+              }
+              /* 「把这一组的文件全标删」= 删整组。协作者干不了这件事 (服务端也拦),
+                 所以提交按钮直接禁用 —— Ctrl+S 走的是同一个判断 (workbenchHotkey 先看 submit.disabled) */
+              const clearingAll = () => {
+                if (!editGroup || !queue.length) return false;
+                return queue.every((item) => item.kind === 'existing' && item.removed);
+              };
+              const refreshSubmit = () => {
+                const lockedOut = !!editGroup && !isOwner && clearingAll();
+                submit.disabled = uploading || lockedOut || (editGroup ? !editDirty() : !queue.length);
+                submit.title = lockedOut ? '清空文件列表等于删除整组，只有上传者可以' : '';
+              };
+
+              let busyToast = null;
+              function setBusy(on) {
+                uploading = on;
+                /* 进度条之外再挂一块「加载中」牌子; 这里不能 block —— 工作台里那个「取消上传」
+                   就是用户在等待期间唯一的出口, 封住信号就点不动了 */
+                if (on) {
+                  if (!busyToast) busyToast = showForaineToast({ text: I18N.t('foraine-toast.loading') });
+                } else if (busyToast) {
+                  busyToast.close();
+                  busyToast = null;
+                }
+                drop.hidden = on;
+                progressBox.hidden = !on;
+                metaTitle.disabled = on;
+                metaDesc.disabled = on;
+                /* 上传期间把 placeholder 也收掉: 字框已经禁用,
+                   还挂着「标题 / 简介」会让人以为那里有内容 (空的就是空的) */
+                metaTitle.placeholder = on ? '' : '标题';
+                metaDesc.placeholder = on ? '' : '简介';
+                expireSelect.disabled = on;
+                clearTimeout(cancelTimer);
+                cancelArmed = false;
+                cancel.textContent = on ? '取消上传' : '取消';
+                if (on) paintTotalProgress();
+                syncMetaFields();
+                renderQueue();
+              }
+
+              /* 停下这一趟: 只置标志, 由正在跑的那个循环在文件边界上收手 */
+              function cancelUpload() {
+                uploadCancelled = true;
+                uploadStopRequested = true;
+                cancelArmed = false;
+                cancel.disabled = true;
+                cancel.textContent = '正在取消';
+                renderQueue();
+              }
+
+              /* 校验值一个个算 (串行): 同时读几个 GB 进内存会直接把标签页拖死。
+                 算不出来也不拦上传 —— 它只是凭据, 不是防篡改 (大文件那条路 Worker 见不到字节)。
+                 两个摘要 (SHA-256 / SHA-1) 同一次读字节算出, 见 core.js 的 hashFilePair */
+              let hashRunning = false;
+              const runHash = async () => {
+                if (hashRunning) return;
+                hashRunning = true;
+                for (;;) {
+                  const item = uploading ? null : queue.find((entry) => entry.sha === undefined);
+                  if (!item) break;
+                  let pair = { sha256: '', sha1: '' };
+                  try { pair = await hashFilePair(item.file); } catch (err) { pair = { sha256: '', sha1: '' }; }
+                  item.sha = pair.sha256 || '';
+                  item.sha1 = pair.sha1 || '';
+                  renderQueue();
+                }
+                hashRunning = false;
+              };
+
+              /* 那一对框正在编辑谁: 没选中 = 组, 选中了 = 那个文件。
+                 换目标时把内容搬过去, 并重算一次简介框高度 (换值不会触发 input) */
+              function syncMetaFields() {
+                const item = pickedItem();
+                const src = item || groupMeta;
+                metaTitle.value = src.title || '';
+                metaDesc.value = src.desc || '';
+                /* 协作者 (公开编辑进来的) 改不了**组**那对框, 也改不了**别人的**文件:
+                   没选中文件时就是在改组, 这时锁上 */
+                const locked = (!!editGroup && !isOwner && !item)
+                  || !!(item && item.locked);
+                metaTitle.disabled = uploading || locked;
+                metaDesc.disabled = uploading || locked;
+                expireSelect.disabled = uploading || (!!editGroup && !isOwner);
+                const why = locked
+                  ? (item ? '这是别人上传的文件，改不了' : '只有上传者能修改资源组的信息')
+                  : '';
+                metaTitle.title = why;
+                metaDesc.title = why;
+                expireSelect.title = editGroup && !isOwner ? '只有上传者能修改资源组的信息' : '';
+                /* 这一行只说「现在这对框在改谁」: 平时带「正在编辑」前缀, 上传期间只留名字
+                   (那会儿改不了, 加前缀反而容易被当成「还能改」) */
+                const what = item ? '正在编辑：' + item.file.name : '正在编辑文件组';
+                metaWhich.textContent = uploading
+                  ? (item ? item.file.name : '文件组')
+                  : what;
+                autoGrowLines(metaDesc, 3, 1);
+                refreshSubmit();
+              }
+
+              function renderQueue() {
+                queueBox.innerHTML = '';
+                queue.forEach((item, index) => {
+                  const card = el('div', 'rw-item');
+                  card.dataset.id = String(item.id);
+                  card.draggable = !uploading;
+                  if (item.id === pickedId) card.classList.add('is-picked');
+                  if (item.status === 'done') card.classList.add('is-done');
+                  if (item.status === 'failed') card.classList.add('is-failed');
+                  if (item.removed) card.classList.add('is-removed');
+                  if (item.locked) card.classList.add('is-locked');
+                  // 别人的文件不让拖动排序 (拖动是想改动这一组, 那是主人的事)
+                  if (item.locked) card.draggable = false;
+
+                  const head = el('div', 'rw-item-head');
+                  head.appendChild(el('span', 'rw-item-index', String(index + 1)));
+                  head.appendChild(el('span', 'rw-item-name', item.file.name));
+                  // 图片 / 文本先给一个「预览」, 点了才展开。
+                  // 组里已有的文件不给预览: 手里只有一个名字与大小, 预览要先把整个文件拉下来
+                  if (item.kind !== 'existing' && canPreview(item.file)) {
+                    const peek = el('button', 'rw-item-preview-btn', item.open ? '收起' : '预览');
+                    peek.type = 'button';
+                    peek.onclick = (event) => {
+                      event.stopPropagation();
+                      if (item.open) closePreview(item);
+                      else item.open = true;
+                      renderQueue();
+                    };
+                    head.appendChild(peek);
+                  }
+                  /* 两种「移除」不是一回事:
+                     新文件   = 从队列里拿掉, 服务器上什么都没发生;
+                     已有的文件 = **提交后真的会从组里删掉** -> 点一次只打标记 (.is-removed),
+                                 再点一次撤销, 真正的删除在提交那一步 */
+                  const isOld = item.kind === 'existing';
+                  const remove = el('button', 'rw-item-remove', isOld ? (item.removed ? '撤销' : '删除') : '移除');
+                  remove.type = 'button';
+                  // 上传/保存期间不让动队列
+                  remove.disabled = uploading;
+                  remove.hidden = uploading;
+                  remove.onclick = (event) => {
+                    event.stopPropagation();
+                    if (!isOld) { removeItem(index); return; }
+                    if (uploading) return;
+                    item.removed = !item.removed;
+                    step.reset();
+                    renderQueue();
+                  };
+                  /* 「公开编辑」进来的协作者动不了**别人传的**文件:
+                     连「删除」按钮都不摆 —— 摆一个点了报 403 的按钮最讨人厌 */
+                  if (item.locked) {
+                    remove.hidden = true;
+                    head.appendChild(el('span', 'rw-item-owner', item.ownerName || '他人的文件'));
+                  } else {
+                    head.appendChild(remove);
+                  }
+                  card.appendChild(head);
+
+                  const hashText = item.sha === undefined
+                    ? '正在计算校验值…'
+                    : (item.sha ? 'SHA-256 ' + item.sha : (isOld ? '' : '浏览器无法计算校验值'));
+                  card.appendChild(el('p', 'rw-item-meta', hashText
+                    ? formatFileSize(item.file.size) + ' · ' + hashText
+                    : formatFileSize(item.file.size)));
+
+                  if (item.status === 'uploading' || item.status === 'done') {
+                    const bar = el('div', 'rw-item-bar');
+                    const fill = el('span', 'rw-item-fill');
+                    fill.style.width = (item.percent || 0) + '%';
+                    bar.appendChild(fill);
+                    card.appendChild(bar);
+                    card.appendChild(el('p', 'rw-item-state', item.status === 'done' ? '已上传' : '上传中 ' + (item.percent || 0) + '%'));
+                  } else if (item.status === 'failed') {
+                    card.appendChild(el('p', 'rw-item-state is-bad', item.error || '上传失败'));
+                  }
+
+                  if (item.open) card.appendChild(buildPreviewBox(item));
+
+                  card.onclick = (event) => {
+                    if (event.target.closest('button')) return;
+                    pickedId = item.id;
+                    renderQueue();
+                    syncMetaFields();
+                  };
+                  card.addEventListener('dragstart', (event) => {
+                    dragFrom = index;
+                    event.dataTransfer.effectAllowed = 'move';
+                    // Firefox 不给 dataTransfer 塞点东西就不肯派发 drag
+                    try { event.dataTransfer.setData('text/plain', String(item.id)); } catch (err) { /* 有些浏览器只读 */ }
+                  });
+                  card.addEventListener('dragover', (event) => {
+                    if (uploading || dragFrom < 0) return;
+                    event.preventDefault();
+                    card.classList.add('is-over');
+                  });
+                  card.addEventListener('dragleave', () => card.classList.remove('is-over'));
+                  card.addEventListener('drop', (event) => {
+                    event.preventDefault();
+                    card.classList.remove('is-over');
+                    if (dragFrom < 0 || dragFrom === index) return;
+                    const moved = queue.splice(dragFrom, 1)[0];
+                    queue.splice(index, 0, moved);
+                    dragFrom = -1;
+                    step.reset();   // 次序变了 = 即将上传的内容变了
+                    renderQueue();
+                  });
+                  card.addEventListener('dragend', () => { dragFrom = -1; });
+                  queueBox.appendChild(card);
+                });
+
+                sumLine.textContent = queue.length
+                  ? ' · ' + queue.length + ' 个 · ' + formatFileSize(totalSize())
+                  : '';
+                emptyLine.hidden = queue.length > 0;
+                refreshSubmit();
+                // 队列空了就没有「移除全部」；没选中文件就没有「取消选择」
+                // 编辑模式不摆「移除全部」: 那等于一键把整组文件标删, 手滑的代价太大
+                // 忙碌态只收起「移除全部」 (它会动队列); 「取消选择」照旧显示 ——
+                // 上传开始后想把目标切回整组, 只能靠它
+                clearAll.hidden = uploading || !!editGroup || !queue.length;
+                clearPick.hidden = !pickedItem();
+                if (uploading) paintTotalProgress();
+              }
+
+              /* 队列卡片里那坨预览内容 (图片 / 纯文本) */
+              function buildPreviewBox(item) {
+                const box = el('div', 'rw-item-preview');
+                if (isImageFile(item.file)) {
+                  if (!item.previewUrl) item.previewUrl = URL.createObjectURL(item.file);
+                  const img = document.createElement('img');
+                  img.src = item.previewUrl;
+                  img.alt = item.file.name || '';
+                  // 图片默认是可拖的 —— 在面板里拖它会拖出一个图片阴影, 看着像面板被拖了
+                  img.draggable = false;
+                  box.appendChild(img);
+                } else {
+                  box.appendChild(el('pre', null, item.previewText == null ? '读取中…' : item.previewText));
+                  if (item.previewText == null && !item.textLoading) {
+                    item.textLoading = true;
+                    // 只读开头一段: 素材可能是几百 MB 的 log, 全读进内存没必要
+                    item.file.slice(0, 200000).text()
+                      .then((text) => { item.previewText = text.slice(0, 20000) || '(空文件)'; })
+                      .catch(() => { item.previewText = '读不出来'; })
+                      .then(() => { item.textLoading = false; renderQueue(); });
+                  }
+                }
+                return box;
+              }
+
+              /* 进度只改那一张卡片, 别为了几个百分比重画整个队列 */
+              const paintProgress = (id, percent) => {
+                const card = queueBox.querySelector('.rw-item[data-id="' + id + '"]');
+                if (!card) return;
+                const fill = card.querySelector('.rw-item-fill');
+                const state = card.querySelector('.rw-item-state');
+                if (fill) fill.style.width = percent + '%';
+                if (state) state.textContent = '上传中 ' + percent + '%';
+                paintTotalProgress();
+              };
+
+              function removeItem(index) {
+                if (uploading) return;
+                const gone = queue.splice(index, 1)[0];
+                if (gone) { closePreview(gone); giveUpMultipart(gone.file); }
+                if (gone && gone.id === pickedId) {
+                  pickedId = 0;
+                  syncMetaFields();
+                }
+                step.reset();
+                renderQueue();
+              }
+
+              /* 移除全部: 也是「点两次」(红框黑亚克力那类), 免得手一滑把整队清光 */
+              function clearQueue() {
+                if (uploading) return;
+                queue.forEach((item) => giveUpMultipart(item.file));
+                queue.forEach(closePreview);
+                queue.length = 0;
+                pickedId = 0;
+                step.reset();
+                renderQueue();
+                syncMetaFields();
+              }
+
+              const addFiles = (files) => {
+                if (uploading) return;
+                const firstBatch = queue.length === 0;
+                let added = 0;
+                (files || []).forEach((file) => {
+                  if (!file || !file.size) {
+                    if (file) showToast(file.name + '内容为空，跳过上传', 'warn');
+                    return;
+                  }
+                  if (file.size > RES_MAX_BYTES) {
+                    showToast(file.name + ' 超过 ' + RES_MAX_GB + ' GB，上传失败', 'warn');
+                    return;
+                  }
+                  if (queue.some((item) => item.file.name === file.name && item.file.size === file.size)) {
+                    showToast(file.name + ' 已经在队列里了', 'warn');
+                    return;
+                  }
+                  seqId += 1;
+                  queue.push({ id: seqId, file, sha: undefined, title: '', desc: '', status: 'ready', percent: 0, error: '' });
+                  added += 1;
+                });
+                if (!added) return;
+                if (totalSize() > RES_BATCH_MAX_BYTES) {
+                  showToast('上传的文件超过了 ' + RES_BATCH_GB + ' GB，请分为两批次上传', 'warn');
+                }
+                // 组标题默认取第一个文件的名字 (用户想改再改); 后面再往队列里加东西就不动了
+                if (firstBatch && !groupMeta.title) {
+                  groupMeta.title = queue[0].file.name.replace(/\.[^.]+$/, '').slice(0, 80);
+                }
+                pickedId = queue[queue.length - added].id;
+                step.reset();
+                renderQueue();
+                syncMetaFields();
+                runHash();
+              };
+
+              /* 一对框改的是谁: 看当前有没有选中文件 (选中 = 那个文件, 否则 = 组) */
+              metaTitle.addEventListener('input', () => {
+                (pickedItem() || groupMeta).title = metaTitle.value;
+                step.reset();
+                refreshSubmit();   // 编辑模式: 真的改了东西才能点「确认变更」
+              });
+              metaDesc.addEventListener('input', () => {
+                (pickedItem() || groupMeta).desc = metaDesc.value;
+                step.reset();
+                refreshSubmit();
+              });
+              clearPick.onclick = () => {
+                // ⚠️ 忙碌态也要能用: 那会儿目标是哪个文件靠它切回「整组」（只改看的那对框, 不动队列）
+                pickedId = 0;
+                renderQueue();
+                syncMetaFields();
+              };
+
+              drop.addEventListener('click', () => pickChatFile({ kind: 'file', multiple: true, onPickMany: addFiles }));
+              ['dragenter', 'dragover'].forEach((type) => drop.addEventListener(type, (event) => {
+                event.preventDefault();
+                drop.classList.add('is-over');
+              }));
+              ['dragleave', 'drop'].forEach((type) => drop.addEventListener(type, () => drop.classList.remove('is-over')));
+              drop.addEventListener('drop', (event) => {
+                event.preventDefault();
+                if (uploading) return;
+                addFiles(event.dataTransfer && event.dataTransfer.files ? Array.prototype.slice.call(event.dataTransfer.files) : []);
+              });
+              // 拖偏了别让浏览器把整个页面换成那个文件
+              ['dragover', 'drop'].forEach((type) => root.addEventListener(type, (event) => event.preventDefault()));
+
+              cancel.onclick = () => {
+                if (uploading) {
+                  /* 上传期间这个按钮是「取消上传」, 同样点两次才真取消。
+                     没用 ui.js 的 armTwoStep: 它把按钮文字固定在构造时, 而这个按钮平时是「取消」、
+                     上传时才是「取消上传」, 超时复原时会被它改回错的字 */
+                  if (cancelArmed) {
+                    clearTimeout(cancelTimer);
+                    cancelUpload();
+                    return;
+                  }
+                  cancelArmed = true;
+                  cancel.textContent = '确定？';
+                  cancelTimer = setTimeout(() => {
+                    cancelArmed = false;
+                    cancel.textContent = '取消上传';
+                  }, 5000);
+                  return;
+                }
+                releasePreviews();
+                closeWorkbench();
+              };
+
+              const runUploads = async () => {
+                uploadCancelled = false;
+                uploadStopRequested = false;
+                resetEta();
+                /* 上传期间把弹窗锁住: 以前一点背景 / 按 Esc 就把工作台关了,
+                   正在传的队列与进度全看不到。锁着的同时也会拦住关标签页。
+                   「取消上传」现在是正经出口, 所以 cancel 不再 disabled */
+                const guard = lockModal();
+                setBusy(true);
+                const expire = expireSelect.value || 'never';
+                const gTitle = groupMeta.title.trim();
+                const gDesc = groupMeta.desc.trim();
+                /* 这一批一共多大 —— 服务端拿它定「新组要不要默认开防盗链」 (>5GB 就开)。
+                   每个文件都带 (组是第一个文件那一下开出来的, 谁开就靠谁那份) */
+                const gTotal = String(totalSize());
+                let groupId = null;
+                let okCount = 0;
+                let autoGuarded = false;
+                const failed = [];
+
+                for (let index = 0; index < queue.length; index += 1) {
+                  if (uploadCancelled) break;
+                  const item = queue[index];
+                  if (item.status === 'done') { okCount += 1; groupId = groupId || item.groupId || null; continue; }
+                  item.status = 'uploading';
+                  item.percent = 0;
+                  item.error = '';
+                  renderQueue();
+                  try {
+                    let sha = item.sha;
+                    if (sha === undefined) {
+                      // 还没算过 (用户点得快): 这里补算一次, 两个摘要一起拿
+                      const pair = await hashFilePair(item.file).catch(() => ({ sha256: '', sha1: '' }));
+                      sha = pair.sha256 || '';
+                      item.sha1 = pair.sha1 || '';
+                    }
+                    item.sha = sha;
+                    const meta = {
+                      scope: 'library',
+                      title: item.title || '',
+                      description: item.desc || '',
+                      sha256: sha || '',
+                      sha1: item.sha1 || '',
+                      expire,
+                      group_total: gTotal
+                    };                    // 第一个文件开组 (带上组信息), 后面的挂进这个组
+                    if (groupId) meta.group_id = groupId;
+                    else {
+                      meta.group_title = gTitle;
+                      meta.group_description = gDesc;
+                    }
+
+                    const info = await uploadResourceFile(item.file, meta, (percent) => {
+                      item.percent = percent;
+                      paintProgress(item.id, percent);
+                    });
+                    groupId = info.group_id || groupId;
+                    if (info.auto_guard) autoGuarded = true;
+                    item.groupId = groupId;
+                    item.status = 'done';
+                    item.percent = 100;
+                    okCount += 1;
+                    /* 直传那条路 Worker 见不到字节、拿不到 ETag, 传完补一次服务端校验值。
+                       ⚠️ 分片上传没有这回事: 它的 ETag 不是内容的 MD5, 补也只会拿到 502 */
+                    if (!info.multipart && !info.md5 && info.id) backfillResourceHash(info.id);
+                  } catch (error) {
+                    item.status = 'failed';
+                    item.error = (error && error.message) || '上传失败';
+                    /* 大文件是分片传的: 拦住它的那一刻进度就存在 OSS 上了, 说一句,
+                       否则用户以为要重新传一遍 (他只要再点一次「确认上传」就行) */
+                    if (item.file.size > RES_INLINE_MAX && !/进度已保留/.test(item.error)) {
+                      item.error += '（进度已保留，再传一次可继续）';
+                    }
+                    failed.push(item.file.name);
+                  }
+                  renderQueue();
+                }
+
+                guard.release();
+                setBusy(false);
+                if (uploadCancelled) {
+                  // 已经传完的会留在服务器上 (登记行也在了), 所以回列表让人看见实情
+                  cancel.disabled = false;
+                  showToast(okCount ? '已取消上传，已传完 ' + okCount + ' 个文件' : '已取消上传', 'ok');
+                  releasePreviews();
+                  closeWorkbench();
+                  loadResources(1);
+                  return;
+                }
+                if (failed.length) {
+                  // 失败的那些留在队列里 (状态是失败的), 再点一次「确认上传」就只重传它们
+                  cancel.textContent = '关闭';
+                  showToast(okCount + ' 个上传完成，' + failed.length + ' 个失败：' + failed.join('、') + '，可以再点一次「确认上传」重试', 'warn');
+                  return;
+                }
+                showToast('上传完成：' + okCount + ' 个文件', 'ok');
+                // 超过 5GB 的新组服务端已经默认开了防盗链
+                if (autoGuarded) showToast('这一组超过 5 GB，已默认开启防盗链', 'info');
+                releasePreviews();
+                closeWorkbench();
+                loadResources(1);
+              };
+
+              /* 一次把所有改动提交完 (只有「编辑组」模式走这里)。
+                 次序不能乱:
+                   ① 组信息 (标题 / 简介 / 有效期) 先改 —— 组行要是没了就再也改不成
+                   ② 新文件带着这一组的 id 传上去 (而不是又开一组)
+                   ③ 逐个文件改标题简介
+                   ④ 标了删除的最后删 —— 前面哪一步败了, 文件至少还在, 不会「删完了才发现改错」 */
+              const runEditSave = async () => {
+                uploadCancelled = false;
+                uploadStopRequested = false;
+                const guard = lockModal();
+                setBusy(true);
+                const groupId = editGroup.id;
+                const problems = [];
+                const gTitle = groupMeta.title.trim();
+                const gDesc = groupMeta.desc.trim();
+                const oldOnes = queue.filter((item) => item.kind === 'existing');
+                const kept = oldOnes.filter((item) => !item.removed);
+                const doomed = oldOnes.filter((item) => item.removed);
+                const fresh = queue.filter((item) => item.kind !== 'existing');
+                const expire = expireSelect.value || 'never';
+
+                /* 「把文件列表清空」= 删整组: 不走下面 ①~④, 直接交给 deleteResource ——
+                   那一下会弹验证身份 (密码), 服务端还会再验一次。
+                   得**先把工作台关掉**再开那个弹窗: 工作台自己就在 #modal-content 里,
+                   不关的话验身份/确认框会把它整个顶掉, 关掉之后就再也回不到工作台了
+                   (代价是用户在那两个框上点取消时工作台已经关了 —— 什么都没删, 重新点一次就行) */
+                if (!fresh.length && !kept.length && doomed.length) {
+                  guard.release();
+                  setBusy(false);
+                  closeWorkbench();
+                  await deleteResource(editGroup, null, false);
+                  return;
+                }
+
+                // ① 组信息: 只发改动过的字段
+                const groupPayload = { id: groupId };
+                if (gTitle !== original.title) groupPayload.title = gTitle;
+                if (gDesc !== original.desc) groupPayload.description = gDesc;
+                if (expireTouched) groupPayload.expire = expire;
+                if (Object.keys(groupPayload).length > 1) {
+                  try {
+                    await apiPost('/api/resource/group', groupPayload);
+                  } catch (error) {
+                    problems.push('组的标题简介没改成功');
+                  }
+                }
+
+                // ② 新文件 (进度照上传那条路画)
+                let okCount = 0;
+                let failCount = 0;
+                for (let index = 0; index < fresh.length; index += 1) {
+                  if (uploadCancelled) break;
+                  const item = fresh[index];
+                  item.status = 'uploading';
+                  item.percent = 0;
+                  item.error = '';
+                  renderQueue();
+                  try {
+                    let sha = item.sha;
+                    if (sha === undefined) {
+                      // 还没算过 (点得快): 这里补算一次, 两个摘要一起拿
+                      const pair = await hashFilePair(item.file).catch(() => ({ sha256: '', sha1: '' }));
+                      sha = pair.sha256 || '';
+                      item.sha1 = pair.sha1 || '';
+                    }
+                    item.sha = sha;
+                    const info = await uploadResourceFile(item.file, {
+                      scope: 'library',
+                      title: item.title || '',
+                      description: item.desc || '',
+                      sha256: sha || '',
+                      sha1: item.sha1 || '',
+                      expire,
+                      group_id: groupId
+                    }, (percent) => {
+                      item.percent = percent;
+                      paintProgress(item.id, percent);
+                    });
+                    item.status = 'done';
+                    item.percent = 100;
+                    okCount += 1;
+                    if (!info.multipart && !info.md5 && info.id) backfillResourceHash(info.id);
+                  } catch (error) {
+                    item.status = 'failed';
+                    item.error = (error && error.message) || '上传失败';
+                    failCount += 1;
+                  }
+                  renderQueue();
+                }
+
+                // ③ 逐个文件改标题简介 (没改过的一个请求都不发)
+                for (const item of kept) {
+                  if (uploadCancelled) break;
+                  const before = original.files[item.fileId] || { title: '', desc: '' };
+                  const nowTitle = String(item.title || '').trim();
+                  const nowDesc = String(item.desc || '').trim();
+                  if (nowTitle === before.title && nowDesc === before.desc) continue;
+                  try {
+                    await apiPost('/api/resource/group', {
+                      id: groupId, file_id: item.fileId, title: nowTitle, description: nowDesc
+                    });
+                  } catch (error) {
+                    problems.push('「' + item.file.name + '」的标题简介没改成功');
+                  }
+                }
+
+                // ④ 标了删除的
+                for (const item of doomed) {
+                  if (uploadCancelled) break;
+                  try {
+                    await apiPost('/api/resource/delete', { id: groupId, file_id: item.fileId });
+                  } catch (error) {
+                    problems.push('「' + item.file.name + '」没删掉');
+                  }
+                }
+
+                guard.release();
+                setBusy(false);
+                if (uploadCancelled) {
+                  // 已经发出去的改动都留在服务器上了, 所以直接回详情让人看见实情
+                  cancel.disabled = false;
+                  showToast('已取消，改动过的部分会保留', 'ok');
+                  releasePreviews();
+                  closeWorkbench();
+                  showDetail(groupId);
+                  return;
+                }
+                if (failCount) problems.push(failCount + ' 个文件没传完');
+                if (problems.length) {
+                  // 失败的那些留在队列里, 再点一次「确认变更」就只补没成的部分
+                  cancel.textContent = '关闭';
+                  showToast('变更没有全部完成：' + problems.join('；') + '。可以再点一次「确认变更」重试', 'warn');
+                  return;
+                }
+                showToast(okCount ? '变更已保存，新增 ' + okCount + ' 个文件' : '变更已保存', 'ok');
+                releasePreviews();
+                closeWorkbench();
+                // 一个文件都不剩了 (整组删光) -> 组也跟着走, 回列表
+                if (!kept.length && !okCount) goPage('/resource/');
+                else showDetail(groupId);
+              };
+
+              /* 二次确认 = 点两次: 第一次点只把按钮变成「确定？」,
+                 再点一次才真传 (原来那个确认浮层已删, 见 ui.js 的 armTwoStep) */
+              const step = armTwoStep(submit, {
+                label: editGroup ? '确认变更' : '确认上传',
+                armedLabel: '确定？',
+                onConfirm: () => {
+                  if (uploading || !queue.length) return;
+                  if (editGroup) runEditSave();
+                  else runUploads();
+                }
+              });
+              /* Ctrl/Cmd+S = 直接执行主按钮。键盘是明确的意图, 所以**不走「点两次」**: 键一按就执行。
+                 闭包留在 workbenchHotkey 里, 弹窗关掉后由那个监听里的 #rw-root 判断早退 */
+              workbenchHotkey = () => {
+                if (uploading || submit.disabled) return;
+                if (editGroup) runEditSave();
+                else runUploads();
+              };
+              /* 「移除全部」也走点两次: 清空整队比删一个文件疼多了 */
+              armTwoStep(clearAll, { label: '移除全部', armedLabel: '确定？', onConfirm: clearQueue });
+
+              renderQueue();
+              syncMetaFields();
+            }
+
+            /* 直传那条路 Worker 见不到字节、拿不到 ETag, 传完补一次服务端校验值。
+               失败不拦人 (详情页以后还能再补), 但**要再试一次**: 线上实测刚 PUT 完立刻补
+               会偶发失败, 隔几秒就正常 */
+            function backfillResourceHash(id, round) {
+              const attempt = round || 1;
+              apiPost('/api/resource/hash', { id }).catch(() => {
+                if (attempt < 2) setTimeout(() => backfillResourceHash(id, attempt + 1), 3000);
+              });
+            }
+
+            /* 小文件走 Worker 中转 (xhrUpload 能报进度), 大文件切分片直传 OSS
+               (Worker 的请求体上限与 128MB 内存都不允许中转; 分片这条还能断点续传) */
+            async function uploadResourceFile(file, meta, onProgress) {
+              if (file.size > RES_INLINE_MAX) {
+                return await uploadResourceMultipart(file, meta, onProgress);
+              }
+              const form = new FormData();
+              form.append('file', file);
+              Object.keys(meta).forEach((key) => form.append(key, meta[key]));
+              return await xhrUpload('POST', '/api/resource/upload', form, onProgress);
+            }
+
+            /* 分片上传 + 断点续传: 大文件 (>RES_INLINE_MAX) 切成 8MB 一片, 走 OSS 的 Multipart Upload:
+                 init -> (sign -> PUT 分片) × N -> complete
+               浏览器只做两件事: 要签名、PUT 分片。**分片清单与 ETag 全在服务端** ——
+               桶的 CORS 没暴露任何响应头, 浏览器读不到 ETag, 所以合并那一步由服务端自己 ListParts 拼。
+               断点续传: 把「还没传完的那次上传」(对象名 + uploadId) 记在 localStorage 里,
+               再选同一个文件时先问服务端它那边收下了哪几片, 只补缺的那些。
+               记录里**别存分片清单**: 那是 OSS 那边的事实, 本地记一份只会两边对不上 */
+            const RES_PART_BYTES = 8 * 1024 * 1024;   // 与服务端 resource.js 的 RES_PART_BYTES 一致
+            /* 「停下来」的标志在模块作用域再放一份: 分片上传那个函数在工作台闭包**外面**
+               (上传期间工作台可能已经关了), 闭包里那个 uploadCancelled 它看不到。
+               三处同步: 两处开始时清零, cancelUpload 里置位 */
+            let uploadStopRequested = false;
+            const RES_UPLOAD_LS = 'foraine.resource.uploads';
+            const RES_UPLOAD_KEEP_MS = 7 * 24 * 60 * 60 * 1000;
+            const RES_UPLOAD_MAX_RECORDS = 30;
+
+            function uploadRecords() {
+              try {
+                const all = JSON.parse(localStorage.getItem(RES_UPLOAD_LS) || '{}') || {};
+                const now = Date.now();
+                const clean = {};
+                // 太老的 (以及没有 uploadId 的) 顺手丢掉: OSS 那边的碎片的自己做生命周期规则清
+                Object.keys(all).forEach((key) => {
+                  const rec = all[key];
+                  if (rec && rec.upload_id && now - (rec.updatedAt || 0) < RES_UPLOAD_KEEP_MS) clean[key] = rec;
+                });
+                return clean;
+              } catch (error) { return {}; }
+            }
+            function saveUploadRecords(all) {
+              try { localStorage.setItem(RES_UPLOAD_LS, JSON.stringify(all)); } catch (error) { /* 存不下就只是这一次不能续传 */ }
+            }
+            function readUploadRecord(fp) { return uploadRecords()[fp] || null; }
+            function writeUploadRecord(fp, rec) {
+              const all = uploadRecords();
+              all[fp] = Object.assign({}, rec, { updatedAt: Date.now() });
+              const keys = Object.keys(all);
+              if (keys.length > RES_UPLOAD_MAX_RECORDS) {
+                keys.sort((a, b) => (all[a].updatedAt || 0) - (all[b].updatedAt || 0))
+                  .slice(0, keys.length - RES_UPLOAD_MAX_RECORDS).forEach((key) => { delete all[key]; });
+              }
+              saveUploadRecords(all);
+            }
+            function dropUploadRecord(fp) {
+              const all = uploadRecords();
+              delete all[fp];
+              saveUploadRecords(all);
+            }
+            /* 同一个文件 = 名字 + 大小 + 最后修改时间 (改名或改内容都算另一个文件, 不冒着续错的风险) */
+            function uploadFingerprint(file) {
+              return [file.name || '', file.size || 0, file.lastModified || 0].join('|');
+            }
+            function partLength(file, number) {
+              const from = (number - 1) * RES_PART_BYTES;
+              return Math.max(0, Math.min(file.size, from + RES_PART_BYTES) - from);
+            }
+
+            /* ---- MD5 (分片收尾要用) ----
+               OSS 给每个分片算的 ETag 就是**这一片内容的 MD5 (大写十六进制)**。
+               而桶的 CORS 没暴露 ETag 头, 浏览器读不到 OSS 给的那个值, 所以自己算一份
+               (桶的 CORS 以后把 ETag 加进「暴露 Headers」的话, 这份就用不上了, 会优先用 OSS 回的)。
+               WebCrypto 里没有 MD5, 只能手写: 标准实现, 一次 64 字节 */
+            const RES_MD5_SHIFT = [
+              7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22,
+              5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20,
+              4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23,
+              6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21
+            ];
+            const RES_MD5_K = new Uint32Array(64);
+            for (let i = 0; i < 64; i += 1) RES_MD5_K[i] = Math.floor(Math.abs(Math.sin(i + 1)) * 4294967296);
+
+            function md5Hex(bytes) {
+              const len = bytes.length;
+              const padded = new Uint8Array(((len + 8) >> 6) * 64 + 64);
+              padded.set(bytes);
+              padded[len] = 0x80;
+              const bits = len * 8;
+              const tail = padded.length - 8;
+              // 长度按小端写 64 位: 低 32 位够用 (分片最大 8MB), 高位照算不误
+              const low = bits % 4294967296;
+              const high = Math.floor(bits / 4294967296);
+              padded[tail] = low & 0xff;
+              padded[tail + 1] = (low >>> 8) & 0xff;
+              padded[tail + 2] = (low >>> 16) & 0xff;
+              padded[tail + 3] = (low >>> 24) & 0xff;
+              padded[tail + 4] = high & 0xff;
+              padded[tail + 5] = (high >>> 8) & 0xff;
+              padded[tail + 6] = (high >>> 16) & 0xff;
+              padded[tail + 7] = (high >>> 24) & 0xff;
+
+              let a0 = 0x67452301, b0 = 0xefcdab89, c0 = 0x98badcfe, d0 = 0x10325476;
+              const word = new Uint32Array(16);
+              for (let offset = 0; offset < padded.length; offset += 64) {
+                for (let i = 0; i < 16; i += 1) {
+                  const at = offset + i * 4;
+                  word[i] = padded[at] | (padded[at + 1] << 8) | (padded[at + 2] << 16) | (padded[at + 3] << 24);
+                }
+                let a = a0, b = b0, c = c0, d = d0;
+                for (let i = 0; i < 64; i += 1) {
+                  let f; let g;
+                  if (i < 16) { f = (b & c) | (~b & d); g = i; }
+                  else if (i < 32) { f = (d & b) | (~d & c); g = (5 * i + 1) % 16; }
+                  else if (i < 48) { f = b ^ c ^ d; g = (3 * i + 5) % 16; }
+                  else { f = c ^ (b | ~d); g = (7 * i) % 16; }
+                  const sum = (a + f + RES_MD5_K[i] + word[g]) | 0;
+                  const rotated = ((sum << RES_MD5_SHIFT[i]) | (sum >>> (32 - RES_MD5_SHIFT[i]))) | 0;
+                  a = d; d = c; c = b; b = (b + rotated) | 0;
+                }
+                a0 = (a0 + a) | 0; b0 = (b0 + b) | 0; c0 = (c0 + c) | 0; d0 = (d0 + d) | 0;
+              }
+              const hex = (value) => {
+                let out = '';
+                for (let i = 0; i < 4; i += 1) out += ((value >>> (i * 8)) & 0xff).toString(16).padStart(2, '0');
+                return out;
+              };
+              return (hex(a0) + hex(b0) + hex(c0) + hex(d0)).toUpperCase();
+            }
+
+            /* 这一片的 ETag: OSS 回了就用它的, 没回 (CORS 没暴露 ETag) 就自己算 */
+            async function partEtag(blob, fromServer) {
+              if (fromServer) return fromServer;
+              return md5Hex(new Uint8Array(await blob.arrayBuffer()));
+            }
+
+
+            /* 把一个没传完的分片上传真正丢掉: 告诉 OSS 别再留着那些碎片, 并把本地那条记录抹掉。
+               用在「把队列里的文件移除」时 —— 那是「我不传这个了」的意思, 而「取消上传」**不算**
+               (那个要留着进度, 下次接着传)。失败也不吭声: 桶里多一堆碎片而已, 不拦人。 */
+            function giveUpMultipart(file) {
+              if (!file || file.size <= RES_INLINE_MAX) return;
+              const fp = uploadFingerprint(file);
+              const rec = readUploadRecord(fp);
+              dropUploadRecord(fp);
+              if (!rec) return;
+              apiPost('/api/resource/multipart/abort', { key: rec.key, upload_id: rec.upload_id }).catch(() => {});
+            }
+
+            /* PUT 一个分片, 顺带报这一片自己的进度 (0~1) 并把 ETag 回给调用方。
+               headers 一个都不能少: OSS 拿它们重算签名 (x-oss-date / Authorization / x-oss-content-sha256)。
+               ETag 要读得到, 得靠桶的 CORS 把它暴露出来 (暴露 Headers 里写 ETag) —— 写不到就返回空串 */
+            function xhrPutPart(url, headers, blob, onPartProgress) {
+              return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('PUT', url, true);
+                Object.keys(headers || {}).forEach((key) => { xhr.setRequestHeader(key, headers[key]); });
+                if (onPartProgress && xhr.upload) {
+                  xhr.upload.onprogress = (event) => {
+                    if (event.lengthComputable && event.total) onPartProgress(event.loaded / event.total);
+                  };
+                }
+                xhr.onload = () => {
+                  if (xhr.status >= 200 && xhr.status < 300) {
+                    let etag = '';
+                    try { etag = (xhr.getResponseHeader('etag') || '').replace(/"/g, '').trim(); } catch (error) { etag = ''; }
+                    resolve(etag);
+                  } else reject(new Error('分片上传失败：HTTP ' + xhr.status));
+                };
+                xhr.onerror = () => reject(new Error('分片上传失败（网络断了）'));
+                xhr.send(blob);
+              });
+            }
+
+            async function uploadResourceMultipart(file, meta, onProgress) {
+              const fp = uploadFingerprint(file);
+              const total = Math.max(1, Math.ceil(file.size / RES_PART_BYTES));
+              let rec = readUploadRecord(fp);
+              let have = new Set();
+              /* 服务端能不能列分片 (RAM 里给了 oss:ListParts 才行)。能的话收尾也用它那份,
+                 本地这串 ETag 就只是「哪几片已经传过」的备用依据 */
+              let serverListed = false;
+
+              /* 上次没传完的那次还认得出来吗? 先问服务端它那边收下了哪几片 (最权威);
+                 列不了 (RAM 里没给 oss:ListParts) 就退到本地记的那份 —— 本地那串还带着
+                 每片的 ETag, 收尾时用得上 */
+              if (rec) {
+                if (rec.size !== file.size) {
+                  dropUploadRecord(fp);
+                  rec = null;
+                } else {
+                  rec.parts = rec.parts || {};
+                  const status = await apiPost('/api/resource/multipart/list', {
+                    key: rec.key, upload_id: rec.upload_id
+                  }).catch(() => null);
+                  if (status && status.ok && !status.gone) {
+                    have = new Set((status.parts || []).map((part) => part.n));
+                    serverListed = true;
+                  } else if (status && status.gone) {
+                    dropUploadRecord(fp);   // 那次已经没了 (被清掉 / 已经合并过)
+                    rec = null;
+                  } else {
+                    // 服务端列不出来: 按本地记的接着传
+                    have = new Set(Object.keys(rec.parts).map((n) => parseInt(n, 10)).filter((n) => n > 0));
+                  }
+                }
+              }
+
+              if (!rec) {
+                const created = await apiPost('/api/resource/multipart/init', Object.assign({
+                  name: file.name || '', size: file.size, mime: file.type || ''
+                }, meta));
+                rec = {
+                  key: created.key, upload_id: created.upload_id,
+                  name: created.name, size: file.size, group_id: created.group_id || null,
+                  // 组是不是因超过 5GB 而自动开了防盗链 —— 续传时本地记录里也要有
+                  auto_guard: !!created.auto_guard,
+                  parts: {}
+                };
+                writeUploadRecord(fp, rec);
+              } else if (have.size) {
+                showToast('找到未传完的部分，继续上传「' + (file.name || '') + '」', 'info');
+              }
+
+              /* 进度按字节算: 传完的那几片直接记满, 正在传的那一片吃它自己的比例。
+                 不给 100 —— 最后那一下要等 complete 成功才算真的完成 */
+              let doneBytes = 0;
+              have.forEach((number) => { doneBytes += partLength(file, number); });
+              const paint = (loadedInPart) => {
+                if (!onProgress) return;
+                const loaded = Math.min(file.size, doneBytes + loadedInPart);
+                onProgress(Math.min(99, Math.round(loaded / file.size * 100)));
+              };
+              paint(0);
+
+              for (let number = 1; number <= total; number += 1) {
+                /* 「取消上传」在**分片边界**停 (与文件边界同一个意思)。
+                   停下时**不删记录**: 下次选同一个文件接着传, 这就是断点续传 */
+                if (uploadStopRequested) throw new Error('已取消，进度已保留');
+                if (have.has(number)) continue;
+                const from = (number - 1) * RES_PART_BYTES;
+                const blob = file.slice(from, Math.min(file.size, from + RES_PART_BYTES));
+                const signed = await apiPost('/api/resource/multipart/sign', {
+                  key: rec.key, upload_id: rec.upload_id, parts: [number]
+                });
+                const one = (signed.parts || [])[0];
+                if (!one) throw new Error('准备分片失败');
+                const serverEtag = await xhrPutPart(one.url, one.headers, blob, (ratio) => paint(blob.size * ratio));
+                /* 每传完一片就把 ETag 写回记录 —— 那就是断点续传的全部家当:
+                   下次要收尾时, 这份 {片号: ETag} 就是 complete 的输入 */
+                rec.parts[number] = await partEtag(blob, serverEtag);
+                have.add(number);
+                writeUploadRecord(fp, rec);
+                doneBytes += blob.size;
+                paint(0);
+              }
+
+              const clientParts = Object.keys(rec.parts)
+                .map((n) => ({ n: parseInt(n, 10), etag: rec.parts[n] }))
+                .filter((part) => part.n > 0 && part.etag)
+                .sort((a, b) => a.n - b.n);
+              // 服务端列得到分片就用不上本地这份; 列不到时它就是唯一那份
+              if (!serverListed && !clientParts.length) throw new Error('拿不到分片校验值，请向站长反馈');
+
+              /* 收尾: 带上元信息 (行是服务端这一步才写的)。
+                 对象名已经定死了, 组的 id 要用 init 那一次开出来的那个 —— 续传时
+                 meta 里可能根本没有 group_id (那一次上传的队列早没了) */
+              const finalMeta = Object.assign({}, meta);
+              if (!finalMeta.group_id && rec.group_id) finalMeta.group_id = rec.group_id;
+              const info = await apiPost('/api/resource/multipart/complete', Object.assign({
+                key: rec.key, upload_id: rec.upload_id,
+                name: file.name || '', size: file.size, mime: file.type || '',
+                /* 服务端列得到分片时用不上它, 列不到时它就是唯一那份 (以服务端的 ETag 为准优先) */
+                parts: clientParts
+              }, finalMeta));
+              dropUploadRecord(fp);
+              if (onProgress) onProgress(100);
+              /* 分片这条的 auto_guard 在 init 那一步就回来了 (complete 不看这个) —— 带出去,
+                 否则收尾拿到的是 complete 的响应、前端就永远不知道组被自动开了防盗 */
+              if (rec.auto_guard && info && !info.auto_guard) info.auto_guard = true;
+              return info;
+            }
+
+            /* 初始化 */
+
+            document.addEventListener('DOMContentLoaded', () => {
+              // 带 ?id= 就是详情: 列表那块整棵不画 (省掉一次白拉的请求)
+              const params = new URLSearchParams(location.search);
+              const id = parseInt(params.get('id') || '', 10);
+              if (Number.isInteger(id)) {
+                showDetail(id);
+                return;
+              }
+
+              state.q = (params.get('q') || '').trim();
+              state.kind = (params.get('kind') || '').trim();
+              state.uploader = (params.get('uploader') || '').trim();
+
+              const search = document.getElementById('resource-search');
+              if (search) {
+                search.value = state.q;
+                // 打字停 300ms 再查 (每个键都打一次接口没必要); 回车 = 立刻查
+                let timer = 0;
+                search.addEventListener('input', () => {
+                  clearTimeout(timer);
+                  timer = setTimeout(() => {
+                    state.q = search.value.trim();
+                    reload();
+                  }, 300);
+                });
+                search.addEventListener('keydown', (event) => {
+                  if (event.key !== 'Enter') return;
+                  clearTimeout(timer);
+                  state.q = search.value.trim();
+                  reload();
+                });
+              }
+
+              const uploaderSelect = document.getElementById('uploader-select');
+              if (uploaderSelect) {
+                uploaderSelect.addEventListener('change', () => {
+                  state.uploader = uploaderSelect.value;
+                  reload();
+                });
+              }
+
+              const sortLabel = document.getElementById('sort-label');
+              if (sortLabel) sortLabel.textContent = RES_SORTS.find((item) => item.key === state.sort).label;
+
+              loadResources(1);
+
+              // 访客 / 被封禁 / 没填邮箱都不该看到「上传」(服务端也各拦一道)
+              getCurrentUser().then((user) => {
+                if (user && !user.ban && user.email) return;
+                document.querySelectorAll('.list-create').forEach((button) => {
+                  // 用内联 display 而不是 hidden 属性: .btn-acrylic 自己有 display, [hidden] 会被它盖掉
+                  button.style.display = 'none';
+                });
+              });
+
+              const tagToggle = document.getElementById('tag-toggle');
+              if (tagToggle) tagToggle.addEventListener('click', toggleTagDrawer);
+              document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape') closeTagDrawer();
+              });
+            });
+        </script>
+    </body>
+</html>

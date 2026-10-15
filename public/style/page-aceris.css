@@ -1,0 +1,294 @@
+/* ==================== 星历 (Aceris) /aceris/ ==================== */
+/* 一个月一张网格, 可左右翻月; 视觉目标是「安静但梦幻」: 深空底 + 星幕 + 紫调柔光 */
+/* 今天那一格自己会亮, 节日那格带一点暖色; 颜色一律走令牌, 不新增色号 */
+
+/* ---------- 星幕 ---------- */
+/* 铺满视口的缓慢闪烁, 纯 CSS (不用 canvas)
+   z-index: -1 与 body::before 同一层, 排在它后面所以叠在它上面 */
+.aceris-stars {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    radial-gradient(1.6px 1.6px at 12% 18%, rgba(255, 255, 255, 0.85), transparent 100%),
+    radial-gradient(1.4px 1.4px at 72% 8%, rgba(255, 255, 255, 0.7), transparent 100%),
+    radial-gradient(1.8px 1.8px at 44% 62%, rgba(255, 255, 255, 0.8), transparent 100%),
+    radial-gradient(1.2px 1.2px at 88% 74%, rgba(255, 255, 255, 0.65), transparent 100%),
+    radial-gradient(1.5px 1.5px at 26% 88%, rgba(255, 255, 255, 0.7), transparent 100%),
+    radial-gradient(1.3px 1.3px at 62% 34%, rgba(255, 255, 255, 0.6), transparent 100%),
+    radial-gradient(1.7px 1.7px at 8% 54%, rgba(255, 255, 255, 0.75), transparent 100%),
+    radial-gradient(1.2px 1.2px at 94% 40%, rgba(255, 255, 255, 0.6), transparent 100%);
+  animation: aceris-twinkle 7s ease-in-out infinite alternate;
+}
+@keyframes aceris-twinkle {
+  from { opacity: 0.45; }
+  to   { opacity: 0.95; }
+}
+
+/* ---------- 页头 ---------- */
+.aceris-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+  text-align: center;
+}
+.aceris-title {
+  font-size: var(--fs-48);
+  line-height: 1.1;
+  color: var(--c-text);
+  /* 手写体 + 一层很淡的紫光, 像远处那颗星 */
+  text-shadow: 0 0 18px rgba(148, 94, 236, 0.55), 0 0 46px rgba(148, 94, 236, 0.28);
+}
+.aceris-sub {
+  font-size: var(--fs-14);
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--c-text-faint);
+}
+.aceris-today {
+  font-size: var(--fs-20);
+  color: var(--c-text-muted);
+}
+
+/* ---------- 日历卡 ---------- */
+.aceris-card {
+  position: relative;
+  width: min(760px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  padding: var(--sp-6);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  background: rgba(0, 0, 0, 0.38);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+/* 卡里那层星云: 两团很淡的紫在缓慢呼吸 (纯渐变, 不是图片) */
+.aceris-card::before {
+  content: '';
+  position: absolute;
+  inset: -30% -10% auto -10%;
+  height: 150%;
+  pointer-events: none;
+  background:
+    radial-gradient(closest-side, rgba(148, 94, 236, 0.30), transparent 100%) 12% 18% / 46% 62% no-repeat,
+    radial-gradient(closest-side, rgba(152, 91, 196, 0.24), transparent 100%) 88% 76% / 52% 70% no-repeat;
+  filter: blur(14px);
+  animation: aceris-nebula 12s ease-in-out infinite alternate;
+}
+@keyframes aceris-nebula {
+  from { opacity: 0.55; transform: translate3d(-1.5%, 1%, 0) scale(1); }
+  to   { opacity: 0.95; transform: translate3d(1.5%, -1%, 0) scale(1.05); }
+}
+.aceris-card > * {
+  position: relative;   /* 压在那层星云上面 */
+}
+
+.aceris-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+.aceris-nav {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--c-border);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--c-text-muted);
+  font-size: var(--fs-22);
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, background-color 0.2s, transform 0.2s;
+}
+.aceris-nav:hover:not(:disabled) {
+  color: var(--c-accent-hover);
+  border-color: var(--c-accent);
+  background: rgba(148, 94, 236, 0.16);
+  transform: translateY(-1px);
+}
+.aceris-nav:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.aceris-now {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-3);
+}
+.aceris-year {
+  font-size: var(--fs-18);
+  color: var(--c-text-dim);
+  letter-spacing: 0.08em;
+}
+.aceris-month {
+  font-size: var(--fs-36);
+  font-weight: bold;
+  color: var(--c-text);
+}
+.aceris-range {
+  text-align: center;
+  font-size: var(--fs-14);
+  color: var(--c-text-faint);
+}
+
+/* ---------- 网格 ----------
+   星历没有「周」, 所以是 6 列 x 5 行把 30 天正好铺满; 窄屏换成 5 列 x 6 行
+   每格里的公历日期只是对照, 不是星期对齐 */
+.aceris-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--sp-2);
+}
+.aceris-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+  min-height: 76px;
+  padding: var(--sp-2);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--c-text-muted);
+  cursor: pointer;
+  transition: border-color 0.2s, background-color 0.2s, color 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+.aceris-cell:hover {
+  border-color: var(--c-accent);
+  background: rgba(148, 94, 236, 0.16);
+  color: var(--c-text);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(148, 94, 236, 0.25);
+}
+.aceris-cell-day {
+  font-size: var(--fs-20);
+  color: inherit;
+}
+.aceris-cell-greg {
+  font-size: var(--fs-14);
+  color: var(--c-text-faint);
+}
+.aceris-cell-fest {
+  font-size: var(--fs-14);
+  color: var(--c-warn);
+  white-space: nowrap;
+}
+/* 节日那一格: 淡淡的暖色, 与「今天」的紫分开 */
+.aceris-cell.is-festival {
+  border-color: rgba(245, 181, 68, 0.55);
+  background: rgba(245, 181, 68, 0.08);
+}
+.aceris-cell.is-festival .aceris-cell-day {
+  color: var(--c-warn);
+}
+/* 今天: 紫边 + 外发光 + 很慢的呼吸 */
+.aceris-cell.is-today {
+  border-color: var(--c-accent);
+  background: rgba(148, 94, 236, 0.22);
+  color: var(--c-text);
+  box-shadow: 0 0 0 1px var(--c-accent), 0 0 24px rgba(148, 94, 236, 0.55);
+  animation: aceris-today 3.6s ease-in-out infinite alternate;
+}
+@keyframes aceris-today {
+  from { box-shadow: 0 0 0 1px var(--c-accent), 0 0 14px rgba(148, 94, 236, 0.35); }
+  to   { box-shadow: 0 0 0 1px var(--c-accent-hover), 0 0 26px rgba(148, 94, 236, 0.70); }
+}
+/* 选中的那一格 (今天以外的): 实心紫一点 */
+.aceris-cell.is-picked:not(.is-today) {
+  border-color: var(--c-accent);
+  background: rgba(148, 94, 236, 0.30);
+  color: var(--c-text);
+}
+
+.aceris-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+.aceris-hint {
+  font-size: var(--fs-14);
+  color: var(--c-text-faint);
+}
+
+/* ---------- 选中那一日的详情 ---------- */
+.aceris-day {
+  width: min(760px, 100%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-5);
+  padding: var(--sp-5) var(--sp-6);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  background: rgba(0, 0, 0, 0.30);
+}
+.aceris-day-main {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.aceris-day-title {
+  font-size: var(--fs-36);
+  color: var(--c-text);
+}
+.aceris-day-full {
+  font-size: var(--fs-20);
+  color: var(--c-text-muted);
+}
+.aceris-day-tag {
+  padding: 2px var(--sp-2);
+  border: 1px solid var(--c-accent);
+  border-radius: var(--radius-sm);
+  color: var(--c-accent-hover);
+  font-size: var(--fs-14);
+  white-space: nowrap;
+}
+.aceris-day-side {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: right;
+  flex: none;
+}
+.aceris-key {
+  font-size: var(--fs-14);
+  color: var(--c-text-faint);
+}
+.aceris-value {
+  font-family: var(--font-mono);
+  font-size: var(--fs-18);
+  color: var(--c-text);
+}
+.aceris-fest {
+  font-size: var(--fs-14);
+  color: var(--c-warn);
+}
+
+.aceris-lore {
+  max-width: min(760px, 100%);
+  text-align: center;
+  font-size: var(--fs-14);
+  line-height: 1.9;
+  color: var(--c-text-faint);
+}
+
+/* 尊重系统设置里「减少动态效果」 */
+@media (prefers-reduced-motion: reduce) {
+  .aceris-stars,
+  .aceris-card::before,
+  .aceris-cell.is-today {
+    animation: none;
+  }
+}

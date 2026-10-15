@@ -1,0 +1,43 @@
+# ==================== 缓存策略 ====================
+# 默认「不缓存」兜底 —— HTML 与无扩展名路径必须是新的。
+# 注意: 这里以前给 /* 设过 max-age=86400, 结果 HTML 更新了、CSS 还是旧版, 页面就错位。
+# 零构建项目没有内容哈希文件名, 只能靠 must-revalidate + ETag 走 304 (开销极小)。
+/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+# 图片 / 字体 / 资源包: 内容基本不变, 放心长缓存 (7 天)
+/assets/*
+  Cache-Control: public, max-age=604800
+
+/Resource/*
+  Cache-Control: public, max-age=604800
+
+/articles/
+  Cache-Control: public, max-age=0, must-revalidate
+
+# 资源页（小写路径）。注意 /Resource/* 是给「资源文件」用的长缓存规则，页面路径故意用小写区分开
+/resource/
+  Cache-Control: public, max-age=0, must-revalidate
+
+/article/
+  Cache-Control: public, max-age=0, must-revalidate
+
+# 鉴权页面: 禁止缓存与往返缓存(bfcache), 避免退出登录后按返回仍看到旧页面
+/login
+  Cache-Control: no-store
+
+/login.html
+  Cache-Control: no-store
+
+/profile
+  Cache-Control: no-store
+
+/profile.html
+  Cache-Control: no-store
+
+# 私信页: 同上 (里面是别人的聊天记录, 不该被缓存下来)
+/chat
+  Cache-Control: no-store
+
+/chat/
+  Cache-Control: no-store

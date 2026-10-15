@@ -1,0 +1,1703 @@
+<!DOCTYPE html>
+
+<html lang="zh">
+    <head>
+        <!-- 元数据 -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <base href="/">
+        <title>Foraine 文章</title>
+
+        <!-- 加载资源 -->
+        <link rel="icon" type="image/x-icon" href="assets/Icon/foraine-icon-v2.png">
+        <link rel="stylesheet" href="/style/main.css?v=40">
+        <!-- 右下角的「加载中」牌子 (showBusyNote) -->
+        <link rel="stylesheet" href="/style/page-foraine-toast.css?v=40">
+        <link rel="stylesheet" href="/style/page-article.css?v=40">
+        <!-- 窄屏样式按需加载: 宽屏连请求都不发 (只写 <link media> 的 Chrome 仍会下载, 所以用脚本判断) -->
+        <script>
+            if (matchMedia('(max-width: 900px)').matches) {
+                const mediaLink = document.createElement('link');
+                mediaLink.rel = 'stylesheet';
+                mediaLink.href = '/style/main-media.css';
+                document.head.appendChild(mediaLink);
+            }
+        </script>
+        <script src="/script/i18n.js?v=40" defer></script>
+        <script src="/script/core.js?v=40" defer></script>
+        <script src="/script/ui.js?v=40" defer></script>
+        <script src="/script/transition.js?v=40" defer></script>
+        <!-- 语法高亮 (代码块用) 必须在 markdown.js 之前 -->
+        <script src="/script/highlight.js?v=40" defer></script>
+        <!-- LaTeX (轻量, 无第三方库): 必须排在 markdown.js 前面 (markdown.js 抽到 $…$ 时会直接调 renderLatex()) -->
+        <script src="/script/latex.js?v=40" defer></script>
+        <script src="/script/markdown.js?v=40" defer></script>
+        <script src="/script/header.js?v=40" defer></script>
+        <script src="/script/layout.js?v=40" defer></script>
+        <script src="/script/rain-sound.js?v=40" defer></script>
+        <!-- 叙述编辑页那层会呼吸的三角网格背景 -->
+        <script src="/script/grid-bg.js?v=40" defer></script>
+    </head>
+
+    <body>
+        <!-- 叙述模式 (\(body.page-narra\)) 才铺: 会呼吸的三角网格 (不跟鼠标、不能拖) -->
+        <canvas class="narra-grid" id="narra-grid" aria-hidden="true"></canvas>
+        <div class="page-layout">
+
+            <!-- 阅读布局: 正文 + 侧边目录 (目录在右, 窄屏变抽屉) -->
+            <div class="article-layout">
+
+                <div class="article-main" data-anim>
+
+                    <!-- 文章视图 (无框体) -->
+                    <section class="article-section" id="view-panel" hidden>
+                        <div class="article-view">
+                            <div class="article-meta" id="article-meta"></div>
+                            <!-- 最后更新时间: 标题上面单独一行, 没有就不显示 -->
+                            <p class="article-updated" id="article-updated" hidden></p>
+                            <h1 class="article-title" id="article-title"></h1>
+                            <!-- 简介: 标题下面一行小灰斜体带双引号, 作者没写就整行不显示 -->
+                            <p class="article-intro" id="article-intro" hidden></p>
+                            <hr class="article-divider">
+                            <div class="article-body" id="article-body"></div>
+                        </div>
+                    </section>
+
+                    <!-- 评论区: 头像 + 昵称 + 时间, 两级楼中楼。
+                         正文走 renderMarkdown, 文字那层借 .article-body 的排版 (所以带那个类); 编辑模式整块不显示。 -->
+                    <section class="comment-section" id="comment-section" hidden>
+                        <div class="comment-head">
+                            <h2 class="comment-title">评论</h2>
+                            <span class="comment-total" id="comment-total"></span>
+                        </div>
+
+                        <!-- 发表框: 左头像 + 右输入 (登录后才显示) -->
+                        <div class="comment-form" id="comment-form" hidden>
+                            <span class="comment-face"><img class="comment-avatar" id="comment-my-avatar" alt=""></span>
+                            <div class="comment-form-main">
+                                <textarea id="comment-input" rows="1" maxlength="600"
+                                          placeholder="说点什么…"></textarea>
+                                <div class="comment-form-foot">
+                                    <span class="comment-reply-hint" id="comment-reply-hint" hidden></span>
+                                    <button type="button" class="btn" id="comment-submit" onclick="submitComment()">发表评论</button>
+                                </div>
+                            </div>
+                            <!-- 插入图片: 评论框聚焦后从左边滑进来 + 淡入 -->
+                            <button type="button" class="comment-image-btn" id="comment-image-btn" onclick="pickCommentImage()" title="插入图片">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="8.5" cy="9.5" r="1.5"></circle><path d="m4 17 4.5-4.5 3.5 3.5 3-3L20 17"></path></svg>
+                                <span>插入图片</span>
+                            </button>
+                            <input type="file" id="comment-image-file" accept="image/*" hidden>
+                        </div>
+
+                        <!-- 未登录: 只给一个登录入口 -->
+                        <div class="comment-guest" id="comment-guest" hidden>
+                            <span class="editor-hint">登录之后才能评论</span>
+                            <button type="button" class="btn-outline" onclick="okLogin()">去登录</button>
+                        </div>
+
+                        <div class="comment-list" id="comment-list"></div>
+                    </section>
+
+                </div>
+
+                <!-- 侧边目录 (桌面 sticky 靠右 / 窄屏右滑抽屉)。
+                     这里绝对不能写 data-anim: 入场动画的收尾帧 (transform: none + fill-mode: both) 会把抽屉的 translateX(100%) 压死 -->
+                <aside class="article-toc No-slc" id="article-toc" hidden>
+                    <div class="article-toc-head">
+                        <p class="article-toc-title">文章内容</p>
+                        <!-- 关闭键只在窄屏的抽屉形态下显示 (由 main-media.css 打开) -->
+                        <button type="button" class="article-toc-close" id="toc-close" onclick="closeToc()" aria-label="关闭目录" title="关闭">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+                        </button>
+                    </div>
+                    <nav class="article-toc-nav" id="toc-nav"></nav>
+                </aside>
+            </div>
+
+            <!-- 编辑器: 不带 .panel, 不铺框体 —— 与阅读模式一样直接铺在背景上 -->
+            <section class="panel-wide" id="editor-panel" hidden data-anim>
+                <div class="editor">
+                    <h1 id="editor-heading">撰写·文章</h1>
+                    <!-- 封禁中: 说清楚为什么发不了 (服务端同样会拦) -->
+                    <div class="ban-banner" id="editor-ban" hidden></div>
+                    <div class="field">
+                        <input type="text" id="editor-title" placeholder="Title 总是很重要的">
+                        <label for="editor-title">标题</label>
+                    </div>
+                    <!-- 简介: 作者自己写的一句话主题, 用于列表页描述与个人页卡片 (可留空); 叙述模式整块藏掉 -->
+                    <div class="field" id="field-intro">
+                        <input type="text" id="editor-intro" maxlength="120" placeholder="简述文章内容">
+                        <label for="editor-intro">简介</label>
+                    </div>
+                    <div class="field" id="field-tags">
+                        <input type="text" id="editor-tags" placeholder="用逗号分隔">
+                        <label for="editor-tags">标签</label>
+                    </div>
+                    <div class="field">
+                        <textarea id="editor-content" placeholder="内容也是蛮重要的~"></textarea>
+                        <label for="editor-content">内容</label>
+                    </div>
+                    <div class="editor-row">
+                        <!-- 按钮分三组: 宽屏就在同一行 (display:contents), 窄屏才拆行 --
+                             第一行 插图 / 第二行 发布+草稿+取消 / 第三行 预览+Md 规则 -->
+                        <div class="editor-group">
+                            <button class="btn-acrylic editor-image-btn" type="button" onclick="openImageInsert()" title="插入图片">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"></path><path d="m7.5 8.5 4.5-4.5 4.5 4.5"></path><path d="M4 16v2.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V16"></path></svg>
+                                插入图片
+                            </button>
+                        </div>
+                        <div class="editor-group">
+                            <button class="btn" id="editor-publish" onclick="saveArticle('published')">发布</button>
+                            <!-- 草稿态 = 「保存草稿」(触屏才列出来, 桌面按 Ctrl+S); 已发布态 = 「转为草稿」 (点击弹「下架确认」) -->
+                            <button class="btn-acrylic" id="editor-draft" onclick="onDraftButton()">保存草稿</button>
+                            <button class="btn-acrylic" onclick="cancelEditor()">取消</button>
+                        </div>
+                        <div class="editor-group">
+                            <button class="btn-acrylic" onclick="showPreview()">预览</button>
+                            <!-- 缩进宽度: 只桌面端可见 -->
+                            <label class="editor-indent" title="Ctrl / ⌘ + [ 与 ] 按这个宽度缩进">
+                                <span>缩进</span>
+                                <select id="editor-indent">
+                                    <option value="2" selected>2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                </select>
+                            </label>
+                            <button class="btn-acrylic editor-md-help" onclick="showMdRules()">Md 规则</button>
+                        </div>
+                    </div>
+                    <!-- 插图选文件的入口 (hidden): 手机直接弹相册, 桌面由弹窗里的拖放区转发 -->
+                    <input type="file" id="editor-image-file" accept="image/*" hidden>
+                </div>
+            </section>
+
+            <!-- 弹性留白: 内容不满一屏时由它吃掉多余空间, 把页脚压到视口底部 -->
+            <div class="spacer-flex"></div>
+
+        </div>
+
+        <script>
+            /* article/index.html 文章详情 + 编辑器 */
+            /*
+              内容: 阅读 (正文 / 评论区 / 侧边目录 / 进度球) + 编辑 (发布 / 草稿 / 插图)
+              依赖: core.js / ui.js / markdown.js / latex.js / highlight.js / 接口 /api/article, /api/comments
+            */
+            let sessionUser = null;
+            let articleData = null;
+            let canEdit = false;
+            let canDelete = false;
+            let canModerate = false;
+            let narraMode = false;      // 叙述: 没有简介/标签/缩进/Md 规则, 只有一个「保存」
+
+            const params = new URLSearchParams(location.search);
+            // 这两个要是 let: 新文章保存后要认领刚建出来的 id, 否则再按一次 Ctrl+S 会又建一篇
+            let articleId = params.get('id');
+            const editParam = params.get('edit');
+            let isNew = editParam === 'new';
+            const isEditMode = isNew || editParam === '1';
+
+            function $(id) { return document.getElementById(id); }
+            /* 回列表: 默认不过场 (详情 → 列表的返回不要转场动画); animate = true 用于「动作之后跳走」(删文/审核) */
+            function goArticles(animate) { goPage('/articles/', { animate: !!animate }); }
+            function okLogin() { pageTransitionTo('/login.html'); }
+
+            // meta 行的小图标 (stroke=currentColor, 跟随文字色)
+            const META_ICONS = {
+              user: '<circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path>',
+              calendar: '<rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path>',
+              clock: '<circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path>',
+              hashtag: '<path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"></path>'
+            };
+
+            // 作者: 头像 + 昵称, 点一下进作者主页 (/u/<用户名>)
+            // (账号被注销的文章没有 username, 退化成原来的图标 + 文字)
+            function authorItem(a) {
+              const username = a.author_username;
+              const avatar = a.author_avatar;
+              const wrap = el(username ? 'a' : 'span', 'meta-item meta-author');
+              if (username) wrap.href = '/u/' + encodeURIComponent(username);
+
+              const face = document.createElement('img');
+              face.className = 'meta-author-avatar';
+              face.alt = '';
+              face.loading = 'lazy';
+              face.src = avatar || '/assets/Icon/foraine-icon-v2.png';
+              wrap.appendChild(face);
+              wrap.appendChild(el('span', null, a.author));
+              return wrap;
+            }
+
+            function metaItem(icon, text) {              const item = el('span', 'meta-item');
+              const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+              svg.setAttribute('viewBox', '0 0 24 24');
+              svg.setAttribute('fill', 'none');
+              svg.setAttribute('stroke', 'currentColor');
+              svg.setAttribute('stroke-width', '2');
+              svg.setAttribute('stroke-linecap', 'round');
+              svg.setAttribute('stroke-linejoin', 'round');
+              svg.innerHTML = META_ICONS[icon] || '';
+              item.appendChild(svg);
+              item.appendChild(el('span', null, text));
+              return item;
+            }
+
+            /* 阅读时长: 中文 380 字/分, 西文 200 词/分, 代码块各加 4 秒; 不足 1 分钟按 5 秒取整 */
+            const READING_CJK_PER_MIN = 380;
+            const READING_WORD_PER_MIN = 200;
+            function readingTimeText(text) {
+              const raw = String(text || '');
+              const cjk = (raw.match(/[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/g) || []).length;
+              const words = (raw.match(/[A-Za-z][A-Za-z'\u2019\-]*/g) || []).length;
+              const numbers = (raw.match(/\d+/g) || []).length;
+              const codeBlocks = Math.floor((raw.match(/```/g) || []).length / 2);
+              const seconds = (cjk / READING_CJK_PER_MIN) * 60
+                + ((words + numbers) / READING_WORD_PER_MIN) * 60
+                + codeBlocks * 4;
+              if (seconds < 60) return Math.max(5, Math.round(seconds / 5) * 5) + ' 秒';
+              return Math.round(seconds / 60) + ' 分钟';
+            }
+
+            // 初始化
+            async function init() {
+              sessionUser = await getCurrentUser();
+              syncViewContext();      // 编辑器预览那一趟也看得到 <view …>
+
+              // 目录抽屉 (窄屏)
+              const tocToggle = $('toc-toggle');
+              if (tocToggle) {
+                tocToggle.addEventListener('click', () => {
+                  if ($('article-toc').classList.contains('show')) closeToc();
+                  else openToc();
+                });
+              }
+              const tocShade = $('toc-shade');
+              if (tocShade) tocShade.addEventListener('click', closeToc);
+
+              // 右下角阅读进度球
+              $('scroll-btn').addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+              window.addEventListener('scroll', updateScrollProgress, { passive: true });
+              window.addEventListener('resize', updateScrollProgress, { passive: true });
+
+              if (isEditMode) {
+                if (!sessionUser) { okLogin(); return; }
+                // 编辑模式没有阅读可讲: 右下角那组悬浮圆钮 (目录 / 进度球) 整组收掉 (窄屏 CSS 让它们常驻)
+                const floating = $('action-buttons');
+                if (floating) floating.hidden = true;
+                // 选完图 → 上传 (手机直接插, 桌面交给弹窗)
+                const imageInput = $('editor-image-file');
+                if (imageInput) {
+                  imageInput.addEventListener('change', () => {
+                    const file = imageInput.files && imageInput.files[0];
+                    if (file) uploadEditorImage(file, { dialog: !TOUCH_ONLY });
+                  });
+                }
+                $('editor-panel').hidden = false;
+                $('view-panel').hidden = true;
+                $('editor-heading').textContent = isNew ? '写文章' : '编辑文章';
+                renderEditorBan();
+                editorStatus = 'draft'; // 新文章 = 还没存在服务端的草稿
+                if (!isNew && articleId) await loadForEdit(articleId);
+                applyEditorStatus();   // 按钮字面/显隐跟着刚拿到的状态走
+                if (narraMode) applyNarraMode();
+                // 记下「刚打开时」的样子, 之后用来判断有没有改动
+                initialSnapshot = editorSnapshot();
+                savedSnapshot = initialSnapshot;
+                return;
+              }
+
+              if (articleId) { loadArticle(articleId); }
+              else { showMessage('缺少文章参数<br><br><button class="btn" onclick="closeModal(); goArticles()">回到列表</button>'); }
+            }
+
+            /* <view …> 的上下文: 观看者是谁 + 那一瞬的时刻 (阅读时是「请求这篇文章」那一刻)。
+               没登录就是 unknown / null */
+            function syncViewContext(time) {
+              if (typeof setViewContext !== 'function') return;
+              setViewContext({
+                user: sessionUser && sessionUser.username,
+                nickname: sessionUser && (sessionUser.nickname || sessionUser.username),
+                permissions: (sessionUser && sessionUser.permissions) || [],
+                time: time || Date.now()
+              });
+            }
+
+            // 阅读
+            async function loadArticle(id) {
+              syncViewContext(Date.now());
+              const panel = $('view-panel');
+              panel.hidden = false;
+              const body = $('article-body');
+              body.textContent = '';
+              body.appendChild(loadingState());
+
+              try {
+                const response = await fetch('/api/article?id=' + encodeURIComponent(id), { cache: 'no-store' });
+                const data = await response.json();
+                /* 草稿 / 叙述对别人就是「不存在」→ 送去拒绝访问页
+                   (与 Worker 的 serveNotFound 同一个落点) */
+                if (response.status === 404) { location.replace('/access-denied.html?reason=404'); return; }
+                if (!response.ok) throw new Error(data.error || '加载失败');
+
+                articleData = data.article;
+                // 叙述: 阅读页也用编辑页那层背景
+                if (articleData.narra) startNarraBackground();
+                canEdit = !!(data.can && data.can.edit);
+                canDelete = !!(data.can && data.can.delete);
+                canModerate = !!(data.can && data.can.moderate);
+                renderArticle(articleData);
+                buildToc();
+                updateScrollProgress();
+                // 评论区 (文章下面那一块) 独立加载: 发完评论只刷新它, 不重画正文
+                loadComments();
+                // 正文是异步加载的: 首屏渐入时它还不在, 加载完得重播一次
+                replayEnterAnim(document.querySelector('.article-main'));
+              } catch (error) {
+                body.textContent = error.message;
+              }
+            }
+
+            function renderArticle(a) {
+              const title = (a.title && a.title.trim()) ? a.title : (a.content.split('\n')[0] || '无标题');
+              // 标题 / 简介也能用自定行内 DOM (不解析 secret / 零宽 / font, 见 markdown.js 的 inlinePlain)
+              $('article-title').innerHTML = inlinePlain(title);
+
+              // meta 行: 作者 · 日期 · 阅读时长 · 标签 (标签并入 meta, 不再单独一行)
+              const meta = $('article-meta');
+              meta.innerHTML = '';
+              meta.appendChild(authorItem(a));
+              meta.appendChild(metaItem('calendar', formatTime(a.created_at)));
+              meta.appendChild(metaItem('clock', readingTimeText(a.content || '')));
+              // 标签不显示在文章详情页 (列表卡片上那行照旧保留); 标签本身仍然随文章存/取 (编辑器要用)
+              if (a.status === 'draft') {
+                meta.appendChild(el('span', 'tag-chip active', '草稿'));
+              }
+
+              // 编辑 / 审核 / 删除 靠右
+              const actions = el('span', 'meta-actions');
+              // 一律按服务端的 can.edit / can.delete / can.moderate 画 (它们本来就算的真实权限)
+              const mine = !!(sessionUser && a.author_username && a.author_username === sessionUser.username);
+              // ⚠️ 旧的 '*' 串 2026-09-29 已取消, 站长看 dev.access
+              const isSiteOwner = !!(sessionUser && (sessionUser.permissions || []).includes('dev.access'));
+              // 被封禁的人不给自己开编辑入口 (服务端也会拦)
+              const bannedNowViewer = !!(sessionUser && sessionUser.ban);
+              // 只有作者本人能看到「编辑」(article.edit.any 已取消, 站长也不能编辑别人的文章)
+              if (canEdit && mine && !bannedNowViewer) {
+                const editBtn = el('button', 'auth-link-btn', '编辑');
+                editBtn.onclick = () => enterEdit(a.id);
+                actions.appendChild(editBtn);
+              }
+              // 别人的文章: 管理员/站长走「审核」—— 必须填理由, 理由会留档并发站内信给作者
+              if (!mine && canModerate) {
+                const modBtn = el('button', 'auth-link-btn', '审核');
+                modBtn.onclick = () => moderateArticle(a.id, title);
+                actions.appendChild(modBtn);
+              }
+              // 站长额外多一个「删除」: 真删 (管理员只能下架)
+              if (!mine && canDelete && isSiteOwner) {
+                const delBtn = el('button', 'auth-link-btn', '删除');
+                delBtn.onclick = () => removeArticle(a.id, a.title);
+                actions.appendChild(delBtn);
+              }
+              // 自己的文章: 普通删除, 不需要写理由
+              if (canDelete && mine) {
+                const delBtn = el('button', 'auth-link-btn', '删除');
+                delBtn.onclick = () => deleteArticle(a.id);
+                actions.appendChild(delBtn);
+              }
+              meta.appendChild(actions);
+
+              // 最后更新时间: 节点搬进 meta 行当最后一个条目 (仅桌面端; 窄屏会自然落到下一行, 正好是想要的差别)
+              const updatedBox = $('article-updated');
+              if (updatedBox) {
+                const stamp = a.updated_at || a.created_at;
+                updatedBox.hidden = !stamp;
+                updatedBox.textContent = stamp ? ('最后更新 ' + formatTime(stamp)) : '';
+                if (stamp) meta.appendChild(updatedBox);
+              }
+
+              /* 标题下面那行小灰斜体: 普通文章 = 简介 (带双引号), 叙述 = 这篇的 QuoteKey (终端世界里那篇文章的键名) */
+              const introBox = $('article-intro');
+              if (introBox) {
+                if (a.narra) {
+                  introBox.hidden = !a.quotekey;
+                  introBox.textContent = a.quotekey || '';
+                } else {
+                  const intro = (a.intro || '').trim();
+                  introBox.hidden = !intro;
+                  introBox.innerHTML = intro ? ('“' + inlinePlain(intro) + '”') : '';
+                }
+              }
+
+              $('article-body').innerHTML = renderMarkdown(a.content);
+              // 超过 5 行的代码块装上「展开」圆形键
+              setupCodeBlocks($('article-body'));
+              // @提及: 存在的用户染成紫色 (异步查一次, 查不到就当普通链接)
+              setupMentions($('article-body'));
+            }
+
+            /* 评论区
+                 两级: 顶层评论 + 缩进的回复; 回复不另开小输入框, 一律走顶部那个发表框 + 一条「正在回复 @xx」的提示 */
+            const DEFAULT_AVATAR = '/assets/Icon/foraine-icon-v2.png';
+            const COMMENT_PLACEHOLDER = '说点什么…';
+            const COMMENT_ICONS = {
+              reply: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"></path><path d="M4 9h9a7 7 0 0 1 7 7v3"></path></svg>',
+              trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"></path><path d="M9 7V5h6v2"></path><path d="m6 7 1 13h10l1-13"></path></svg>'
+            };
+            let commentList = [];
+            let commentReplyTo = null;   // 正在回复的那条 { id, nickname }
+
+            // 时间照 Waline: 刚发出来的写「刚刚」, 一周以上才写日期
+            function commentTimeText(ts) {
+              const diff = Date.now() - (ts || 0);
+              if (diff < 0) return formatDate(ts);
+              if (diff < 60e3) return '刚刚';
+              if (diff < 3600e3) return Math.floor(diff / 60e3) + ' 分钟前';
+              if (diff < 86400e3) return Math.floor(diff / 3600e3) + ' 小时前';
+              if (diff < 7 * 86400e3) return Math.floor(diff / 86400e3) + ' 天前';
+              return formatDate(ts);
+            }
+
+            function commentActionButton(icon, label, onClick, danger) {
+              const btn = el('button', 'comment-action' + (danger ? ' is-danger' : ''));
+              btn.type = 'button';
+              btn.innerHTML = COMMENT_ICONS[icon]; // 写死的 svg, 不是用户内容
+              btn.appendChild(el('span', null, label));
+              btn.onclick = onClick;
+              return btn;
+            }
+
+            function commentAvatarNode(c) {
+              const box = el(c.username ? 'a' : 'span', 'comment-face');
+              if (c.username) {
+                box.href = '/u/' + encodeURIComponent(c.username);
+                box.title = '@' + c.username;
+              }
+              const face = document.createElement('img');
+              face.className = 'comment-avatar';
+              face.alt = '';
+              face.loading = 'lazy';
+              face.src = c.avatar_url || DEFAULT_AVATAR;
+              face.onerror = () => { face.onerror = null; face.src = DEFAULT_AVATAR; };
+              box.appendChild(face);
+              return box;
+            }
+
+            // 一条评论 = 头像 + (名字/回复对象/时间 → 正文 → 回复·删除)
+            function commentRow(c, isReply) {
+              const row = el('div', 'comment-item' + (isReply ? ' is-reply' : '') + (c.is_deleted ? ' is-deleted' : ''));
+              row.appendChild(commentAvatarNode(c));
+
+              const main = el('div', 'comment-main');
+              const meta = el('div', 'comment-meta');
+              const name = el(c.username ? 'a' : 'span', 'comment-name', c.nickname);
+              if (c.username) name.href = '/u/' + encodeURIComponent(c.username);
+              meta.appendChild(name);
+              if (isReply && c.reply_to_nickname) {
+                meta.appendChild(el('span', 'comment-reply-to', '回复 @' + c.reply_to_nickname));
+              }
+              meta.appendChild(el('span', 'comment-time', commentTimeText(c.created_at)));
+              main.appendChild(meta);
+
+              // 正文: 挂在 .article-body 里借它的排版 (段落/行内代码/链接/引用一次到位)
+              const text = el('div', 'comment-text article-body');
+              if (c.is_deleted) text.appendChild(el('span', 'comment-deleted', '该评论已删除'));
+              else text.innerHTML = renderMarkdown(c.content);
+              main.appendChild(text);
+
+              const actions = el('div', 'comment-actions');
+              if (!c.is_deleted && sessionUser) {
+                actions.appendChild(commentActionButton('reply', '回复', () => startReply(c)));
+              }
+              // 「删除」: 没人回复过就直接抹掉, 有人回复过就留占位 (没有「撤回」这回事)
+              if (c.can_delete) {
+                actions.appendChild(commentActionButton('trash', '删除', () => deleteComment(c), true));
+              }
+              if (actions.childNodes.length) main.appendChild(actions);
+
+              row.appendChild(main);
+              return row;
+            }
+
+            function renderComments(data) {
+              const list = $('comment-list');
+              list.innerHTML = '';
+
+              const total = $('comment-total');
+              const count = (data && data.count) || commentList.length;
+              if (total) total.textContent = count ? count + ' 条' : '';
+
+              if (!commentList.length) {
+                list.appendChild(el('p', 'comment-empty', '还没有人评论，来说两句吧。'));
+                return;
+              }
+
+              // 回复一律上浮到**根评论**下面 → 永远只有两级, 不无限缩进
+              const byId = {};
+              commentList.forEach((c) => { byId[c.id] = c; });
+              const rootOf = (c) => {
+                let cur = c;
+                let hops = 0;
+                while (cur && cur.reply_to_comment_id && hops < 10) {
+                  const parent = byId[cur.reply_to_comment_id];
+                  if (!parent) break;
+                  cur = parent;
+                  hops += 1;
+                }
+                return cur ? cur.id : c.id;
+              };
+
+              commentList.filter((c) => !c.reply_to_comment_id).forEach((c) => {
+                const thread = el('div', 'comment-thread');
+                thread.appendChild(commentRow(c, false));
+                const kids = commentList.filter((k) => k.reply_to_comment_id && rootOf(k) === c.id);
+                if (kids.length) {
+                  const box = el('div', 'comment-replies');
+                  kids.forEach((k) => box.appendChild(commentRow(k, true)));
+                  thread.appendChild(box);
+                }
+                list.appendChild(thread);
+              });
+            }
+
+            async function loadComments() {
+              const section = $('comment-section');
+              if (!section || isEditMode) return;
+              /* 草稿 (只有作者/管理员看得到) 不挂评论区: 谁都还没读到, 没什么好评论的。
+                 叙述也一样 —— 详情页整块评论系统都不出现 (发评论服务端也拦着, 见 comment.js) */
+              if (articleData && (articleData.narra || (articleData.status && articleData.status !== 'published'))) {
+                section.hidden = true;
+                return;
+              }
+              section.hidden = false;
+
+              const list = $('comment-list');
+              list.innerHTML = '';
+              list.appendChild(loadingState());
+
+              // 发表框: 登录了才给用; 头像跟着自己走
+              const form = $('comment-form');
+              const guest = $('comment-guest');
+              if (form) form.hidden = !sessionUser;
+              if (guest) guest.hidden = !!sessionUser;
+              bindCommentImage(); // 评论框聚焦 → 右侧滑出「插入图片」
+              const myFace = $('comment-my-avatar');
+              if (myFace) {
+                myFace.src = (sessionUser && sessionUser.avatar_url) || DEFAULT_AVATAR;
+                myFace.onerror = () => { myFace.onerror = null; myFace.src = DEFAULT_AVATAR; };
+              }
+              const input = $('comment-input');
+              if (input) {
+                input.placeholder = COMMENT_PLACEHOLDER;
+                if (!input.dataset.bound) {
+                  input.dataset.bound = '1';
+                  hardenField(input);
+                  // 默认 1 行高, 写到换行 / 折行才自己长高
+                  input.addEventListener('input', autoGrowCommentInput);
+                  input.addEventListener('keydown', (event) => {                    // Ctrl/⌘ + 回车 发表 (与 D1 控制台、编辑器同一套手感)
+                    if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+                      event.preventDefault();
+                      submitComment();
+                    }
+                  });
+                }
+              }
+
+              try {
+                const response = await fetch('/api/comments?article_id=' + encodeURIComponent(articleId), { cache: 'no-store' });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || '加载评论失败');
+                commentList = data.comments || [];
+                renderComments(data);
+                setupMentions(list); // 评论里的 @提及 也上色
+                replayItems(list, '.comment-thread'); // 只重播条目, 不重播整块
+              } catch (error) {
+                list.innerHTML = '';
+                list.appendChild(el('p', 'editor-hint', error.message));
+              }
+            }
+
+            /* 评论框: 默认 1 行, 内容长出来才变高 (最高约 40vh, 再高就内部滚) */
+            function autoGrowCommentInput() {
+              const input = $('comment-input');
+              if (!input) return;
+              input.style.height = 'auto'; // 先归零, 否则只能长不能缩
+              const cap = Math.round(window.innerHeight * 0.4);
+              input.style.height = Math.min(input.scrollHeight, cap) + 'px';
+              input.style.overflowY = input.scrollHeight > cap ? 'auto' : 'hidden';
+            }
+
+            /* 评论插图: 复用文章编辑器那条上传管道 (POST /api/image + article_id), 图片与正文共用一个桶 */
+            function bindCommentImage() {
+              const form = $('comment-form');
+              const picker = $('comment-image-file');
+              if (!form || !picker || form.dataset.imgBound) return;
+              form.dataset.imgBound = '1';
+
+              // 聚焦才亮出按钮 (focusin/focusout 会冒泡, 绑定在表单上就够)
+              form.addEventListener('focusin', () => form.classList.add('is-focus'));
+              form.addEventListener('focusout', (event) => {
+                // relatedTarget 还在表单里就不收 (比如点的是「插入图片」本身)
+                if (!form.contains(event.relatedTarget)) form.classList.remove('is-focus');
+              });
+
+              picker.addEventListener('change', () => {
+                const file = picker.files && picker.files[0];
+                picker.value = ''; // 注意: 同一个文件选第二次也要能触发 change
+                if (!file) return;
+                // 手机: 弹窗那套拖放用不上 → 传完直接插入 (默认按「图片」算)
+                if (TOUCH_ONLY) { uploadCommentImage(file, { previewOnly: false }); return; }
+                uploadCommentImage(file, { previewOnly: true });
+              });
+            }
+
+            /* 评论插图: 弹框里选「图片 / 表情包」, 插进评论框的分别是 ![图片](url) 与 ![表情](url);
+                  后者由 markdown.js 渲染成 .md-emoji (16×16, 见 page-article.css) */
+            let commentImageKind = 'image'; // image | emoji
+            let pendingCommentImage = null; // { url }
+
+            function setCommentImageKind(kind) {
+              commentImageKind = kind === 'emoji' ? 'emoji' : 'image';
+              const row = $('img-kind');
+              if (!row) return;
+              [...row.querySelectorAll('button')].forEach((btn) => {
+                btn.classList.toggle('is-active', btn.dataset.kind === commentImageKind);
+              });
+            }
+
+            function pickCommentImage() {
+              const picker = $('comment-image-file');
+              if (!picker) return;
+              picker.value = '';
+              if (TOUCH_ONLY) { picker.click(); return; }
+              if (!articleId) {
+                showToast('先存一下草稿，图片才能归到这篇文章的文件夹里', 'warn');
+                return;
+              }
+              pendingCommentImage = null;
+              commentImageKind = 'image';
+              showMessage(
+                '<p class="modal-preview-title">插入图片</p>' +
+                '<div class="img-kind" id="img-kind">' +
+                  '<button type="button" class="btn-acrylic is-active" data-kind="image">图片</button>' +
+                  '<button type="button" class="btn-acrylic" data-kind="emoji">表情包</button>' +
+                '</div>' +
+                '<div class="img-drop" id="img-drop">' +
+                  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+                    '<path d="M12 16V4"></path><path d="m7.5 8.5 4.5-4.5 4.5 4.5"></path>' +
+                    '<path d="M4 16v2.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V16"></path>' +
+                  '</svg>' +
+                  '<p class="img-drop-title">把图片拖到这里</p>' +
+                  '<p class="img-drop-hint">也可以点这里选本地文件 · PNG / JPG / WebP / GIF · 20 MB 以内</p>' +
+                '</div>' +
+                '<div class="img-picked" id="img-picked" hidden>' +
+                  '<img id="img-picked-img" alt="">' +
+                  '<p class="img-picked-meta" id="img-picked-meta"></p>' +
+                '</div>' +
+                '<div class="confirm-actions">' +
+                  '<button type="button" class="btn" id="img-insert-confirm" disabled>插入</button>' +
+                  '<button type="button" class="btn-outline" onclick="closeModal()">取消</button>' +
+                '</div>'
+              );
+
+              const kindRow = $('img-kind');
+              kindRow.addEventListener('click', (event) => {
+                const btn = event.target.closest('button[data-kind]');
+                if (btn) setCommentImageKind(btn.dataset.kind);
+              });
+              const drop = $('img-drop');
+              drop.addEventListener('click', () => { picker.value = ''; picker.click(); });
+              ['dragenter', 'dragover'].forEach((evt) => drop.addEventListener(evt, (e) => {
+                e.preventDefault();
+                drop.classList.add('is-over');
+              }));
+              ['dragleave', 'dragend'].forEach((evt) => drop.addEventListener(evt, () => drop.classList.remove('is-over')));
+              drop.addEventListener('drop', (e) => {
+                e.preventDefault();
+                drop.classList.remove('is-over');
+                const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+                if (file) uploadCommentImage(file, { previewOnly: true });
+                else showToast('未能读取文件，请点击此处重新选择', 'warn');
+              });
+              $('img-insert-confirm').addEventListener('click', insertPickedCommentImage);
+            }
+
+            function insertPickedCommentImage() {
+              if (!pendingCommentImage) return;
+              const url = pendingCommentImage.url;
+              pendingCommentImage = null;
+              closeModal();
+              insertCommentImage(url, commentImageKind);
+              showToast(commentImageKind === 'emoji' ? '表情包已插入' : '图片已插入', 'ok');
+            }
+
+            async function uploadCommentImage(file, options) {
+              const previewOnly = !!(options && options.previewOnly);
+              const btn = $('comment-image-btn');
+              const label = btn ? btn.querySelector('span') : null;
+              if (btn) btn.disabled = true;
+              if (label) label.textContent = '上传中…';
+              const meta = $('img-picked-meta');
+              if (previewOnly && meta) meta.textContent = (file.name || '图片') + ' · 上传中…';
+              try {
+                const form = new FormData();
+                form.append('file', file);
+                if (articleId) form.append('article_id', articleId);
+                // 注意: 不要自己写 Content-Type —— multipart 的边界串得由浏览器生成
+                const response = await fetch('/api/image', { method: 'POST', body: form });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(data.error || '上传失败');
+
+                if (previewOnly) {
+                  // 只上传 + 预览, 点「插入」才写进评论框
+                  pendingCommentImage = { url: data.url };
+                  const pic = $('img-picked-img');
+                  const box = $('img-picked');
+                  if (pic) pic.src = data.url;
+                  if (box) box.hidden = false;
+                  if (meta) meta.textContent = (file.name || '图片') + ' · 已上传，点「插入」放进评论';
+                  const confirm = $('img-insert-confirm');
+                  if (confirm) confirm.disabled = false;
+                  return;
+                }
+
+                insertCommentImage(data.url, 'image');
+                showToast('图片已插入', 'ok');
+              } catch (error) {
+                showToast(error.message, 'error');
+              } finally {
+                if (btn) btn.disabled = false;
+                if (label) label.textContent = '插入图片';
+              }
+            }
+
+            // 插在光标处 (没有光标就接在末尾), 顺手把框长高到刚好看得见
+            // kind = 'emoji' 时 alt 写「表情」→ markdown.js 会渲染成 16×16 的小图
+            function insertCommentImage(url, kind) {
+              const input = $('comment-input');
+              if (!input) return;
+              const snippet = (kind === 'emoji' ? '![表情](' : '![图片](') + url + ')';
+              const start = typeof input.selectionStart === 'number' ? input.selectionStart : input.value.length;
+              const end = typeof input.selectionEnd === 'number' ? input.selectionEnd : input.value.length;
+              input.value = input.value.slice(0, start) + snippet + input.value.slice(end);
+              const caret = start + snippet.length;
+              try { input.setSelectionRange(caret, caret); } catch (err) { /* 忽略 */ }
+              autoGrowCommentInput();
+              input.focus();
+            }
+
+            function startReply(c) {
+              commentReplyTo = c;
+              const hint = $('comment-reply-hint');
+              if (hint) {
+                hint.hidden = false;
+                hint.innerHTML = '';
+                hint.appendChild(el('span', null, '正在回复 '));
+                hint.appendChild(el('span', 'comment-reply-to', '@' + c.nickname));
+                const cancel = el('button', 'comment-reply-cancel', '✕');
+                cancel.type = 'button';
+                cancel.title = '取消回复';
+                cancel.onclick = () => clearReply();
+                hint.appendChild(cancel);
+              }
+              const input = $('comment-input');
+              if (input) {
+                input.placeholder = '回复 @' + c.nickname + '…';
+                input.focus();
+              }
+              const form = $('comment-form');
+              if (form) form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            function clearReply() {
+              commentReplyTo = null;
+              const hint = $('comment-reply-hint');
+              if (hint) { hint.hidden = true; hint.textContent = ''; }
+              const input = $('comment-input');
+              if (input) input.placeholder = COMMENT_PLACEHOLDER;
+            }
+
+            async function submitComment() {
+              const input = $('comment-input');
+              const btn = $('comment-submit');
+              if (!input || !sessionUser) return;
+              const content = input.value.trim();
+              if (!content) { showToast('写点什么呐..？', 'warn'); return; }
+              if (btn && btn.disabled) return;
+
+              const isReply = !!commentReplyTo;
+              if (btn) { btn.disabled = true; btn.textContent = '发表中…'; }
+              try {
+                await withLoading(() => apiPost('/api/comments', {
+                  article_id: articleId,
+                  content,
+                  reply_to_comment_id: commentReplyTo ? commentReplyTo.id : null
+                }));
+                input.value = '';
+                clearReply();
+                autoGrowCommentInput(); // 清空后回到 1 行高
+                showToast(isReply ? '回复成功' : '评论已发表', 'ok');
+                await loadComments();
+              } catch (error) {
+                showToast(error.message, 'error');
+              } finally {
+                if (btn) { btn.disabled = false; btn.textContent = '发表评论'; }
+              }
+            }
+
+            async function deleteComment(c) {
+              /* 两种删法: 没人回复过 → 直接抹掉, 不留痕迹;
+                    被回复过 → 只能留一句「该评论已删除」当那些回复的落点。 */
+              const yes = await confirmAction({
+                title: '删除这条评论？',
+                message: c.has_replies
+                  ? '此评论被回复过\n删除后将变为「该评论已删除」'
+                  : '确定删除这条评论吗？',
+                confirmText: '删除',
+                danger: true
+              });
+              if (!yes) return;
+              try {
+                await withLoading(() => apiPost('/api/comments/delete', { id: c.id }));
+                showToast('已删除', 'ok');
+                await loadComments();
+              } catch (error) {
+                showToast(error.message, 'error');
+              }
+            }
+
+            async function deleteArticle(id) {
+              const yes = await confirmAction({
+                title: '确定？',
+                message: '确定要删除这篇文章吗？',
+                confirmText: '删除',
+                danger: true
+              });
+              if (!yes) return;
+              // 删除文章要再验一次身份 (仅需密码)
+              if (!(await verifyIdentity({ methods: ['password'] }))) return;
+              try {
+                await withLoading(() => apiPost('/api/articles/delete', { id }));
+                goArticles(true);
+              } catch (error) {
+                showMessage(escapeHtml(error.message));
+              }
+            }
+
+            /* 审核 (别人的文章): 填理由 → 底下两个按钮。下架 = 强制转为草稿 (作者还能改、还能再发);
+                  删除 = 打 is_deleted 标记 (站内看不到, 想恢复只能站长去 D1 改);
+                  两条都会留档 (moderation_log) 并给作者发站内信 */
+            async function moderateArticle(id, title) {
+              const isSiteOwner = !!(sessionUser && (sessionUser.permissions || []).includes('dev.access'));
+              const result = await confirmAction({
+                title: '审核',
+                message: '下架/删除文章；改动将以站内信形式通知原作者' +
+                  (isSiteOwner ? '' : '；如需撤销此操作请联系站长') +
+                  (title ? '\n《' + title + '》' : ''),
+                warning: '',
+                fields: [{
+                  name: 'reason',
+                  placeholder: '理由',
+                  multiline: true,
+                  required: true,
+                  maxlength: 300
+                }],
+                actions: [
+                  { id: 'demote', text: '下架' },
+                  { id: 'delete', text: '删除', danger: true }
+                ]
+              });
+              if (!result) return;
+              // 只拦「删除」那一下; 「下架」可逆, 不折腾验证
+              if (result.id === 'delete' && !(await verifyIdentity({ methods: ['password'] }))) return;
+              try {
+                await withLoading(() => apiPost('/api/moderation/article', {
+                  id,
+                  reason: result.values.reason,
+                  mode: result.id
+                }));
+                showToast(result.id === 'delete' ? '文章已删除' : '文章已下架', 'ok');
+                goArticles(true);
+              } catch (error) {
+                showMessage(escapeHtml(error.message));
+              }
+            }
+
+            /* 站长的「删除」: 真删 —— 评论、标签关联、正文里不再被引用的图都一并清掉 */
+            async function removeArticle(id, title) {
+              const yes = await confirmAction({
+                title: '永久删除这篇文章？',
+                message: title || '',
+                warning: '和「审核下架」不同：这一下会真删掉文章与它的评论，无法恢复',
+                confirmText: '永久删除',
+                danger: true
+              });
+              if (!yes) return;
+              // 删除文章要再验一次身份 (仅需密码)
+              if (!(await verifyIdentity({ methods: ['password'] }))) return;
+              try {
+                await withLoading(() => apiPost('/api/moderation/remove', { id }));
+                showToast('文章已永久删除', 'ok');
+                goArticles(true);
+              } catch (error) {
+                showMessage(escapeHtml(error.message));
+              }
+            }
+
+            // 编辑
+            function enterEdit(id) {
+              pageTransitionTo('/article/?id=' + id + '&edit=1');
+            }
+
+            async function loadForEdit(id) {
+              try {
+                // raw=1: 编辑器要原样正文 (<secret> 不对作者过滤), 不然一保存就把藏着的段落真删了
+                const response = await fetch('/api/article?id=' + encodeURIComponent(id) + '&raw=1', { cache: 'no-store' });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || '加载失败');
+                $('editor-title').value = data.article.title || '';
+                $('editor-intro').value = data.article.intro || '';
+                $('editor-content').value = data.article.content || '';
+                $('editor-tags').value = (data.article.tags || []).join(', ');
+                narraMode = !!data.article.narra;
+                // 服务端现在是什么状态, 决定 Ctrl+S 的含义与那个按钮长什么样
+                editorStatus = data.article.status === 'published' ? 'published' : 'draft';
+                // 编辑模式也要留着这份: 「转为草稿」要看 comment_count 决定弹哪个框
+                // (编辑模式不跑 loadArticle, 不在这里存就永远是 0 条评论)
+                articleData = data.article;
+              } catch (error) {
+                showToast(error.message, 'error');
+              }
+            }
+
+            // 叙述的背景: 会呼吸的三角网格 (编辑页与阅读页共用)
+            function startNarraBackground() {
+              document.body.classList.add('page-narra');
+              if (typeof window.startGridBackground === 'function') window.startGridBackground($('narra-grid'));
+            }
+
+            /* 叙述模式: 藏掉叙述不该有的那几项, 标题与按钮换字, 背景交给会呼吸的三角网格。
+               ⚠️ 保存走的是同一条接口, 只是不带简介/标签, 也不需要「确认发布」那一下 */
+            function applyNarraMode() {
+              startNarraBackground();
+              $('editor-heading').textContent = '叙述';
+              $('field-intro').style.display = 'none';
+              $('field-tags').style.display = 'none';
+              $('editor-draft').style.display = 'none';
+              $('editor-publish').textContent = '保存';
+            }
+
+            function parseTags(value) {
+              return value.split(',').map(s => s.trim()).filter(Boolean);
+            }
+
+            /* 预览: 弹模态框展示渲染结果 (往页面里插预览块会把下面的排版顶下去) */
+            function showPreview() {
+              const html = renderMarkdown($('editor-content').value);
+              showMessage(
+                '<p class="modal-preview-title">文章预览</p>' +
+                '<div class="article-body modal-preview-body">' + html + '</div>' +
+                '<div class="confirm-actions">' +
+                  '<button type="button" class="btn-outline" onclick="closeModal()">关闭</button>' +
+                '</div>'
+              );
+              // 预览里的代码块也要能展开 (弹窗是刚插进 DOM 的, 得自己去处理)
+              setupCodeBlocks(document.getElementById('modal-content'));
+              setupMentions(document.getElementById('modal-content'));
+            }
+
+            /* Md 规则: 速查表 + 换行规则 + LaTeX 用法 */
+            const MD_RULES = [
+              ['# 标题', '一~四级, 右侧自动生成目录'],
+              ['**粗体**', ''],
+              ['*斜体*', ''],
+              ['++下划线++', ''],
+              ['`行内代码`', ''],
+              ['```代码块```', '独占一段'],
+              ['- 列表', '无序'],
+              ['1. 列表', '有序'],
+              ['> 引用', '可多行'],
+              ['[文字](链接)', '裸链接也会自动识别'],
+              ['@用户名', '提及站内用户'],
+              ['$公式$', '行内公式'],
+              ['$$公式$$', '独占一行、居中']
+            ];
+
+            /* LaTeX 速查: 只列渲染器真支持的 (详见 script/latex.js) */
+            const LATEX_RULES = [
+              ['\\frac{a}{b}', '分数'],
+              ['x^2  x_i', '上下标'],
+              ['\\sqrt{x}  \\sqrt[3]{x}', '根号'],
+              ['\\alpha \\pi \\sum \\int \\infty', '希腊字母 / 常用符号'],
+              ['\\times \\le \\ne \\to \\approx', '运算与关系符'],
+              ['\\sin \\cos \\log \\lim \\max', '函数名'],
+              ['\\text{中文}', '正体文字'],
+              ['\\overline{x} \\vec{x} \\hat{x}', '上划线 / 向量 / 帽子'],
+              ['\\left( … \\right]', '括号 (尺寸命令忽略)'],
+              ['\\quad \\, \\\\', '间距 / 换行']
+            ];
+
+            function showMdRules() {
+              const rows = MD_RULES.map((rule) => {
+                const desc = rule[1] ? ' ' + escapeHtml(rule[1]) : '';
+                return '<span><b>' + escapeHtml(rule[0]) + '</b>' + desc + '</span>';
+              }).join('');
+              const texRows = LATEX_RULES.map((rule) => {
+                const desc = rule[1] ? ' ' + escapeHtml(rule[1]) : '';
+                return '<span><b>' + escapeHtml(rule[0]) + '</b>' + desc + '</span>';
+              }).join('');
+              showMessage(
+                '<p class="modal-preview-title">Md 规则</p>' +
+                '<div class="editor-hint editor-syntax">' + rows + '</div>' +
+                '<p class="md-rules-note">换行：单个回车只当空格，<b>行尾空两格</b>或写 <b>&lt;br&gt;</b> 才断行。</p>' +
+                '<p class="md-rules-note">分段：留一个<b>空行</b>；标题、代码块、引用、列表自带分段。</p>' +
+                '<p class="md-rules-title">公式（LaTeX）</p>' +
+                '<div class="editor-hint editor-syntax">' + texRows + '</div>' +
+                '<p class="md-rules-note">行内公式写成 <b>$x^2$</b>，独立公式写成 <b>$$…$$</b>（独占一行、居中）。' +
+                '不支持矩阵 / 对齐环境（<b>\\begin{align}</b> 这类），写了会原样显示。</p>' +
+                '<div class="confirm-actions">' +
+                  '<button type="button" class="btn-outline" onclick="closeModal()">关闭</button>' +
+                '</div>'
+              );
+            }
+
+            /* 插入图片: 传进 foraine-image 桶, 对象名 img/<文章编号>/<时间戳36>-<随机>.ext (一篇文章一个文件夹);
+                  桌面弹窗预览后写进光标处, 手机直接调系统选择器 */
+            const IMG_ALLOWED = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+            const IMG_MAX_MB = 5;
+            let pendingImage = null; // { url, name } —— 等「插入」按钮来拿
+
+            function formatBytes(bytes) {
+              if (!bytes && bytes !== 0) return '';
+              if (bytes < 1024) return bytes + ' B';
+              if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+              return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+            }
+
+            /* 正文的程序化改动 + 撤销/重做: 只接管缩进 / 插图那一步 (打字交给浏览器原生栈,
+                  否则一下 Ctrl+Z 会把一大段打字吞掉); 判据 = 当前内容与栈顶记的那一步对得上 */
+            const EDITOR_TOUCH_ONLY = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+            let progHistory = [];   // [{ before:{value,start,end}, after:{...} }]
+            let progFuture = [];
+
+            /* 把 [from, to] 换成 value 并记一笔历史: 优先 execCommand('insertText')
+                  (直接改 box.value 不进原生撤销栈), 不可用时退回赋值 (至少我们自己的栈能撤) */
+            function applyContentEdit(value, from, to, selFrom, selTo) {
+              const box = $('editor-content');
+              if (!box || !value) return;
+              const before = { value: box.value, start: box.selectionStart, end: box.selectionEnd };
+              box.focus();
+              box.setSelectionRange(from, to);
+              let ok = false;
+              try { ok = document.execCommand('insertText', false, value); } catch (err) { ok = false; }
+              if (!ok || box.value === before.value) {
+                box.value = box.value.slice(0, from) + value + box.value.slice(to);
+                box.dispatchEvent(new Event('input', { bubbles: true }));
+              }
+              if (typeof selFrom === 'number') box.setSelectionRange(selFrom, typeof selTo === 'number' ? selTo : selFrom);
+              progHistory.push({ before, after: { value: box.value, start: box.selectionStart, end: box.selectionEnd } });
+              if (progHistory.length > 60) progHistory.shift();
+              progFuture.length = 0;
+            }
+
+            function restoreContentSnapshot(snap) {
+              const box = $('editor-content');
+              if (!box || !snap) return;
+              box.focus();
+              box.value = snap.value;
+              box.setSelectionRange(snap.start, snap.end);
+              box.dispatchEvent(new Event('input', { bubbles: true }));   // 自动增高 / 改动检测要跟上
+            }
+
+            /* 把一段文字写进正文光标处; 前后补上换行, 让图独占一段 */
+            function insertIntoContent(text) {
+              const box = $('editor-content');
+              const start = typeof box.selectionStart === 'number' ? box.selectionStart : box.value.length;
+              const end = typeof box.selectionEnd === 'number' ? box.selectionEnd : start;
+              const before = box.value.slice(0, start);
+              const after = box.value.slice(end);
+              const lead = before && !/\n$/.test(before) ? '\n' : '';
+              const tail = after && !/^\n/.test(after) ? '\n' : '';
+              const caret = (before + lead + text + tail).length;
+              applyContentEdit(lead + text + tail, start, end, caret, caret);
+            }
+
+            function openImageInsert() {
+              const input = $('editor-image-file');
+              if (!input) return;
+              // 新文章还没编号, 服务端会驳回 (图片得归到哪一篇的文件夹里); 与其选完文件才报错, 不如点按钮时就说清
+              if (!articleId) {
+                showToast('先按 Ctrl / ⌘ + S 存一下草稿，图片才能归到这篇文章的文件夹里', 'warn');
+                return;
+              }
+              input.value = ''; // 同一张图连选两次也要能触发 change
+              if (TOUCH_ONLY) {
+                // 手机: 直接弹系统相册/文件选择器, 不走这个弹窗
+                input.click();
+                return;
+              }
+
+              pendingImage = null;
+              showMessage(
+                '<p class="modal-preview-title">插入图片</p>' +
+                '<div class="img-drop" id="img-drop">' +
+                  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+                    '<path d="M12 16V4"></path><path d="m7.5 8.5 4.5-4.5 4.5 4.5"></path>' +
+                    '<path d="M4 16v2.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V16"></path>' +
+                  '</svg>' +
+                  '<p class="img-drop-title">把图片拖到这里</p>' +
+                  '<p class="img-drop-hint">也可以点这里选本地文件 · PNG / JPG / WebP / GIF · ' + IMG_MAX_MB + ' MB 以内</p>' +
+                '</div>' +
+                '<div class="img-picked" id="img-picked" hidden>' +
+                  '<img id="img-picked-img" alt="">' +
+                  '<p class="img-picked-meta" id="img-picked-meta"></p>' +
+                '</div>' +
+                '<div class="confirm-actions">' +
+                  '<button type="button" class="btn" id="img-insert-confirm" disabled>插入</button>' +
+                  '<button type="button" class="btn-outline" onclick="closeModal()">取消</button>' +
+                '</div>'
+              );
+
+              const drop = $('img-drop');
+              drop.addEventListener('click', () => { input.value = ''; input.click(); });
+              ['dragenter', 'dragover'].forEach((evt) => drop.addEventListener(evt, (e) => {
+                e.preventDefault();
+                drop.classList.add('is-over');
+              }));
+              ['dragleave', 'dragend'].forEach((evt) => drop.addEventListener(evt, () => drop.classList.remove('is-over')));
+              drop.addEventListener('drop', (e) => {
+                e.preventDefault();
+                drop.classList.remove('is-over');
+                const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+                if (file) uploadEditorImage(file, { dialog: true });
+                else showToast('未能读取文件，请点击此处重新选择', 'warn');
+              });
+              $('img-insert-confirm').addEventListener('click', insertPickedImage);
+            }
+
+            function insertPickedImage() {
+              if (!pendingImage) return;
+              // 文件名去掉扩展名当 alt (标记里不能出现括号/方括号, 先洗掉)
+              const alt = String(pendingImage.name || '').replace(/\.[^.]+$/, '').replace(/[\[\]()]/g, '');
+              insertIntoContent('![' + alt + '](' + pendingImage.url + ')');
+              pendingImage = null;
+              closeModal();
+              showToast('图片已插入正文', 'ok');
+            }
+
+            /* 上传: 桌面在弹窗里就地显示进度, 手机用「不可关闭」的处理中弹窗 */
+            async function uploadEditorImage(file, options) {
+              const inDialog = !!(options && options.dialog);
+              if (IMG_ALLOWED.indexOf(file.type) < 0) {
+                showToast('只支持 PNG / JPG / WebP / GIF', 'error');
+                return;
+              }
+              if (file.size > IMG_MAX_MB * 1024 * 1024) {
+                showToast('图片不能超过 ' + IMG_MAX_MB + ' MB', 'error');
+                return;
+              }
+
+              // 先亮本地预览 (blob URL, 不用等上传), 传完再把下面那行换成结果
+              const localUrl = URL.createObjectURL(file);
+              const picked = $('img-picked');
+              const drop = $('img-drop');
+              const confirm = $('img-insert-confirm');
+              if (inDialog && picked) {
+                picked.hidden = false;
+                $('img-picked-img').src = localUrl;
+                $('img-picked-meta').textContent = (file.name || '图片') + ' · ' + formatBytes(file.size) + ' · 上传中…';
+                if (drop) drop.hidden = true;
+                if (confirm) { confirm.disabled = true; confirm.textContent = '上传中…'; }
+              }
+
+              const busy = inDialog ? null : showForaineToast({ text: I18N.t('foraine-toast.loading'), block: true });
+              try {
+                const form = new FormData();
+                form.append('file', file);
+                // 有文章编号就存进那篇的文件夹; 新文章还没编号 → 服务端落 img/unsorted/
+                if (articleId) form.append('article_id', String(articleId));
+                const response = await fetch('/api/image', { method: 'POST', body: form });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(data.error || '上传失败');
+
+                pendingImage = { url: data.url, name: file.name || '' };
+                if (inDialog && picked) {
+                  $('img-picked-meta').textContent = (file.name || '图片') + ' · ' + formatBytes(file.size) + ' · 已上传';
+                  if (confirm) { confirm.disabled = false; confirm.textContent = '插入'; }
+                } else {
+                  insertPickedImage();
+                }
+              } catch (error) {
+                showToast(error.message, 'error');
+                if (inDialog && picked) {
+                  picked.hidden = true;
+                  if (drop) drop.hidden = false;
+                  if (confirm) { confirm.disabled = true; confirm.textContent = '插入'; }
+                }
+              } finally {
+                URL.revokeObjectURL(localUrl);
+                if (busy) busy.close();
+              }
+            }
+
+            let saving = false;
+            let bannedNow = false;
+            /* 服务端那份现在的状态 (新建 = draft): Ctrl+S 与那个按钮都看它 ——
+                  草稿 → 存草稿, 按钮在桌面藏起来 (触屏没键盘才列); 已发布 → 存下来并保持发布。
+                  别把它和「编辑器里改了什么」搞混 */
+            let editorStatus = 'draft';
+            // 触屏 (手机/平板) 没有 Ctrl+S, 草稿态也得留一个能按的保存键
+            const TOUCH_ONLY = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+
+            function applyEditorStatus() {
+              const btn = $('editor-draft');
+              if (!btn) return;
+              const published = editorStatus === 'published';
+              btn.hidden = !published && !TOUCH_ONLY;
+              btn.textContent = published ? '转为草稿' : '保存草稿';
+              btn.title = published
+                ? '取消发布状态，转存为草稿'
+                : '存成草稿，只有自己看得到（Ctrl+S）';
+            }
+
+            // 这个按钮一个位置两个身份: 看服务端现在是不是已发布
+            function onDraftButton() {
+              if (editorStatus === 'published') demoteToDraft();
+              else saveArticle('draft');
+            }
+
+            /* 下架: 已发布转回草稿 (文案别改)。
+                  有评论就不许直接下架 —— 评论挂在文章编号上, 下架后跟着藏、日后重发又冒出来, 对不上号 ——
+                  这时给两个出口 (标题/正文/按钮文案别改字) */
+            async function demoteToDraft() {
+              const commentCount = (articleData && articleData.comment_count) || 0;
+              if (commentCount > 0) {
+                const choice = await confirmAction({
+                  title: '提示',
+                  message: '',
+                  messageHtml: '由于这篇文章因存在评论而不能直接下架<br>'
+                    + '你可以选择删除评论并下架这篇文章；或者保存为一个新的草稿，这篇文章将不会被删除',
+                  warning: '',
+                  actions: [
+                    { id: 'purge', text: '删除评论并下架', danger: true },
+                    { id: 'fork', text: '创建新草稿' }
+                  ]
+                });
+                if (!choice) return;
+                if (choice.id === 'purge') {
+                  await saveArticle('draft', { stay: true, deleteComments: true });
+                } else {
+                  // 原文章留在线上, 编辑器里这份存成**新的一篇**草稿 (编号与原来不同)
+                  await saveArticle('draft', { stay: true, asNew: true });
+                }
+                return;
+              }
+              const ok = await confirmAction({
+                title: '下架确认',
+                message: '这将取消文章的发布状态并存为存稿\n确定继续吗？',
+                confirmText: '下架',
+                warning: '' // 下架可以再发回来, 不是不可逆操作
+              });
+              if (!ok) return;
+              // 原地保存: 存完留在编辑器里, 这时按钮会自己变回「保存草稿」(状态变了)
+              await saveArticle('draft', { stay: true });
+            }
+
+            function setEditorBusy(busy) {
+              // 保存期间把所有操作按钮锁上 (状态文字交给弹窗, 不再往 editor-status 里写)
+              document.querySelectorAll('.editor-row button').forEach(b => { b.disabled = busy; });
+              // 解锁时把「封禁中」那两条重新按回去 (否则一保存失败就又能点了)
+              if (!busy) applyBanLock();
+            }
+
+            // 封禁中: 锁住发布 / 存草稿 (服务端也会拦, 但没必要让人白填一遍)
+            function applyBanLock() {
+              if (!bannedNow) return;
+              ['editor-publish', 'editor-draft'].forEach((id) => {
+                const btn = $(id);
+                if (!btn) return;
+                btn.disabled = true;
+                btn.title = '账号封禁中，无法发布或保存文章';
+              });
+            }
+
+            function renderEditorBan() {
+              bannedNow = !!(sessionUser && sessionUser.ban);
+              const box = $('editor-ban');
+              if (!box) return;
+              if (!bannedNow) {
+                box.hidden = true;
+                return;
+              }
+              const ban = sessionUser.ban;
+              box.innerHTML = '';
+              box.appendChild(el('p', 'ban-banner-title', '账号封禁中，无法发布或保存文章'));
+              box.appendChild(el('p', 'ban-banner-text',
+                (ban.until ? '封禁至 ' + formatDate(ban.until) + ' 止。' : '永久封禁。') +
+                (ban.reason ? '理由：' + ban.reason : '')));
+              box.hidden = false;
+              applyBanLock();
+            }
+
+            async function saveArticle(status, options) {
+              if (saving) return; // 防连点: 狠戳 5 次也只会存下一篇
+              const stay = !!(options && options.stay); // true = 原地保存, 不跳转
+              // asNew = 存成**新的一篇** (原文章不动) —— 「有评论时创建新草稿」用得上
+              const asNew = !!(options && options.asNew);
+              // deleteComments = 用户明确选了「删除评论并下架」(服务端也会再拦一道)
+              const deleteComments = !!(options && options.deleteComments);
+              const wasPublished = editorStatus === 'published'; // 存之前是不是已发布 (只为了提示文案)
+              const content = $('editor-content').value;
+              if (!content.trim()) { showToast('正文不能为空', 'warn'); return; }
+
+              // 发布不可逆, 先确认一句 (原地保存不问); 叙述只有一个「保存」, 没有这一套
+              if (status === 'published' && !stay && !narraMode) {
+                const ok = await confirmAction({
+                  title: '确认发布？',
+                  message: '发布后所有人都能看到了。',
+                  confirmText: '发布'
+                });
+                if (!ok) return;
+              }
+
+              saving = true;
+              setEditorBusy(true);
+              // 锁定牌: 发布这类写入只等接口, 不占弹窗宿主
+              const busy = showForaineToast({ text: I18N.t('foraine-toast.loading'), block: true });
+              try {
+                const payload = narraMode
+                  ? { content, title: $('editor-title').value.trim(), status: 'published' }
+                  : {
+                    content,
+                    title: $('editor-title').value.trim(),
+                    intro: $('editor-intro').value.trim(),
+                    tags: parseTags($('editor-tags').value),
+                    status
+                  };
+                if (!asNew && !isNew && articleId) payload.id = parseInt(articleId, 10);
+                if (deleteComments) payload.delete_comments = true;
+
+                const result = await apiPost('/api/articles', payload);
+                // 存过了就别让离开提醒再拦一次
+                savedSnapshot = editorSnapshot();
+                // 服务端那份的状态已经变了 (发布 -> 草稿), 按钮与 Ctrl+S 语义跟着变
+                editorStatus = status === 'published' ? 'published' : 'draft';
+                applyEditorStatus();
+
+                if (stay) {
+                  // 原地保存: 不跳转。新建的草稿要记住刚拿到的 id 并改地址栏,
+                  // 不然后面再存一次会又建一篇
+                  if (result.id && String(result.id) !== String(articleId)) {
+                    articleId = result.id;
+                    isNew = false;
+                    history.replaceState(null, '', '/article/?id=' + articleId + '&edit=1');
+                    $('editor-heading').textContent = '编辑文章';
+                  }
+                  busy.close();
+                  setEditorBusy(false);
+                  /* 叙述没有「发布」这个概念, 存下去只说「已保存」 (用户 2026-10-01) */
+                  showToast(status === 'draft'
+                    ? (asNew ? '已存为新草稿'
+                      : (wasPublished ? '已转为草稿' : '已保存'))
+                    : (narraMode || wasPublished ? '已保存' : '已发布'), 'ok');
+                  return;
+                }
+
+                // 跳转前一步先解锁: 留着的话离开时会被原生「确定要离开吗」拦一下
+                busy.close();
+                setEditorBusy(false);
+                pageTransitionTo('/article/?id=' + result.id);
+              } catch (error) {
+                busy.close();
+                setEditorBusy(false);
+                // 服务端说「还有评论」= 页面上的评论数过期了 (打开后又有人评论):
+                // 当场把数字补上, 重新弹一次那个两个选择的框
+                if (error && error.data && error.data.code === 'has_comments'
+                    && !deleteComments && !asNew) {
+                  if (articleData) articleData.comment_count = error.data.comment_count || 1;
+                  saving = false; // 先松手, 否则下面这次 saveArticle 会被防连点拦住
+                  await demoteToDraft();
+                  return;
+                }
+                showToast(error.message, 'error');
+              } finally {
+                saving = false;
+              }
+            }
+
+            /* 未保存改动检测: 三个出口都拦 —— 「取消」/ 点导航栏 / 关标签页 */
+            let initialSnapshot = '';
+            let savedSnapshot = '';
+            // 已经在弹窗里确认过「放弃」: 不记这个, 转场开始后 beforeunload 会再弹一次原生框 (同一个决定问两遍)
+            let leavingConfirmed = false;
+
+            function editorSnapshot() {
+              return [$('editor-title').value, $('editor-intro').value, $('editor-tags').value, $('editor-content').value].join('\u0000');
+            }
+
+            function hasUnsavedChanges() {
+              if (!isEditMode) return false;
+              const panel = $('editor-panel');
+              if (!panel || panel.hidden) return false;
+              const now = editorSnapshot();
+              return now !== initialSnapshot && now !== savedSnapshot;
+            }
+
+            async function confirmDiscard() {
+              const ok = await confirmAction({
+                title: '放弃修改',
+                message: '还有未保存的改动，离开后就会丢掉。',
+                confirmText: '放弃',
+                danger: true
+              });
+              if (ok) leavingConfirmed = true; // 放行这一次, 别再被原生框拦一下
+              return ok;
+            }
+
+            function exitEditor() {
+              if (!isNew && articleId) pageTransitionTo('/article/?id=' + articleId);
+              else goArticles();
+            }
+
+            async function cancelEditor() {
+              if (hasUnsavedChanges() && !(await confirmDiscard())) return;
+              exitEditor();
+            }
+
+            // Ctrl/Cmd + S = 保存 (顺手拦掉浏览器自带的「保存网页」)
+            // 存的是什么状态看服务端那份现在是什么, 不是固定存草稿
+            document.addEventListener('keydown', (e) => {
+              if (!isEditMode) return;
+              if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== 's') return;
+              const panel = $('editor-panel');
+              if (!panel || panel.hidden) return;
+              e.preventDefault();
+              saveArticle(editorStatus, { stay: true });
+            });
+
+            /* 缩进 (Ctrl/⌘ + ] / [): 宽度取「缩进」下拉框 (2/3/4), 按整行处理 (选多行就整块一起动) */
+            function editorIndentUnit() {
+              const sel = $('editor-indent');
+              const n = sel ? parseInt(sel.value, 10) : 2;
+              return (n >= 1 && n <= 8) ? n : 2;
+            }
+
+            function indentSelectedLines(delta) {
+              const box = $('editor-content');
+              if (!box) return;
+              const unit = editorIndentUnit();
+              const pad = ' '.repeat(unit);
+              const value = box.value;
+              const start = box.selectionStart;
+              const end = box.selectionEnd;
+              const from = value.lastIndexOf('\n', start - 1) + 1;   // 选中区间覆盖到的整行
+              let to = value.indexOf('\n', end);
+              if (to < 0) to = value.length;
+              const block = value.slice(from, to);
+              const next = block.split('\n').map((line) => {
+                if (delta > 0) return pad + line;
+                if (line[0] === '\t') return line.slice(1);   // tab 缩进也认
+                let cut = 0;
+                while (cut < unit && line[cut] === ' ') cut += 1;
+                return line.slice(cut);
+              }).join('\n');
+              if (next === block) return;   // 已经顶格, 再减没意义
+              // 走 applyContentEdit: 顺手记进程序化历史 (Ctrl+Z 能撤这一步) + 兼容原生撤销栈
+              applyContentEdit(next, from, to, from, from + next.length);
+            }
+
+            document.addEventListener('keydown', (e) => {
+              if (!isEditMode) return;
+              if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+              const box = $('editor-content');
+              if (!box || document.activeElement !== box) return;
+              const indent = e.key === ']' || e.code === 'BracketRight';
+              const outdent = e.key === '[' || e.code === 'BracketLeft';
+              if (!indent && !outdent) return;
+              e.preventDefault();
+              indentSelectedLines(indent ? 1 : -1);
+            });
+
+            /* Ctrl/⌘ + Z 撤销 / Ctrl/⌘ + Y 或 Ctrl/⌘ + Shift + Z 重做 (仅桌面端):
+                  只在「当前内容 == 我们栈里那一步的结果」时才接管, 其余情况让浏览器自己的撤销栈去做 */
+            document.addEventListener('keydown', (e) => {
+              if (EDITOR_TOUCH_ONLY) return;   // 仅桌面端
+              if (!isEditMode) return;
+              if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+              const box = $('editor-content');
+              if (!box || document.activeElement !== box) return;
+              const key = String(e.key || '').toLowerCase();
+              const undo = key === 'z' && !e.shiftKey;
+              const redo = key === 'y' || (key === 'z' && e.shiftKey);
+              if (!undo && !redo) return;
+              if (undo) {
+                const step = progHistory[progHistory.length - 1];
+                if (!step || box.value !== step.after.value) return;
+                progHistory.pop();
+                progFuture.push(step);
+                e.preventDefault();
+                restoreContentSnapshot(step.before);
+                return;
+              }
+              const step = progFuture[progFuture.length - 1];
+              if (!step || box.value !== step.before.value) return;
+              progFuture.pop();
+              progHistory.push(step);
+              e.preventDefault();
+              restoreContentSnapshot(step.after);
+            });
+
+            // 关页面/刷新前的原生提醒 (已经确认过离开就不再拦)
+            window.addEventListener('beforeunload', (e) => {
+              if (leavingConfirmed || !hasUnsavedChanges()) return;
+              e.preventDefault();
+              e.returnValue = '';
+            });
+
+            // 给 header.js 的导航前钩子 (返回 false 就把这次跳转拦下)
+            window.__beforeNavigate = async () => {
+              if (!hasUnsavedChanges()) return true;
+              return await confirmDiscard();
+            };
+
+            // 侧边目录
+            /* 固定 Header 的下沿 + 余量, 用于滚动定位 */
+            function headerOffset() {
+              return 8 + 56 + 16;
+            }
+
+            let tocItems = []; // [{ item, bar, link, heading }]
+
+            function buildToc() {
+              const body = $('article-body');
+              const toc = $('article-toc');
+              const nav = $('toc-nav');
+              const toggle = $('toc-toggle');
+              const headings = Array.from(body.querySelectorAll('h2, h3, h4'));
+
+              nav.innerHTML = '';
+              tocItems = [];
+
+              // 没有小标题就不显示目录
+              if (headings.length === 0) {
+                toc.hidden = true;
+                toggle.hidden = true;
+                return;
+              }
+
+              headings.forEach((heading, index) => {
+                if (!heading.id) heading.id = 'h-' + (index + 1);
+
+                const level = heading.tagName === 'H3' ? ' level-3'
+                  : (heading.tagName === 'H4' ? ' level-4' : '');
+                const item = el('div', 'toc-item' + level);
+                const bar = el('span', 'toc-bar');
+                const link = el('button', 'toc-link', heading.textContent);
+                link.onclick = () => scrollToHeading(heading.id);
+
+                item.appendChild(bar);
+                item.appendChild(link);
+                nav.appendChild(item);
+
+                tocItems.push({ item, bar, link, heading });
+              });
+
+              toc.hidden = false;
+              toggle.hidden = false;
+
+              window.addEventListener('scroll', updateToc, { passive: true });
+              window.addEventListener('resize', updateToc, { passive: true });
+              updateToc();
+            }
+
+            /* 用 JS 滚动而非 <a href="#...">, 否则会被 <base> 解析到首页 */
+            function scrollToHeading(id) {
+              const target = document.getElementById(id);
+              if (!target) return;
+              const top = target.getBoundingClientRect().top + window.scrollY - headerOffset() - 16;
+              window.scrollTo({ top, behavior: 'smooth' });
+              closeToc();
+            }
+
+            /* 逐章节算阅读进度: 视野内 → 紫条 + 紫字加粗, 已读完 → 留在灰条; 条高 = 读完程度 (视野内多节拼成一整块) */
+            function updateToc() {
+              if (!tocItems.length) return;
+
+              const vh = window.innerHeight;
+              const rects = tocItems.map(it => it.heading.getBoundingClientRect());
+              const docBottom = document.documentElement.scrollHeight - window.scrollY;
+
+              const states = tocItems.map((it, i) => {
+                const start = rects[i].top;                       // 本节标题在视口中的位置
+                const end = (i + 1 < tocItems.length)
+                  ? rects[i + 1].top - rects[i].height             // 下一节标题的上缘 = 本节底部
+                  : docBottom;
+                const span = end - start;
+                const progress = span > 0
+                  ? Math.max(0, Math.min(1, (vh - start) / span))
+                  : (start < vh ? 1 : 0);
+                return { inView: start < vh && end > 0, progress };
+              });
+
+              tocItems.forEach((it, i) => {
+                const { inView, progress } = states[i];
+                const prevIn = i > 0 && states[i - 1].inView;
+                const nextIn = i + 1 < tocItems.length && states[i + 1].inView;
+
+                it.item.classList.toggle('in-view', inView);
+                it.item.classList.toggle('is-read', !inView && progress >= 1);
+                it.item.classList.toggle('pill-start', inView && !prevIn);
+                it.item.classList.toggle('pill-end', inView && !nextIn);
+                it.bar.style.height = (progress * 90) + '%';
+              });
+            }
+
+            /* 阅读进度球: 显示滚动百分比, 读满 100% 后数字换成上箭头 */
+            function updateScrollProgress() {
+              const article = $('view-panel');
+              if (!article || article.hidden) return;
+
+              const buttons = $('action-buttons');
+              buttons.classList.toggle('show', window.scrollY > 140);
+
+              const articleTop = article.getBoundingClientRect().top + window.scrollY;
+              const scrollable = article.offsetHeight - window.innerHeight;
+              let percent = 0;
+              if (scrollable <= 0) percent = 100;
+              else if (window.scrollY > articleTop) {
+                percent = Math.round(Math.min(1, (window.scrollY - articleTop) / scrollable) * 100);
+              }
+
+              $('scroll-percent').textContent = percent;
+              buttons.classList.toggle('ended', percent >= 100);
+            }
+
+            function openToc() {
+              $('article-toc').classList.add('show');
+              $('toc-shade').classList.add('show');
+            }
+
+            function closeToc() {
+              $('article-toc').classList.remove('show');
+              $('toc-shade').classList.remove('show');
+            }
+
+            // 等共享脚本(defer)加载完成后再启动
+            document.addEventListener('DOMContentLoaded', init);
+        </script>
+
+        <!-- 右下角悬浮操作: 目录(窄屏) + 阅读进度球 -->
+        <div class="action-buttons" id="action-buttons">
+            <button class="action-btn toc-toggle No-slc" id="toc-toggle" hidden aria-label="目录" title="目录">
+                <!-- 图标必须左右对称: 包围盒中心要落在 x=12, 否则圆形按钮里看着偏右 -->
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="4" cy="6" r="1.2" fill="currentColor" stroke="none"></circle><line x1="8" y1="6" x2="21" y2="6"></line><circle cx="4" cy="12" r="1.2" fill="currentColor" stroke="none"></circle><line x1="8" y1="12" x2="21" y2="12"></line><circle cx="4" cy="18" r="1.2" fill="currentColor" stroke="none"></circle><line x1="8" y1="18" x2="21" y2="18"></line></svg>
+            </button>
+            <button class="action-btn scroll-btn No-slc" id="scroll-btn" aria-label="回到顶部" title="回到顶部">
+                <span class="top-text"><span id="scroll-percent">0</span><span class="sign">%</span></span>
+                <svg class="top-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"></path><path d="m5 12 7-7 7 7"></path></svg>
+            </button>
+        </div>
+        <div class="toc-shade" id="toc-shade"></div>
+
+    </body>
+</html>

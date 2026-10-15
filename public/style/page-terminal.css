@@ -1,0 +1,780 @@
+/* ==================== 终端页 /terminal ==================== */
+:root {
+    /* 世界面板的统一缩放 (terminal.js 的 syncTermScale 按视口算, 宽高同一个比例才不会把六边形压扁) */
+    --term-scale: 1;
+}
+/* 整页纯黑 + 一层「世界」: 底层是常驻的背景格 (可以拖着走), 上面是面板层 */
+body.page-terminal {
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+    background: #000000;
+}
+/* 全站的紫色首屏柔光在这页关掉 (留着就不是纯黑了) */
+body.page-terminal::before {
+    display: none;
+}
+
+/* ==================== 世界 ==================== */
+/* 拖动区: 铺满屏幕, 按住往哪拖网格就往哪走 (和游戏小地图一样的手感) */
+.term-world {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    cursor: grab;
+    /* 触摸也别让浏览器抢去做滚动/缩放 */
+    touch-action: none;
+    /* 拖世界的时候不要顺手把文字选上 */
+    user-select: none;
+    -webkit-user-select: none;
+}
+.term-world.is-grabbing {
+    cursor: grabbing;
+}
+.term-world-grid {
+    position: absolute;
+    inset: 0;
+    display: block;
+}
+/* 面板层: 世界坐标 (0,0) 就是屏幕正中; 跟着拖动一起走。
+   ⚠️ 浮动不在这一层 —— 每块面板自己算 (terminal.js 的 applyLook 挂 --fx/--fy)
+   ⚠️ 加载期（.is-ready 之前）整层是隐形的: 启动画面那会儿只该看到背景格 */
+.term-world-panels {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    --pan-x: 0px;
+    --pan-y: 0px;
+    translate: var(--pan-x) var(--pan-y);
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+.term-world-panels.is-ready {
+    opacity: 1;
+}
+/* ⚠️ 老内核不认 `translate` 这个独立属性 (Chromium < 104), 不写兜底的话整套居中全废 */
+@supports not (translate: none) {
+    .term-world-panels {
+        transform: translate(var(--pan-x), var(--pan-y));
+    }
+}
+
+/* 面板 = 壳 (只管位置/尺寸) + 里子两层: .term-panel-glow 光晕 与 .term-panel-face 亚克力本体。
+   left/top 由 JS 按 data-slot 环着主面板摆 (净距 = TUNE.panelGap) */
+.term-panel {
+    position: absolute;
+    left: 0;
+    top: 0;
+    /* ⚠️ 宽高用**同一个** --term-scale: 各自 min(…, Nvw / Nvh) 的话, 窄屏上宽度先被卡住,
+       六边形就被压扁 (用户报的「水平压缩」)。缩放值由 terminal.js 按视口算 */
+    width: calc(260px * var(--term-scale));
+    height: calc(230px * var(--term-scale));
+    /* 面板以自己的中心对齐世界原点; --fx/--fy 是它自己的浮动偏移 (每块各自算, 见 applyLook) */
+    translate: calc(-50% + var(--fx, 0px)) calc(-50% + var(--fy, 0px));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+/* ⚠️ 光晕必须是壳的孩子、亚克力的**兄弟**: clip-path 会把 box-shadow 与子元素一起剪掉,
+   要在六边形**外面**看得见光, 它就不能被裁 */
+@supports not (translate: none) {
+    .term-panel {
+        transform: translate(calc(-50% + var(--fx, 0px)), calc(-50% + var(--fy, 0px)));
+    }
+}
+
+/* 亚克力本体: 无边框的黑色板 + 暗灰斜条纹, 形状靠 clip-path 切 (默认六边形) */
+.term-panel-face {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(10, 10, 14, 0.62);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+}
+.term-panel-face::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(135deg, rgba(158, 162, 176, 0.10) 0 5px, transparent 5px 13px);
+    pointer-events: none;
+}
+
+/* 面板状态 (用户 2026-10-01 定): 未解锁 = 黑柔光 (原版, 不动) / 可点击 = 干净面板 (**不给光晕**) /
+   已完成 = 里子与名字稍微染紫 + 紫色光晕调淡。没标 data-state 的**一律当未解锁** (新面板不用额外写) */
+.term-panel-glow {
+    position: absolute;
+    inset: 0;
+    clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+    filter: blur(24px);
+    background: #000000;
+    opacity: 0.95;
+    pointer-events: none;
+    transition: opacity 0.35s ease, background-color 0.35s ease;
+}
+/* 可点击: 只留面板自己 (光晕收掉), 名字的黑色阴影撑着立体感 */
+.term-panel[data-state="active"] .term-panel-glow {
+    opacity: 0;
+}
+/* 已完成: 紫光晕调淡, 里子只透一点紫 */
+.term-panel[data-state="done"] .term-panel-glow {
+    background: #945eec;
+    opacity: 0.45;
+    filter: blur(20px);
+}
+/* 未解锁的不能点, 内容也压暗 */
+.term-panel .term-node {
+    pointer-events: none;
+}
+.term-panel[data-state="active"] .term-node,
+.term-panel[data-state="done"] .term-node {
+    pointer-events: auto;
+}
+.term-panel:not([data-state="active"]):not([data-state="done"]) .term-panel-face {
+    opacity: 0.5;
+}
+
+/* 面板里的按钮: **盖满一整块面板** —— 判定范围 = 整个面板, 不是里面那个图标;
+   形状跟着面板一起切 (clip-path), 所以六边形外面那圈透明角不算 */
+.term-node {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+}
+/* 主面板正中的图标: 白色斜条纹 + 星形遮罩 (与启动画面那颗同一个做法, 条纹之间是透明的) */
+.term-panel-logo {
+    display: block;
+    width: calc(128px * var(--term-scale));
+    height: calc(128px * var(--term-scale));
+    background: repeating-linear-gradient(135deg, #eef1fb 0 3px, transparent 3px 9px);
+    -webkit-mask: url('/assets/Icon/foraine-icon-v2.png') center / contain no-repeat;
+    mask: url('/assets/Icon/foraine-icon-v2.png') center / contain no-repeat;
+    opacity: 0.92;
+    transition: opacity 0.25s;
+}
+.term-node:hover .term-panel-logo,
+.term-node:focus-visible .term-panel-logo {
+    opacity: 1;
+}
+
+/* 0,1 那块与权限阶段那几块: 一半大小 (130×115) */
+.term-panel-key,
+.term-panel-tier {
+    width: calc(130px * var(--term-scale));
+    height: calc(115px * var(--term-scale));
+}
+/* 权限阶段的名字 (小面板里那行等宽小字) */
+.term-panel-name {
+    font-family: var(--font-mono);
+    font-size: var(--fs-18);
+    letter-spacing: 0.08em;
+    color: rgba(232, 235, 246, 0.78);
+    /* 名字一律带一层黑色阴影 (面板底色不论黑白都靠它立起来) */
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.85);
+}
+/* 已经解开的阶段: 里子与名字只透一点紫 */
+.term-panel[data-state="done"] .term-panel-face {
+    background-color: rgba(88, 50, 158, 0.34);
+}
+.term-panel[data-state="done"] .term-panel-name {
+    color: #b79cf0;
+}
+.term-node-key {
+    cursor: pointer;
+}
+
+/* ==================== 文章卡 (Iota 两肩那两张平行四边形) ==================== */
+/* 大小 = Iota 卡的 1/2; 材质与六边形面板同一套 (黑亚克力 + 斜纹); 两张同向斜 */
+.term-card {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: calc(65px * var(--term-scale));
+    height: calc(58px * var(--term-scale));
+    translate: calc(-50% + var(--fx, 0px)) calc(-50% + var(--fy, 0px));
+    background-color: rgba(10, 10, 14, 0.62);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    clip-path: polygon(22% 0, 100% 0, 78% 100%, 0 100%);
+}
+.term-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(135deg, rgba(158, 162, 176, 0.10) 0 5px, transparent 5px 13px);
+    pointer-events: none;
+}
+.term-card-btn {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: rgba(232, 235, 246, 0.78);
+    cursor: pointer;
+    transition: color 0.25s ease;
+}
+.term-card-btn svg {
+    width: calc(26px * var(--term-scale));
+    height: calc(26px * var(--term-scale));
+}
+.term-card:hover .term-card-btn,
+.term-card-btn:focus-visible {
+    color: #ffffff;
+}
+@supports not (translate: none) {
+    .term-card {
+        transform: translate(calc(-50% + var(--fx, 0px)), calc(-50% + var(--fy, 0px)));
+    }
+}
+
+/* ==================== 矩形亚克力模态框 (0,1 那块面板里的钥匙点开) ==================== */
+.term-modal-back {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* 遮罩: 透玻璃而不是盖黑布 —— 高斯模糊底下的三角网格世界 */
+    background: rgba(0, 0, 0, 0.38);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    cursor: default;
+}
+.term-modal-back.is-in {
+    opacity: 1;
+}
+/* 通栏黑色亚克力横带: 宽度 = 屏幕宽, 高由内容撑 (上下自然露黑边);
+   带里左右各占一半 (分割线正好落在正中), 左边标题、右边输入框 + 按钮, 各自在那一半里居中 */
+.term-modal {
+    position: relative;
+    overflow: hidden;          /* 裁掉外扩出去的那层条纹 */
+    display: grid;
+    /* 打开: 行高从 0fr 长到 1fr (= 长到内容高), 内边距一起长, 所以真的从「一条线」开出来 */
+    grid-template-rows: 0fr;
+    width: 100%;
+    padding: 0 var(--sp-10);
+    background-color: rgba(12, 12, 16, 0.84);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    /* 白色外发光 + 一圈贴着边框的黑色 (用户 2026-10-01: 边框还要有一层黑色阴影) */
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45),
+                0 0 24px rgba(255, 255, 255, 0.55), 0 0 70px rgba(255, 255, 255, 0.38),
+                0 0 160px rgba(255, 255, 255, 0.22), 0 18px 50px rgba(0, 0, 0, 0.60);
+    opacity: 0;
+    transition: grid-template-rows 0.36s cubic-bezier(0.22, 0.61, 0.36, 1),
+                padding 0.36s cubic-bezier(0.22, 0.61, 0.36, 1),
+                opacity 0.26s ease-out 0.05s;
+}
+.term-modal-back.is-in .term-modal {
+    grid-template-rows: 1fr;
+    padding: var(--sp-8) var(--sp-10);   /* 面板感: 桌面 32/40 */
+    opacity: 1;
+}
+/* 左右两栏的宿主: min-height: 0 + overflow: hidden 是 grid 0fr→1fr 这套的关键 (不然收不回去) */
+.term-modal-inner {
+    position: relative;        /* 压在条纹层之上 (::before 是定位元素, 不抬一层会被它盖住) */
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    align-items: stretch;      /* 两栏都拉满 = 分割线的高度取较高的那一栏 */
+    gap: var(--sp-5);
+}
+/* 表面那层暗灰斜纹 (与面板同一档), 定向无限平移: 看起来就是斜着慢慢流 */
+.term-modal::before {
+    content: '';
+    position: absolute;
+    inset: -20px;              /* 外扩一点, 平移时边上不会露缝 */
+    background: repeating-linear-gradient(135deg, rgba(158, 162, 176, 0.10) 0 5px, transparent 5px 13px);
+    pointer-events: none;
+    animation: term-stripe-flow 2.5s linear infinite;
+}
+/* 13px 的斜纹周期在水平方向上的投影 = 13 / cos45° ≈ 18.3848px:
+   水平走这么远, 图案与起点完全重合 → 循环处无缝; 斜纹本身又让它看着是斜向流动 */
+@keyframes term-stripe-flow {
+    from { transform: translate3d(0, 0, 0); }
+    to   { transform: translate3d(18.3848px, 0, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .term-modal::before { animation: none; }
+}
+/* 分割线: 参照文章那条 (短一截的实线 + --c-border)。
+   高度 = 两栏里较高的那一栏 (内层改成 stretch 之后, 它就是 .term-modal-inner 的全高), 两头渐隐 */
+.term-modal-right::before {
+    content: '';
+    position: absolute;
+    left: calc(var(--sp-5) / -2);   /* 落在两栏之间的缝里 (缝宽 = --sp-5) */
+    top: 0;
+    width: 1px;
+    height: 100%;
+    background: var(--c-border);
+    -webkit-mask-image: linear-gradient(to bottom, transparent, #000000 14%, #000000 86%, transparent);
+    mask-image: linear-gradient(to bottom, transparent, #000000 14%, #000000 86%, transparent);
+}
+/* 左栏: 标题在这一半里居中, 并往中心靠一点; 白字发光 + 一层黑色投影 */
+.term-modal-text {
+    /* 左右两栏 = 3 : 5 (用 width 算而不是 flex, 免得内边距被算进分配里) */
+    flex: none;
+    width: calc((100% - var(--sp-5)) * 0.375);
+    min-width: 0;
+    margin: 0;
+    display: flex;             /* 拉满高之后, 文字自己在里面居中 */
+    align-items: center;
+    justify-content: center;
+    padding-left: var(--sp-12);   /* 往中间靠一点 (想再靠就加大这个值; 别用百分比: 会把输入框挤过分割线) */
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: var(--fs-18);
+    letter-spacing: 0.04em;
+    color: #e8ebf6;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.85), 0 0 10px rgba(255, 255, 255, 0.55), 0 0 24px rgba(255, 255, 255, 0.30);
+}
+/* 右栏: 输入框在上、按钮在下, 整块往中心靠一点 */
+.term-modal-right {
+    position: relative;
+    flex: none;
+    width: calc((100% - var(--sp-5)) * 0.625);
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;   /* 拉满高之后, 输入框 + 按钮整体居中 */
+    padding-right: var(--sp-12);
+    gap: var(--sp-4);
+}
+/* 已经解开过: 右栏只留这一行字 (不再给输入框) */
+.term-modal-note {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: var(--fs-18);
+    letter-spacing: 0.04em;
+    color: #b79cf0;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.85), 0 0 14px rgba(148, 94, 236, 0.55);
+}
+/* 输入框左上角的小字标签: terminal 的输入框都不再用 placeholder, 一律这么标 */
+.term-field {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--sp-1);
+}
+.term-field-label {
+    font-family: var(--font-mono);
+    font-size: var(--fs-14);
+    letter-spacing: 0.06em;
+    color: var(--c-text-dim);
+}
+/* ==================== 父节点与子节点之间那根细线 ==================== */
+/* 描边颜色三档 (用户 2026-10-01): 父节点**没完成**一律灰 / 父节点完成 = 白 / 父子全完成 = 紫
+   ⚠️ 「解锁」(active) 与「完成」(done) 是两回事: 解锁了但还没做完, 线还是灰的 */
+/* ⚠️ 不能给根 svg 写 overflow: visible 来省尺寸 (老内核不认) —— 直接铺一块大画布, JS 加偏移 */
+.term-links {
+    position: absolute;
+    left: -2000px;
+    top: -2000px;
+    width: 4000px;
+    height: 4000px;
+    overflow: visible;
+    pointer-events: none;
+}
+.term-links line {
+    stroke: rgba(232, 235, 246, 0.26);
+    stroke-width: 1;
+    transition: stroke 0.35s ease;
+}
+.term-links.is-open line {
+    stroke: rgba(255, 255, 255, 0.72);
+}
+.term-links.is-done line {
+    stroke: #945eec;
+}
+
+/* 卡片锁着的时候 (父节点还没解锁): 压暗 + 点不动 */
+.term-card.is-locked {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+/* 面板的 key (个性化 > 显示 里那个开关打开后才出现): 灰宇小字, 落在面板上边框左侧, 可以选中复制 */
+.term-article-key {
+    position: absolute;
+    top: var(--sp-2);
+    left: var(--sp-10);
+    z-index: 1;
+    font-family: var(--font-mono);
+    font-size: var(--fs-14);
+    letter-spacing: 0.06em;
+    color: var(--c-text-dim);
+    user-select: text;
+    -webkit-user-select: text;
+    cursor: text;
+}
+
+/* ==================== 文章集模态框 (两肩那两张卡点开) ==================== */
+/* 左栏: 一列 quotekey 卡片, 点一张切右边 */
+.term-article-modal .term-article-list {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    gap: var(--sp-2);
+    padding-left: var(--sp-10);
+    max-height: 80vh;
+    overflow-y: auto;
+    text-align: left;
+}
+.term-article-item {
+    padding: var(--sp-2) var(--sp-3);
+    border: 1px solid transparent;
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(232, 235, 246, 0.82);
+    font-family: var(--font-mono);
+    font-size: var(--fs-18);
+    text-align: left;
+    cursor: pointer;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.85);
+}
+.term-article-item:hover {
+    border-color: var(--c-border);
+}
+.term-article-item.is-on {
+    border-color: rgba(148, 94, 236, 0.7);
+    color: #ffffff;
+}
+.term-article-note {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: var(--fs-14);
+    color: var(--c-text-dim);
+}
+/* 右栏: 正文 (最高 80vh; 滚动条平时隐形, 鼠标进来才出现) */
+.term-article-modal .term-article-body {
+    align-items: flex-start;
+    justify-content: flex-start;
+    max-height: 80vh;
+    overflow-y: auto;
+    padding-right: var(--sp-10);
+    text-align: left;
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+}
+.term-article-modal .term-article-body:hover {
+    scrollbar-color: var(--c-border) transparent;
+}
+.term-article-body::-webkit-scrollbar {
+    width: 6px;
+}
+.term-article-body::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 3px;
+}
+.term-article-body:hover::-webkit-scrollbar-thumb {
+    background: var(--c-border);
+}
+.term-article-error {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: var(--fs-18);
+    color: #ff5b5b;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.85);
+}
+/* 正文里的 Markdown: 只挑最常用的几样 (终端页不加载 page-article.css);
+   正文用**纯白 + 一圈白色发光** (与模态框标题同一套光, 黑色投影保它在条纹上读得清) */
+.term-article-md {
+    width: 100%;
+    font-size: var(--fs-18);
+    line-height: 1.8;
+    color: #ffffff;
+    word-break: break-word;
+    user-select: text;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.85), 0 0 10px rgba(255, 255, 255, 0.55), 0 0 24px rgba(255, 255, 255, 0.30);
+}
+.term-article-md h1,
+.term-article-md h2,
+.term-article-md h3 {
+    margin: var(--sp-4) 0 var(--sp-2);
+    font-size: var(--fs-20);
+    color: #ffffff;
+}
+.term-article-md p {
+    margin: 0 0 var(--sp-3);
+}
+.term-article-md ul,
+.term-article-md ol {
+    margin: 0 0 var(--sp-3);
+    padding-left: 1.4em;
+}
+.term-article-md code {
+    padding: 0 4px;
+    font-family: var(--font-mono);
+    font-size: 0.92em;
+    background: rgba(255, 255, 255, 0.08);
+}
+.term-article-md pre {
+    margin: 0 0 var(--sp-3);
+    padding: var(--sp-3);
+    background: rgba(0, 0, 0, 0.45);
+    overflow-x: auto;
+}
+.term-article-md pre code {
+    padding: 0;
+    background: none;
+}
+.term-article-md blockquote {
+    margin: 0 0 var(--sp-3);
+    padding-left: var(--sp-3);
+    border-left: 2px solid var(--c-border);
+    color: var(--c-text-dim);
+}
+.term-article-md a {
+    color: var(--c-accent);
+}
+.term-article-md img {
+    max-width: 100%;
+    height: auto;
+}
+/* 窄屏: 左栏那列文章收进右下角的圆形按钮 → 右侧抽屉 (灰色亚克力 + 斜条纹 + 高斯模糊遮罩) */
+.term-article-toggle {
+    position: absolute;
+    right: var(--sp-5);
+    bottom: var(--sp-5);
+    z-index: 3;
+    display: none;               /* 只有窄屏才出现 (见本文件末尾的 ≤900) */
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 50%;
+    background-color: rgba(96, 100, 112, 0.34);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: rgba(232, 235, 246, 0.9);
+    cursor: pointer;
+}
+.term-article-toggle::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: repeating-linear-gradient(135deg, rgba(158, 162, 176, 0.16) 0 4px, transparent 4px 11px);
+    pointer-events: none;
+}
+.term-article-toggle svg {
+    width: 22px;
+    height: 22px;
+}
+.term-article-shade {
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    background: rgba(0, 0, 0, 0.42);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.28s ease, visibility 0.28s;
+    cursor: default;
+}
+.term-article-shade.is-on {
+    opacity: 1;
+    visibility: visible;
+}
+.term-article-drawer {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    width: min(78%, 320px);
+    padding: var(--sp-6) var(--sp-5);
+    background-color: rgba(96, 100, 112, 0.34);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-left: 1px solid rgba(255, 255, 255, 0.18);
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.22, 0.61, 0.36, 1);
+    overflow: hidden;
+}
+.term-article-drawer.is-on {
+    transform: none;
+}
+/* 表面那层暗灰斜纹 (与模态框同一档, 也同一套流动关键帧) */
+.term-article-drawer::before {
+    content: '';
+    position: absolute;
+    inset: -20px;
+    background: repeating-linear-gradient(135deg, rgba(158, 162, 176, 0.16) 0 5px, transparent 5px 13px);
+    animation: term-stripe-flow 2.5s linear infinite;
+    pointer-events: none;
+}
+.term-article-drawer-head {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3);
+    margin-bottom: var(--sp-4);
+}
+.term-article-drawer-title {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: var(--fs-18);
+    letter-spacing: 0.06em;
+    color: #e8ebf6;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.85), 0 0 10px rgba(255, 255, 255, 0.45);
+}
+.term-article-drawer-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: var(--radius-sm);
+    background: rgba(0, 0, 0, 0.28);
+    color: rgba(232, 235, 246, 0.8);
+    cursor: pointer;
+}
+.term-article-drawer-close svg {
+    width: 16px;
+    height: 16px;
+}
+.term-article-drawer-body {
+    position: relative;
+    z-index: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--sp-2);
+}
+
+/* 窄屏: 两栏改成上下, 各自占一半高度 (一条 80vh 会顶出屏幕) */
+@media (max-width: 900px) {
+    /* 左栏那列文章整块去掉 —— 换成右下角那颗按钮 + 抽屉 (见上) */
+    .term-article-modal .term-article-list {
+        display: none;
+    }
+    .term-article-modal .term-article-body {
+        max-height: 64vh;
+        padding-left: 0;
+        padding-right: 0;
+    }
+    .term-article-toggle {
+        display: flex;
+    }
+}
+
+/* 窄屏: 改成竖排, 分割线收掉 */
+@media (max-width: 900px) {
+    .term-modal,
+    .term-modal-back.is-in .term-modal {
+        padding: var(--sp-6) var(--sp-5);
+    }
+    .term-modal-inner {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--sp-4);
+    }
+    .term-modal-div,
+    .term-modal-right::before {
+        display: none;
+    }
+    .term-modal-text,
+    .term-modal-right {
+        width: auto;      /* 竖排时两栏都占满宽 */
+        padding-left: 0;
+        padding-right: 0;
+    }
+}
+/* 按钮: 与输入框 (密钥闸门那个白六边形) 同一个形制, 底色换成绿 */
+.term-modal-btn {
+    position: relative;
+    width: calc(min(320px, 56vw) + 30px);
+    height: 32px;
+    padding: 0;
+    border: 0;
+    background: #7fe0a6;
+    color: #04160c;
+    font-family: var(--font-mono);
+    font-size: var(--fs-18);
+    cursor: pointer;
+    clip-path: polygon(15px 0, calc(100% - 15px) 0, 100% 50%, calc(100% - 15px) 100%, 15px 100%, 0 50%);
+}
+.term-modal-btn:hover {
+    background: #a2edc1;
+}
+.term-modal-btn:disabled {
+    cursor: default;
+    opacity: 0.6;
+}
+/* 状态: 验证中整个六边形变灰 / 敲对变绿 / 敲错整框红一下 (用户 2026-10-01: 取消晃动, 只留红闪) */
+.term-modal-back.is-checking .term-gate-field {
+    background: #a8adba;
+}
+.term-modal-back.is-ok .term-gate-field {
+    background: #7fe0a6;
+}
+.term-modal-back.is-wrong .term-gate-field {
+    transition: none;
+    animation: term-gate-deny 0.6s ease-in-out;
+}
+.term-modal-back.is-wrong .term-gate-input {
+    transition: none;
+    animation: term-gate-deny-text 0.6s ease-in-out;
+}
+
+/* ==================== 老内核降级: 没有 backdrop-filter ==================== */
+/* ⚠️ 亚克力全靠 backdrop-filter。老内核没有它时, 面板背后那片**三角网格会直接透出来** ——
+   用户在那个浏览器上看到的就是「网格线从面板中间穿过去」, 整页看着像坏的。
+   这里把那几块换成「更实的底色」, 形状 / 条纹 / 光晕都不动。⚠️ 只在这一个块里降级, 别散落到上面各处。
+   (done 那一档要把特异性写够, 否则压不过 .term-panel[data-state="done"] .term-panel-face) */
+@supports not ((backdrop-filter: blur(2px)) or (-webkit-backdrop-filter: blur(2px))) {
+    .term-panel-face {
+        background-color: rgba(12, 12, 18, 0.94);
+    }
+    .term-panel[data-state="done"] .term-panel-face {
+        background-color: rgba(62, 38, 112, 0.95);
+    }
+    .term-card {
+        background-color: rgba(12, 12, 18, 0.92);
+    }
+    .term-modal {
+        background-color: rgba(12, 12, 16, 0.97);
+    }
+    .term-article-toggle,
+    .term-article-drawer {
+        background-color: rgba(84, 88, 100, 0.96);
+    }
+    /* 遮罩本来就是「糊一层」, 滤不出东西就干脆压暗一点 */
+    .term-article-shade {
+        background: rgba(0, 0, 0, 0.76);
+    }
+}
+

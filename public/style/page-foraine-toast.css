@@ -1,0 +1,62 @@
+/* page-foraine-toast.css 「Foraine」小牌子 */
+/*
+  内容: 右下角那块无框提示（加载中 / 保存进度 / Foraine 会记住的..）
+  依赖: main.css 的令牌
+  与 Toast 的区别: 透明底、不占弹窗宿主、可以一直挂着直到 close()；加 .is-block 才封屏幕信号
+*/
+.foraine-toast {
+  position: fixed;
+  right: var(--sp-6);
+  bottom: var(--sp-6);
+  z-index: 1000;
+  display: flex;
+  /* 底对齐: 文字的下沿贴着图标的下沿 (图标笔画底下有空白, 看着就是基线上对齐) */
+  align-items: flex-end;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-5);
+  background: transparent;
+  pointer-events: none;
+  /* 比普通 Toast 大一圈 (文字只大一档, 体量由图标给) */
+  font-size: var(--fs-20);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.foraine-toast.is-in {
+  opacity: 1;
+}
+
+.foraine-toast-text {
+  font-weight: 700;
+  color: var(--c-text);
+}
+
+.foraine-toast-icon {
+  width: 46px;
+  height: 46px;
+  display: block;
+  animation: foraine-toast-breathe 1.6s ease-in-out infinite;
+}
+
+/* 亮度按 cos 起伏: 起点 1 → 谷底 → 回到 1
+   ease-in-out 近似 sin, 所以取它的半个周期 (终点从 1 到 1), 就是 |cos| 那条曲线 */
+@keyframes foraine-toast-breathe {
+  0% { opacity: 1; }
+  50% { opacity: 0.35; }
+  100% { opacity: 1; }
+}
+
+/* 窄屏 (移动端): 挪到右上角 —— 那里没有别的东西, 不会跟底部居中的 Toast 撞在一起。
+   ⚠️ 顶部要让开吸顶的导航栏: 它的底边在 --sp-8(32) + 63(窄屏的 --nav-h) 处,
+   按原来的 top: --sp-4 会正好压在导航栏里 */
+@media (max-width: 900px) {
+  .foraine-toast {
+    right: var(--sp-4);
+    bottom: auto;
+    top: calc(var(--sp-8) + 63px + var(--sp-2));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .foraine-toast-icon { animation: none; opacity: 1; }
+}

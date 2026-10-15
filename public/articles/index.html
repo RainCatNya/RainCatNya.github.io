@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+
+<html lang="zh">
+    <head>
+        <!-- 元数据定义 -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <base href="/">
+        <title>Foraine 文章</title>
+
+        <!-- 加载资源 -->
+        <link rel="icon" type="image/x-icon" href="assets/Icon/foraine-icon-v2.png">
+        <link rel="stylesheet" href="/style/main.css?v=40">
+        <!-- 右下角的「加载中」牌子 (showBusyNote) -->
+        <link rel="stylesheet" href="/style/page-foraine-toast.css?v=40">
+        <link rel="stylesheet" href="/style/page-list.css?v=40">
+        <!-- 窄屏样式按需加载: 宽屏下连请求都不发 (只写 <link media> 的 Chrome 仍会下载, 所以用脚本判断) -->
+        <script>
+            /* 桌面端默认缩放已整体删除 (配套的 foraine_zoom 标记 / ui-zoom-off 也一并没了), 别加回来 */
+            if (matchMedia('(max-width: 900px)').matches) {
+                const mediaLink = document.createElement('link');
+                mediaLink.rel = 'stylesheet';
+                mediaLink.href = '/style/main-media.css';
+                document.head.appendChild(mediaLink);
+            }
+        </script>
+        <script src="/script/i18n.js?v=40" defer></script>
+        <script src="/script/core.js?v=40" defer></script>
+        <script src="/script/ui.js?v=40" defer></script>
+        <script src="/script/transition.js?v=40" defer></script>
+        <script src="/script/header.js?v=40" defer></script>
+        <script src="/script/layout.js?v=40" defer></script>
+        <script src="/script/rain-sound.js?v=40" defer></script>
+        <!-- 卡片上的标题与简介也能用自定行内 DOM (inlinePlain): 要 latex 先于 markdown -->
+        <script src="/script/latex.js?v=40" defer></script>
+        <script src="/script/markdown.js?v=40" defer></script>
+    </head>
+
+    <body>
+        <div class="page-layout">
+
+            <!-- 标题行: 宽屏只有标题, 「创建」在右栏标签上方; 窄屏右栏收起 → 「创建」搬来这里与标题同行 -->
+            <div class="list-top">
+                <h1 class="list-title No-slc" data-anim>文章</h1>
+                <button class="btn-acrylic list-create list-create-mobile" onclick="startWrite()">创建</button>
+                <!-- 叙述 (窄屏那一份): 右栏收起时才跟着「创建」一起出现, 宽屏用右栏里与「撰写」并列的那一份;
+                     只给站长 (article.narra), 默认 display:none, getCurrentUser 回来后才亮 -->
+                <button class="btn-acrylic list-create list-create-mobile list-narra" style="display:none" data-i18n="narra.button" onclick="openNarraDialog()">叙述</button>
+            </div>
+
+            <!-- 左右两栏: 左 3fr 列表 / 右 1fr 标签 -->
+            <div class="list-grid">
+
+                <!-- 计数行: 栅格第一行第一列 (行宽 = 左栏宽 → 排序按钮落在第一张卡片的右上角) -->
+                <div class="list-head No-slc">
+                    <span class="list-count" id="list-count">…</span>
+                    <!-- 排序: 一个按钮, 点一下切到另一种 -->
+                    <button type="button" class="sort-toggle" id="sort-toggle" onclick="toggleSort()" title="切换排序方式">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16"></path><path d="m3 8 4-4 4 4"></path><path d="M17 20V4"></path><path d="m13 16 4 4 4-4"></path></svg>
+                        <span id="sort-label">按时间排序</span>
+                    </button>
+                </div>
+
+                <!-- 左栏: 卡片列表 + 分页 -->
+                <section class="list-main" data-anim>
+                    <div class="article-list" id="article-list">
+                        <div class="page-state"><div class="page-state-spinner"></div><p class="page-state-text">直达星辰..</p></div>
+                    </div>
+                    <div class="pager" id="pager"></div>
+                </section>
+
+                <!-- 右栏: 标签 (窄屏换成右下角那个按钮 + 抽屉) -->
+                <aside class="tag-side No-slc" data-anim>
+                    <h2 class="tag-side-title">Narratize..</h2>
+                    <!-- 「撰写」与「叙述」并排, 各占一半宽 (叙述只给站长, 默认 display:none) -->
+                    <div class="tag-side-actions">
+                        <button class="btn-acrylic list-create list-create-side" onclick="startWrite()">撰写</button>
+                        <button class="btn-acrylic list-create list-narra" style="display:none" data-i18n="narra.button" onclick="openNarraDialog()">叙述</button>
+                    </div>
+                    <h2 class="tag-side-title">标签</h2>
+                    <div class="tag-row" id="tag-row"></div>
+                </aside>
+
+            </div>
+
+            <!-- 弹性留白: 内容不满一屏时由它吃掉多余空间, 把页脚压到视口底部 -->
+            <div class="spacer-flex"></div>
+
+        </div>
+
+        <!-- 窄屏: 右下角「标签」悬浮按钮 + 抽屉 (与文章页的「文章内容」按钮同一套做法) -->
+        <div class="action-buttons">
+            <button class="action-btn tag-toggle No-slc" id="tag-toggle" hidden aria-label="标签" title="标签">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0l-7.2-7.2A2 2 0 0 1 2.8 12V4.8A2 2 0 0 1 4.8 2.8H12a2 2 0 0 1 1.4.6l7.2 7.2a2 2 0 0 1 0 2.8z"></path><circle cx="7.6" cy="7.6" r="1.2"></circle></svg>
+            </button>
+        </div>
+        <aside class="tag-drawer No-slc" id="tag-drawer">
+            <div class="tag-drawer-head">
+                <p class="tag-side-title">标签</p>
+                <button type="button" class="tag-drawer-close" onclick="closeTagDrawer()" aria-label="关闭标签" title="关闭">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+                </button>
+            </div>
+            <div class="tag-row tag-drawer-row" id="tag-drawer-row"></div>
+        </aside>
+        <div class="tag-shade" id="tag-shade" onclick="closeTagDrawer()"></div>
+
+        <script>
+            /*
+              文章列表页
+              内容: 标签侧栏与窄屏抽屉 / 排序切换 / 卡片列表与分页
+              依赖: core.js(el, goPage, replayItems, formatDate)
+                    ui.js(goIfLoggedIn, emptyState, loadingState, showToast)
+            */
+            let currentPage = 1;
+            let currentTag = '';
+            let currentSort = 'time'; // 'time' | 'comments'
+            const PAGE_SIZE = 20;
+
+            // 切换排序: 时间 / 评论数, 重拉第一页
+            function toggleSort() {
+              currentSort = currentSort === 'comments' ? 'time' : 'comments';
+              const label = document.getElementById('sort-label');
+              if (label) label.textContent = currentSort === 'time' ? '按时间排序' : '按评论数排序';
+              loadArticles(1);
+            }
+
+            // 点「创建」: 未登录时由 goIfLoggedIn 拦下并提示
+            function startWrite() {
+              goIfLoggedIn('/article/?edit=new');
+            }
+
+            /* asyfunc 新建叙述: 先要一个「引用键名」(独一无二, 建叙述时就占位), 再去编辑页。
+               ⚠️ 取值要用 onConfirm(values) —— confirmAction 的 resolve 值对带 fields 的表单只回 true */
+            function openNarraDialog() {
+              confirmAction({
+                title: I18N.t('narra.button', '叙述'),
+                message: I18N.t('narra.hint', '引用键名会登记这篇叙述，之后不可更改。'),
+                confirmText: I18N.t('narra.create', '创建'),
+                fields: [{
+                  name: 'quotekey',
+                  placeholder: I18N.t('narra.key', '文章引用键名'),
+                  required: true,
+                  maxlength: 40
+                }],
+                // 返回 false 会留在弹窗里: 键名被占这种错可以当场改一个再试
+                onConfirm: async (values, api) => {
+                  const quotekey = String((values && values.quotekey) || '').trim().toLowerCase();
+                  if (!quotekey) return false;
+                  try {
+                    const response = await fetch('/api/articles/narra', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ quotekey: quotekey })
+                    });
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.error || '创建失败');
+                    pageGoInstant('/article/?edit=1&id=' + data.id);
+                    return true;
+                  } catch (error) {
+                    if (api && typeof api.setError === 'function') api.setError(error.message);
+                    else showToast(error.message, 'error');
+                    return false;
+                  }
+                }
+              });
+            }
+
+            // 打开文章: 列表 → 详情不过场 (goPage 自动判定)
+            function openArticle(id) {
+              goPage('/article/?id=' + id);
+            }
+
+            /* asyfunc 拉标签 */
+            async function loadTags() {
+              const sidebar = document.getElementById('tag-row');
+              const drawer = document.getElementById('tag-drawer-row');
+              const toggle = document.getElementById('tag-toggle');
+              sidebar.innerHTML = '';
+              drawer.innerHTML = '';
+              try {
+                const response = await fetch('/api/tags', { cache: 'no-store' });
+                const data = await response.json();
+                const tags = data.tags || [];
+                if (tags.length === 0) {
+                  sidebar.appendChild(el('span', 'editor-hint', '还没有标签'));
+                  return;
+                }
+                // 侧栏与窄屏抽屉各画一份 (窄屏侧栏被 CSS 收掉, 宽屏抽屉不出现, 同一屏不会两份都在)
+                [sidebar, drawer].forEach((box) => {
+                  const all = el('button', 'tag-chip' + (currentTag === '' ? ' active' : ''), '全部');
+                  all.onclick = () => { currentTag = ''; loadTags(); loadArticles(1); closeTagDrawer(); };
+                  box.appendChild(all);
+
+                  tags.forEach(t => {
+                    const chip = el('button', 'tag-chip' + (currentTag === t.name ? ' active' : ''), t.name);
+                    const count = el('span', 'tag-count', String(t.count));
+                    chip.appendChild(count);
+                    chip.onclick = () => { currentTag = t.name; loadTags(); loadArticles(1); closeTagDrawer(); };
+                    box.appendChild(chip);
+                  });
+                });
+                // 有标签才亮出右下角那个按钮 (没标签时点了是空的)
+                if (toggle) toggle.hidden = false;
+                // 只重播标签胶囊本身, 侧栏的「创建」「标签」标题不动
+                replayItems(sidebar, '.tag-chip');
+                replayItems(drawer, '.tag-chip');
+              } catch (error) {
+                showToast(error.message, 'error');
+                sidebar.appendChild(el('span', 'editor-hint', '暂无标签'));
+              }
+            }
+
+            /* 窄屏的标签抽屉 (右侧滑入, 与文章页的目录抽屉同一套) */
+            // 开抽屉
+            function openTagDrawer() {
+              document.getElementById('tag-drawer').classList.add('show');
+              document.getElementById('tag-shade').classList.add('show');
+            }
+
+            // 关抽屉
+            function closeTagDrawer() {
+              document.getElementById('tag-drawer').classList.remove('show');
+              document.getElementById('tag-shade').classList.remove('show');
+            }
+
+            // 开合切换
+            function toggleTagDrawer() {
+              if (document.getElementById('tag-drawer').classList.contains('show')) closeTagDrawer();
+              else openTagDrawer();
+            }
+
+            /* 卡片里的小图标 (阅读时长与标签) */
+            const META_ICONS = {
+              clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.4V12l3.1 2"></path></svg>',
+              hashtag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"></path></svg>'
+            };
+            // 卡片右下角的评论气泡图标
+            const COMMENT_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9.3 9.3 0 0 1-3.2-.6L3.5 21l1.7-4.6A8.3 8.3 0 0 1 4 11.5a8.4 8.4 0 0 1 8.5-8.4A8.4 8.4 0 0 1 21 11.5z"></path></svg>';
+
+            // 组装一个「图标 + 文字」的元信息项
+            function metaItem(icon, text) {
+              const item = el('span', 'meta-item');
+              if (icon && META_ICONS[icon]) {
+                const wrap = el('span', 'meta-icon');
+                wrap.innerHTML = META_ICONS[icon];
+                item.appendChild(wrap);
+              }
+              item.appendChild(el('span', null, text));
+              return item;
+            }
+
+            /* 作者: 头像 + 昵称, 整块点进作者主页 (注销的账号没有 username, 退化成不可点的文字) */
+            function authorItem(a) {
+              const username = a.author_username;
+              const wrap = el(username ? 'a' : 'span', 'meta-item meta-author');
+              if (username) wrap.href = '/u/' + encodeURIComponent(username);
+
+              const face = document.createElement('img');
+              face.className = 'meta-author-avatar';
+              face.alt = '';
+              face.loading = 'lazy';
+              face.src = a.author_avatar || '/assets/Icon/foraine-icon-v2.png';
+              wrap.appendChild(face);
+              wrap.appendChild(el('span', null, a.author));
+              // 卡片本身就是「点开文章」: 别让点作者又变成开文章
+              wrap.addEventListener('click', (e) => e.stopPropagation());
+              return wrap;
+            }
+
+            /* asyfunc 拉文章: 带分页与当前标签 / 排序 */
+            async function loadArticles(page) {
+              currentPage = page || 1;
+              const list = document.getElementById('article-list');
+              list.innerHTML = '';
+              list.appendChild(loadingState());
+
+              try {
+                let url = '/api/articles?page=' + currentPage + '&size=' + PAGE_SIZE;
+                if (currentTag) url += '&tag=' + encodeURIComponent(currentTag);
+                if (currentSort !== 'time') url += '&sort=' + encodeURIComponent(currentSort);
+                const response = await fetch(url, { cache: 'no-store' });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || '加载失败');
+
+                const articles = data.articles || [];
+                list.innerHTML = '';
+
+                // 计数行: 第 N 页 - 显示 M 篇, 共 T 篇 (都是当前筛选下的数)
+                const countBox = document.getElementById('list-count');
+                if (countBox) {
+                  if (articles.length === 0) {
+                    countBox.textContent = currentTag ? '这个标签下还没有文章' : '还没有文章';
+                  } else {
+                    countBox.textContent = '第 ' + (data.page || currentPage) + ' 页 - 显示 '
+                      + articles.length + ' 篇，共 ' + (data.total || 0) + ' 篇文章';
+                  }
+                }
+
+                if (articles.length === 0) {
+                  if (currentTag) {
+                    list.appendChild(emptyState({ icon: 'book', title: '这个标签下还没有文章', text: '' }));
+                  } else {
+                    list.appendChild(emptyState({ icon: 'book' }));
+                  }
+                }
+
+                articles.forEach(a => {
+                  const item = el('div', 'article-item');
+                  const displayTitle = (a.title && a.title.trim()) ? a.title : (a.intro || '无标题');
+
+                  // 右上角编号 (#1 #2 ...), 绝对定位的角标, 不占位置
+                  item.appendChild(el('div', 'article-id', '#' + a.id));
+
+                  // 主体: 第一行(日期 + 标题) / 简介 / 元信息 / 标签 (日期在标题左边那一列)
+                  const bodyCol = el('div', 'article-body-col');
+
+                  const head = el('div', 'article-item-head');
+                  head.appendChild(el('span', 'article-date', formatDate(a.created_at)));
+                  // 标题走行内管线 (不解析 secret / 零宽 / font)
+                  const titleEl = el('span', 'article-title', '');
+                  titleEl.innerHTML = inlinePlain(displayTitle);
+                  head.appendChild(titleEl);
+                  bodyCol.appendChild(head);
+
+                  // 描述 = 作者在编辑器「简介」里写的那一句 (没写就只剩标题; 最多两行)
+                  if (a.intro) {
+                    const introEl = el('p', 'article-summary', '');
+                    introEl.innerHTML = inlinePlain(a.intro);
+                    bodyCol.appendChild(introEl);
+                  }
+
+                  // 元信息: 阅读时长 + 作者 (头像 + 昵称) + 标签
+                  // 标签不单独铺一行气泡, 并入这一行
+                  const meta = el('div', 'article-meta');
+                  if (a.read_text) meta.appendChild(metaItem('clock', a.read_text));
+                  meta.appendChild(authorItem(a));
+                  if (a.tags && a.tags.length) {
+                    meta.appendChild(metaItem('hashtag', a.tags.map(t => '#' + t).join(' / ')));
+                  }
+                  bodyCol.appendChild(meta);
+                  item.appendChild(bodyCol);
+
+                  // 右侧箭头 (hover 滑入)
+                  const arrow = el('div', 'article-arrow');
+                  arrow.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>';
+                  item.appendChild(arrow);
+
+                  // 右下角: 评论数 (小图标 + 「N 条」, 没有评论就不显示)
+                  if (a.comment_count > 0) {
+                    const cmt = el('div', 'article-comments');
+                    cmt.innerHTML = COMMENT_ICON;
+                    cmt.appendChild(el('span', null, a.comment_count + ' 条'));
+                    item.appendChild(cmt);
+                  }
+
+                  item.onclick = () => openArticle(a.id);
+                  list.appendChild(item);
+                });
+
+                renderPager(data);
+                // 卡片是加载完才有的 → 只让卡片自己飘入, 分页那行不动
+                replayItems(list, '.article-item');
+              } catch (error) {
+                // 报错走 Toast, 列表里只留一句中性占位 (不把错误信息当正文铺出来)
+                showToast(error.message, 'error');
+                list.innerHTML = '';
+                list.appendChild(el('p', 'editor-hint', '暂时拿不到文章'));
+              }
+            }
+
+            // 分页: 上一页 / 页码 / 下一页 (只有一页就不画)
+            function renderPager(data) {
+              const pager = document.getElementById('pager');
+              pager.innerHTML = '';
+              const totalPages = Math.max(1, Math.ceil((data.total || 0) / (data.size || PAGE_SIZE)));
+              if (totalPages <= 1) return;
+
+              const prev = el('button', 'btn-outline', '上一页');
+              prev.disabled = currentPage <= 1;
+              prev.onclick = () => loadArticles(currentPage - 1);
+
+              const info = el('span', null, '第 ' + currentPage + ' / ' + totalPages + ' 页');
+
+              const next = el('button', 'btn-outline', '下一页');
+              next.disabled = !data.hasMore;
+              next.onclick = () => loadArticles(currentPage + 1);
+
+              pager.appendChild(prev);
+              pager.appendChild(info);
+              pager.appendChild(next);
+            }
+
+            // 等共享脚本(defer)加载完成后再初始化
+            document.addEventListener('DOMContentLoaded', () => {
+              loadTags();
+              loadArticles(1);
+
+              // 访客 / 被封禁 / 没填邮箱 都不显示「创建」(邮箱是发文追责的凭证), 两份按钮都是 .list-create
+              // 用内联 display 而不是 hidden 属性: .btn-acrylic 自己有 display, [hidden] 会被它盖掉
+              getCurrentUser().then((user) => {
+                // 卡片上的标题 / 简介能用 <view …>: 拿到观看者之后才拉列表 (同一趟缓存里的 /api/me, 不多发请求)
+                if (typeof setViewContext === 'function') {
+                  setViewContext({
+                    user: user && user.username,
+                    nickname: user && (user.nickname || user.username),
+                    permissions: (user && user.permissions) || [],
+                    time: Date.now()
+                  });
+                }
+                loadTags();
+                loadArticles(1);
+                // 「叙述」只有站长能看 (服务端也会再拦一道); 先亮它, 再按登录/封禁/邮箱把两份都收掉
+                if (user && (user.permissions || []).indexOf('article.narra') >= 0) {
+                  document.querySelectorAll('.list-narra').forEach((btn) => {
+                    btn.style.display = '';
+                  });
+                }
+                if (!user || user.ban || !user.email) {
+                  document.querySelectorAll('.list-create').forEach((btn) => {
+                    btn.style.display = 'none';
+                  });
+                }
+              });
+
+              const tagToggle = document.getElementById('tag-toggle');
+              if (tagToggle) tagToggle.addEventListener('click', toggleTagDrawer);
+              // Esc 关抽屉 (窄屏没有更好的关法)
+              document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') closeTagDrawer();
+              });
+            });
+        </script>
+    </body>
+</html>

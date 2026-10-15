@@ -1,0 +1,59 @@
+/* ==================== 首页: 雨幕 + 2.5D 地面 ==================== */
+/* 那条「紫色横幅」就是全站的 body::before 首屏柔光, 首页把它关掉 */
+body.page-home::before {
+    display: none;
+}
+/* .rain-canvas 与「关掉紫色柔光 / 页脚压雨幕」那两条在 main.css (私聊页也要用), 别在这里重复定义 */
+
+/* ==================== 首页菜单 ==================== */
+/* 一个完全透明、fit-content 的框体, 里面只有三个图标按钮 (按钮自身也无背景) */
+.home-menu {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: var(--sp-5);
+    width: fit-content;
+    margin: 0 auto;
+    padding: var(--sp-2) var(--sp-4);
+    background: none;
+    border: 0;
+    box-shadow: none;
+}
+.home-menu-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 46px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: none;      /* 按钮背景也透明 */
+    color: var(--c-text-dim);
+    cursor: pointer;
+    transition: color 0.2s, transform 0.2s;
+}
+.home-menu-btn svg {
+    width: 26px;
+    height: 26px;
+}
+.home-menu-btn:hover {
+    background: none;
+    color: var(--c-accent-hover);
+    transform: translateY(-2px);
+}
+
+/* 首页整屏高度锁死, 手机上不能上下滑动; body 是纵向 flex, 给了精确高度 .spacer-flex 就把菜单与页脚压到底部 */
+body.page-home {
+    height: 100vh;
+    height: 100dvh;
+    height: var(--vh-full);   /* 桌面端放大 125% 时要除回去，见 main.css 的 zoom 段 */
+    overflow: hidden;
+}
+/* **标题的中心**落在屏幕正中, 图标在它上方 (用户：「标题居中，图标在其之上」):
+   上面留白 = 半个页面高 - 170.4
+   170.4 = 面板上内边距 20 + 图标 128 + 半个标题 22.4 (图标是块级, 所以图标与标题之间没有行盒间隙)
+   ⚠️ 太矮的窗口里至少给导航栏让出位置 */
+body.page-home .page-top-space {
+    height: max(calc(var(--vh-full) / 2 - 170.4px), var(--page-top));
+}

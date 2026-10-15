@@ -1,0 +1,221 @@
+/* ==================== 统计页 /stats/ ==================== */
+/* 版式: 一张宽面板 = 一块内容, 宽度对齐全站正文列 (1040px) */
+/* 首屏那层紫色柔光 (body::before) 整页关掉, 整页就是 --c-page-bg 一个纯色 */
+
+/* ---------- 左上角的页名 ---------- */
+/* 左上角页名: 不用 .panel, 就是一行左对齐的标题, 宽度对齐下面的面板 */
+.stats-head-bar {
+    width: min(1040px, calc(100% - var(--sp-8)));
+    margin: 0 auto var(--sp-5);
+}
+.stats-title {
+    font-size: var(--fs-36);
+}
+
+/* ---------- 关掉首屏柔光 ---------- */
+/* 只有这一页要纯底色; 带上 .page-stats 把特异性提到 (0,1,1) 才压得过 main.css 的 body::before */
+body.page-stats::before {
+    display: none;
+}
+
+/* ---------- 面板统一宽度 ---------- */
+body.page-stats .panel {
+    width: min(1040px, calc(100% - var(--sp-8)));
+    max-width: 100%;
+    padding: var(--sp-6) var(--sp-5);
+}
+
+/* ---------- 总览: 那个数字 ---------- */
+.stats-head {
+    display: flex;
+    align-items: baseline;
+    gap: var(--sp-4);
+    flex-wrap: wrap;
+}
+/* 数字用 48px 一档 + 等宽数字, 比页面 h1 (36px) 高一档 */
+.stats-number {
+    font-size: var(--fs-48);
+    line-height: 1.1;
+    font-weight: bold;
+    color: var(--c-text);
+    font-variant-numeric: tabular-nums;
+}
+.stats-label {
+    font-size: var(--fs-20);
+    color: var(--c-text-muted);
+}
+.stats-sub {
+    font-size: var(--fs-14);
+    color: var(--c-text-dim);
+    font-variant-numeric: tabular-nums;
+}
+
+/* 一行小胶囊: 总请求 / 有访问的天数 / 单日峰值 */
+.stats-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-3);
+    margin-top: var(--sp-4);
+}
+.stats-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--gap-micro);
+    padding: var(--sp-2) var(--sp-3);
+    border: 1px solid var(--c-border);
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.32);
+    font-size: var(--fs-14);
+    color: var(--c-text-muted);
+}
+.stats-chip b {
+    color: var(--c-text);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 折线图 ---------- */
+.stats-chart {
+    margin-top: var(--sp-5);
+}
+.stats-svg {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+.stats-grid {
+    stroke: rgba(255, 255, 255, 0.08);
+    stroke-width: 1;
+    shape-rendering: crispEdges;
+}
+.stats-axis {
+    fill: var(--c-text-faint);
+    font-size: 12px;
+    font-family: var(--font-mono);
+}
+.stats-axis-x {
+    font-size: 11px;
+}
+.stats-area {
+    fill-opacity: 1;   /* 填充色由 SVG 自己的 fill="url(#...)" 给 (每张图一个独立渐变 id) */
+}
+.stats-line {
+    fill: none;
+    stroke: var(--c-accent);
+    stroke-width: 2;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+}
+/* hover 命中区: 只为了挂原生 <title> 提示, 自己不画东西 */
+.stats-hit {
+    fill: transparent;
+}
+
+/* ---------- 地区条 ---------- */
+.stats-bars {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    margin-top: var(--sp-4);
+}
+.stats-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    font-size: var(--fs-14);
+    color: var(--c-text-muted);
+}
+.stats-bar-name {
+    flex: 0 0 auto;
+    min-width: 8em;
+    white-space: nowrap;
+}
+.stats-bar-track {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    overflow: hidden;
+}
+.stats-bar-fill {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, rgba(148, 94, 236, 0.55), var(--c-accent));
+}
+.stats-bar-count {
+    flex: 0 0 auto;
+    min-width: 7em;
+    text-align: right;
+    color: var(--c-text);
+    font-variant-numeric: tabular-nums;
+}
+.stats-bar-pct {
+    margin-left: var(--sp-2);
+    font-size: var(--fs-14);
+    color: var(--c-text-faint);
+}
+
+/* ---------- D1 用量的小卡片 ---------- */
+.stats-cards {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--sp-3);
+    margin-top: var(--sp-4);
+}
+.stats-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-1);
+    margin: 0;
+    padding: var(--sp-4);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-md);
+    background: rgba(0, 0, 0, 0.32);
+}
+.stats-card-label {
+    font-size: var(--fs-14);
+    color: var(--c-text-dim);
+}
+.stats-card-value {
+    font-size: var(--fs-28);
+    font-weight: bold;
+    color: var(--c-text);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 脚注 / 空态 ---------- */
+.stats-note {
+    margin-top: var(--sp-3);
+    font-size: var(--fs-14);
+    color: var(--c-text-faint);
+}
+.stats-empty {
+    color: var(--c-text-faint);
+}
+
+/* 窄屏: 地区条改成两行 (名字+数字一行, 进度条独占一行); 一行放不下三段时进度条会被挤成 0 */
+@media (max-width: 640px) {
+    .stats-bar {
+        flex-wrap: wrap;
+        row-gap: var(--sp-1);
+    }
+    .stats-bar-name {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+    .stats-bar-count {
+        flex: 0 0 auto;
+        min-width: 0;
+    }
+    .stats-bar-track {
+        order: 2;
+        flex: 1 1 100%;
+    }
+    .stats-cards {
+        grid-template-columns: 1fr;
+    }
+    .stats-number {
+        font-size: var(--fs-36);
+    }
+}

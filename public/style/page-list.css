@@ -1,0 +1,323 @@
+/* ==================== page-list.css ==================== */
+/* 文章列表页专属样式, 只在 /articles/ 加载 (由 split_css.py 从 main.css 拆出, 改这里别改 main.css) */
+
+/* 关掉 main.css 的首屏紫色柔光 (body::before): 本页第一屏是卡片, 紫光衬在卡片周围显脏 */
+body::before {
+  display: none;
+}
+/* ==================== 文章列表页专属 ==================== */
+
+/* 标题行: 宽屏只有「文章」; 窄屏是「文章 …… [创建]」一行, 「第1页」单独一行 */
+.list-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  width: min(1040px, calc(100% - var(--sp-10))); /* 与 .list-grid 同宽 → 标题左边缘 = 卡片左边缘 */
+  /* 用负外边距把与计数行的间距从父级 flex gap --sp-5 压到 --sp-2 */
+  margin-bottom: calc(var(--sp-2) - var(--sp-5));
+}
+/* 页面标题: 左对齐的素面标题 (照橘橘的 #content-header), 不加副标题 */
+.list-title {
+  text-align: left;
+  font-size: var(--fs-28);
+  font-weight: bold;
+  color: var(--c-text);
+}
+
+/* 搜索框 (.tag-search) 与 HTML 里的 #search-input 已整块删除, 别再往回加 */
+
+/* ==================== 左右两栏 (照橘橘的博客列表) ==================== */
+/* 左 3fr 列表 / 右 1fr 标签; 窄屏右栏收进右下角「标签」按钮 + 抽屉 (同文章页的目录抽屉) */
+.list-grid {
+  display: grid;
+  grid-template-columns: 3fr 1fr;
+  align-items: start;
+  gap: var(--sp-4) var(--sp-8);
+  width: min(1040px, calc(100% - var(--sp-10)));
+  text-align: left;
+}
+/* 三块的位置写死在第 1/2 行: 计数行宽度 = 左栏宽, 排序按钮才落得到第一张卡片右上角; 别删 .tag-side 那两条, 否则它被挤到第 1 行会空出一行 */
+.list-head {
+  grid-column: 1;
+  grid-row: 1;
+  /* 搬进栅格后间距变成行距 --sp-4, 补回与原来的 4px 差 */
+  margin-bottom: calc(var(--sp-5) - var(--sp-4));
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.list-main {
+  grid-column: 1;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-width: 0; /* 网格子项的默认 min-width:auto 会被长标题撑破 */
+}
+/* 计数行: 「第 N 页 - 显示 M 篇, 共 T 篇文章」小字 + 最右的排序按钮; 宽度由栅格给, 别写 width */
+.list-count {
+  font-size: var(--fs-14);
+  color: var(--c-text);
+}
+/* 排序切换按钮的样式在 main.css (.sort-toggle), 个人页的连携星点共用同一个 */
+.list-create {
+  flex: none;
+}
+/* 「撰写」按钮: 宽屏在右栏顶部、fit-content 靠左; 窄屏右栏收起, 换成标题行里那一份 */
+.list-create-side {
+  width: fit-content;
+  align-self: flex-start; /* 侧栏是 flex column, 不写这条会被拉伸成通栏 */
+}
+/* 「撰写」与「叙述」并排: 各占一半宽 (上下两块时宽度不一样: 一份 fit-content, 一份被拉伸成通栏) */
+.tag-side-actions {
+  display: flex;
+  align-items: stretch;
+  gap: var(--sp-2);
+}
+.tag-side-actions .list-create {
+  flex: 1 1 0;
+  width: auto;
+  align-self: auto;
+  min-width: 0;
+}
+.list-create-mobile {
+  display: none;
+}
+
+/* 右栏标签 (照橘橘的 #sidebar), grid-row: 2 与第一张卡片同高 */
+.tag-side {
+  grid-column: 2;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-width: 0;
+}
+.tag-side-title {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-18);
+  font-weight: bold;
+  color: var(--c-text);
+}
+.tag-side-title::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--c-accent);
+}
+/* 侧栏里的标签靠左排成一团, 不居中 */
+.tag-side .tag-row {
+  justify-content: flex-start;
+}
+
+/* ==================== 窄屏的标签抽屉 ==================== */
+/* 与文章页的目录抽屉同一套: 常驻 DOM、默认滑出屏幕, .show 才滑进来 (用 display 开关就没有过渡); 定位写在 main-media.css 的 ≤900 */
+.tag-toggle {
+  display: none; /* 仅窄屏出现 */
+}
+.tag-drawer {
+  display: none;
+}
+.tag-shade {
+  position: fixed;
+  inset: 0;
+  z-index: 109;
+  background: rgba(0, 0, 0, 0.55);
+  display: none;
+}
+.tag-shade.show {
+  display: block;
+}
+.tag-drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+.tag-drawer-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--c-border);
+  color: var(--c-text-dim);
+  background: transparent;
+  transition: color 0.2s, border-color 0.2s;
+}
+.tag-drawer-close:hover {
+  color: var(--c-text);
+  border-color: var(--c-accent);
+}
+.tag-drawer-close svg {
+  width: 16px;
+  height: 16px;
+}
+.tag-drawer-row {
+  justify-content: flex-start;
+}
+
+/* 列表 */
+.article-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  text-align: left;
+  width: 100%;
+}
+/* 卡片: 大圆角 + 描边 + 标题 + 悬停点亮 (形制照橘橘的 PostPreview) */
+.article-item {
+  position: relative; /* 右上角 #编号 的定位基准 */
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: var(--sp-5);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  background: rgba(0, 0, 0, 0.35);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.30);
+  cursor: pointer;
+  transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
+}
+.article-item:hover {
+  border-color: rgba(148, 94, 236, 0.55);
+  background: rgba(148, 94, 236, 0.08);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.50);
+}
+/* 序号: 卡片右上角的灰色角标, 绝对定位不占位置 */
+.article-item .article-id {
+  position: absolute;
+  top: var(--sp-3);
+  right: var(--sp-4);
+  font-size: var(--fs-14);
+  color: var(--c-text-faint);
+  font-variant-numeric: tabular-nums; /* #1 和 #12 宽度一致 */
+}
+/* 评论数: 右下角小图标 + 「N 条」, 与右上角的序号成一对 */
+.article-item .article-comments {
+  position: absolute;
+  right: var(--sp-4);
+  bottom: var(--sp-3);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap-micro);
+  font-size: var(--fs-18);
+  color: var(--c-text-faint);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none; /* 整张卡都能点, 别让这个小角标抢点击 */
+}
+.article-item .article-comments svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  opacity: 0.85;
+}
+/* 元信息那行别伸到角标底下 */
+.article-item:has(.article-comments) .article-meta {
+  padding-right: var(--sp-10);
+}
+.article-item .article-body-col {
+  flex: 1;
+  min-width: 0;
+}
+/* 第一行: 日期在上、标题在下 (全站统一, 不再分桌面「日期窄列 + 标题同行」) */
+.article-item .article-item-head {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-1);
+  /* 给右上角的编号让位, 标题很长时也不会碰到它 */
+  padding-right: var(--sp-12);
+}
+.article-item .article-date {
+  flex: none;
+  font-size: var(--fs-14);
+  color: var(--c-text-dim);
+  font-variant-numeric: tabular-nums;
+}
+.article-item .article-title {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-20);
+  font-weight: bold;
+  color: var(--c-text);
+  transition: color 0.2s;
+}
+/* 悬停时标题点亮: 卡片整体变底 + 文字转主题色 */
+.article-item:hover .article-title {
+  color: var(--c-accent-hover);
+}
+.article-item .article-summary {
+  margin-top: var(--sp-1);
+  font-size: var(--fs-14);
+  color: var(--c-text-muted);
+  /* 限两行, 长简介不拖着整张卡变高 */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.article-item .article-meta {
+  margin-top: var(--sp-2);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-3);
+  font-size: var(--fs-14);
+  font-style: italic; /* 橘橘那行元信息是斜体小字 */
+  color: var(--c-text-dim);
+}
+.article-item .article-meta .meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap-micro);
+}
+/* 作者那块 (头像 + 昵称) 与其它元素等高 */
+.article-item .article-meta .meta-author-avatar {
+  width: 22px;
+  height: 22px;
+  /* 只要圆头像本身: 去掉 main.css 里那圈灰描边与淡底 */
+  border: none;
+  background: transparent;
+}
+.article-item .article-meta .meta-icon {
+  display: inline-flex;
+}
+.article-item .article-meta .meta-icon svg {
+  width: 15px;
+  height: 15px;
+}
+/* 「最后更新」气泡已搬到文章详情页, .article-tags 已取消 (标签改到上面的元信息行) */
+/* hover 时滑入的箭头 (借鉴双葉橘列表) */
+.article-item .article-arrow {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  color: var(--c-text-faint);
+  transform: translateX(8px);
+  opacity: 0;
+  transition: transform 0.3s ease, opacity 0.3s ease, color 0.2s;
+}
+.article-item:hover .article-arrow {
+  transform: translateX(0);
+  opacity: 1;
+  color: var(--c-accent);
+}
+
+/* 分页 */
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+  font-size: var(--fs-20);
+  color: var(--c-text); /* 计数小字 → 纯白 */
+}

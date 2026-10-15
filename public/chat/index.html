@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+
+<html lang="zh">
+    <head>
+        <!-- 元数据 -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <!-- 私信是站内页面, 不给搜索引擎收录 -->
+        <meta name="robots" content="noindex">
+        <base href="/">
+        <title>私信 · Foraine</title>
+
+        <!-- 加载资源 -->
+        <link rel="icon" type="image/x-icon" href="assets/Icon/foraine-icon-v2.png">
+        <link rel="stylesheet" href="/style/main.css?v=40">
+        <link rel="stylesheet" href="/style/page-chat.css?v=40">
+        <!-- 右下角的「加载中」牌子 (showBusyNote) -->
+        <link rel="stylesheet" href="/style/page-foraine-toast.css?v=40">
+        <!-- 窄屏样式按需加载: 宽屏连请求都不发 (只写 <link media> 的 Chrome 仍会下载, 所以用脚本判断) -->
+        <script>
+            if (matchMedia('(max-width: 900px)').matches) {
+                const mediaLink = document.createElement('link');
+                mediaLink.rel = 'stylesheet';
+                mediaLink.href = '/style/main-media.css';
+                document.head.appendChild(mediaLink);
+            }
+        </script>
+        <script src="/script/i18n.js?v=40" defer></script>
+        <script src="/script/core.js?v=40" defer></script>
+        <script src="/script/ui.js?v=40" defer></script>
+        <script src="/script/transition.js?v=40" defer></script>
+        <script src="/script/header.js?v=40" defer></script>
+        <script src="/script/layout.js?v=40" defer></script>
+        <script src="/script/rain-sound.js?v=40" defer></script>
+        <!-- 下雨特效: 与首页共用 rain.js (自带 /api/rain 取天气强度), 样式在 main.css 的 .rain-canvas -->
+        <script src="/script/rain.js?v=40" defer></script>
+    </head>
+
+    <body class="page-chat">
+        <div class="page-layout">
+
+            <!-- 私信: 应用式三栏 (图标栏 + 会话列表 + 对话), 形制照 QQ / VS Code ——
+                 每块面板各自圆角与描边, 之间只隔 2px (--chat-gap) -->
+            <div class="chat-app" data-anim>
+
+                <!-- 左栏: 图标栏 (照 VS Code 的 activity bar) -->
+                <nav class="chat-rail No-slc" aria-label="快捷入口">
+                    <button type="button" class="chat-rail-btn is-active" data-mode="chat" title="私信" aria-label="私信">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9.3 9.3 0 0 1-3.2-.6L3.5 21l1.7-4.6A8.3 8.3 0 0 1 4 11.5a8.4 8.4 0 0 1 8.5-8.4A8.4 8.4 0 0 1 21 11.5z"></path><path d="M8.6 11.6h.01M12 11.6h.01M15.4 11.6h.01"></path></svg>
+                    </button>
+                    <span class="chat-rail-space"></span>
+                    <!-- 雨幕开关 -->
+                    <button type="button" class="chat-rail-btn" id="rail-rain" onclick="toggleRain()" title="雨" aria-label="雨">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5c3.4 4 5.6 7 5.6 9.6a5.6 5.6 0 0 1-11.2 0c0-2.6 2.2-5.6 5.6-9.6z"></path></svg>
+                    </button>
+                    <!-- 刷新: 清空缓存, 立刻与数据库同步 -->
+                    <button type="button" class="chat-rail-btn" id="rail-refresh" onclick="syncNow()" title="刷新（与数据库同步）" aria-label="刷新">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"></path><path d="M20 5v6h-6"></path></svg>
+                    </button>
+                    <!-- 自己: 最底下一颗 -->
+                    <a class="chat-rail-btn chat-rail-me" id="rail-me" href="/profile" title="个人主页" aria-label="个人主页">
+                        <img id="rail-avatar" alt="">
+                    </a>
+                </nav>
+
+                <!-- 中: 会话列表 -->
+                <aside class="chat-list-pane" id="chat-list-pane">
+                    <div class="chat-list-head">
+                        <h1 class="chat-list-title">私信</h1>
+                        <span class="chat-list-count" id="chat-list-count"></span>
+                        <!-- 发起私聊 -->
+                        <button type="button" class="chat-add" onclick="openPicker()" title="发起私聊" aria-label="发起私聊">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+                        </button>
+                    </div>
+                    <div class="chat-list" id="chat-list">
+                        <div class="page-state"><div class="page-state-spinner"></div><p class="page-state-text">直达星辰..</p></div>
+                    </div>
+                </aside>
+
+                <!-- 右: 对话 -->
+                <section class="chat-thread-pane" id="chat-thread-pane" hidden>
+                    <div class="chat-thread-head">
+                        <button type="button" class="chat-back" id="chat-back" onclick="showList()" aria-label="返回会话列表" title="返回">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"></path><path d="m12 19-7-7 7-7"></path></svg>
+                        </button>
+                        <!-- 头像本身就是去 TA 主页的链接 (站内跳转交给 transition.js) -->
+                        <a class="chat-avatar-link" id="thread-home" href="#" title="看 TA 的主页" aria-label="看 TA 的主页">
+                            <img class="chat-avatar" id="thread-avatar" alt="">
+                        </a>
+                        <div class="chat-who">
+                            <p class="chat-name" id="thread-name">…</p>
+                            <p class="chat-username" id="thread-username"></p>
+                        </div>
+                    </div>
+                    <div class="chat-body" id="chat-body"></div>
+                    <!-- 输入区: 自己一块圆角盒子, 框里是输入框 + 发送键一行, 工具行另起一行 -->
+                    <div class="chat-send">
+                        <div class="chat-send-box">
+                            <!-- 附件位: 桌面浮在输入框上沿, 窄屏是输入区第一行 (见 page-chat.css) -->
+                            <div class="chat-attach" id="chat-attach" hidden></div>
+                            <textarea id="chat-input" rows="1" maxlength="600" placeholder=""></textarea>
+                            <!-- 工具行: 表情 / 图片 / 文件 / 发送 -->
+                            <div class="chat-tools">
+                                <button type="button" class="chat-tool" id="chat-sticker-btn" onclick="toggleStickers()" title="表情" aria-label="表情">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M8.5 14.5c.9 1.2 2.1 1.8 3.5 1.8s2.6-.6 3.5-1.8"></path><path d="M9 9.5h.01"></path><path d="M15 9.5h.01"></path></svg>
+                                </button>
+                                <button type="button" class="chat-tool" onclick="openChatPick('image')" title="图片" aria-label="发送图片">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="m21 15-5-5L5 21"></path></svg>
+                                </button>
+                                <button type="button" class="chat-tool" onclick="openChatPick('file')" title="文件" aria-label="发送文件">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path></svg>
+                                </button>
+                                <button type="button" class="btn chat-send-btn" id="chat-send-btn" onclick="sendChat()">发送</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 宽屏未选人时的占位 -->
+                <div class="chat-empty-pane" id="chat-empty-pane">← 选一个人开始聊</div>
+
+            </div>
+
+            <!-- 弹性留白: 内容不满一屏时由它吃掉多余空间, 把页脚压到视口底部 -->
+            <div class="spacer-flex"></div>
+
+        </div>
+
+        <script>
+            /* chat/index.html 私信页 */
+            /*
+              内容: 左图标栏 / 会话列表 / 对话
+              依赖: core.js / ui.js(聊天积木) / 接口 GET /api/chat/conversations, GET/POST /api/chat
+            */
+            const POLL_MS = 5000;
+            // 会话列表自己的慢轮询: 消息那条 5 秒轮询只在对话正在前台时跑, 挂机看列表时它不动
+            const CONV_POLL_MS = 15000;
+            const DEFAULT_AVATAR = '/assets/Icon/foraine-icon-v2.png';
+
+            let me = null;         // 当前登录用户
+            let peer = null;       // 正在聊的人 { username, nickname, avatar_url }
+            let lastId = 0;        // 已渲染的最后一条消息 id (用来判断有没有新消息)
+            let pollTimer = null;  // 消息轮询句柄
+            const CHAT_TIME_GAP_MS = 5 * 60e3; // 隔多久就再插一枚时间胶囊
+
+            /* 缓存: 每个会话自己一份消息, 切回来先拿缓存铺上 (不闪 loading), 轮询只拉 ?after=<最后一条 id> */
+            const msgCache = {};   // 'c:<用户名>' → { list: [], lastId: 0 }
+            let convoSig = '';     // 会话列表上一次的指纹 (没变就不重画)
+            let convList = [];     // 会话列表**当前**的数据 (发了消息就就地改它, 见 touchConversation)
+            let convUnread = 0;    // 未读总数 (就地重画时要给回去)
+            let convSeen = null;   // Map<用户名, 指纹> —— 上一轮每张卡片的内容, 变了的闪一下 (脉冲)
+            let convTimer = null;  // 会话列表的慢轮询句柄
+
+            function cacheOf(key) {
+                if (!msgCache[key]) msgCache[key] = { list: [], lastId: 0 };
+                return msgCache[key];
+            }
+
+            /* 「发送中」的那几条: 乐观气泡只在 DOM 上, 重画会把它抹掉, 所以另存一份补在最后 */
+            const pendingMsgs = {};   // 'c:<用户名>' → [{ cid, body, created_at, failed }]
+            function pendingOf(key) {
+                if (!pendingMsgs[key]) pendingMsgs[key] = [];
+                return pendingMsgs[key];
+            }
+            function dropPending(username, cid) {
+                const list = pendingOf('c:' + username);
+                const i = list.findIndex((p) => p.cid === cid);
+                if (i >= 0) list.splice(i, 1);
+            }
+            function failPending(username, cid) {
+                const p = pendingOf('c:' + username).find((x) => x.cid === cid);
+                if (p) p.failed = true;
+            }
+
+            /* 图标栏那颗刷新: 丢掉全部缓存, 立刻与数据库同步一次 */
+            function syncNow() {
+                Object.keys(msgCache).forEach((k) => delete msgCache[k]);
+                convoSig = '';
+                loadConversations(true);
+                if (peer) refreshThread(true);
+                const btn = $('rail-refresh');
+                if (btn) {
+                    btn.classList.add('is-spin');
+                    setTimeout(() => btn.classList.remove('is-spin'), 600);
+                }
+                showToast('已与数据库同步', 'ok');
+            }
+
+            function $(id) { return document.getElementById(id); }
+            const RAIN_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5c3.4 4 5.6 7 5.6 9.6a5.6 5.6 0 0 1-11.2 0c0-2.6 2.2-5.6 5.6-9.6z"></path></svg>';
+            // 雨被划掉 = 关着的状态
+            const RAIN_OFF_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5c3.4 4 5.6 7 5.6 9.6a5.6 5.6 0 0 1-11.2 0c0-2.6 2.2-5.6 5.6-9.6z"></path><path d="M4.5 4.5l15 15"></path></svg>';
+
+            /* 雨幕开关: 真正的过渡在 rain.js (关 = 停生成等落地, 开 = 从上方下起来) */
+            function toggleRain() {
+                const btn = document.getElementById('rail-rain');
+                const on = typeof window.rainIsEnabled === 'function' ? window.rainIsEnabled() : true;
+                if (typeof window.rainSetEnabled === 'function') window.rainSetEnabled(!on);
+                paintRainBtn(!on);
+                showToast(!on ? '下雨了..' : '雨要停了呢..', 'info');
+            }
+
+            function paintRainBtn(on) {
+                const btn = document.getElementById('rail-rain');
+                if (!btn) return;
+                btn.innerHTML = on ? RAIN_ICON : RAIN_OFF_ICON;
+                btn.title = on ? '雨：开' : '雨：关';
+                btn.classList.toggle('is-off', !on);
+            }
+
+            // 进页时按记住的状态 (localStorage) 把图标画对
+            document.addEventListener('DOMContentLoaded', () => {
+                paintRainBtn(typeof window.rainIsEnabled === 'function' ? window.rainIsEnabled() : true);
+            });
+
+            function isNarrow() { return matchMedia('(max-width: 900px)').matches; }
+
+            /* 布局 */
+            function applyPanes() {
+                const narrow = isNarrow();
+                const listPane = $('chat-list-pane');
+                const threadPane = $('chat-thread-pane');
+                const emptyPane = $('chat-empty-pane');
+                const listWasHidden = listPane.hidden;
+
+                threadPane.hidden = !peer;
+                if (narrow) {
+                    // 单屏: 选中了就只看右边那块, 没选中就看列表
+                    listPane.hidden = !!peer;
+                    emptyPane.hidden = true;
+                } else {
+                    emptyPane.hidden = !!peer;
+                }
+
+                /* 左右过渡: 进对话从右边滑进来, 回列表从左边滑进来; 只在窄屏做 (宽屏两块是并排的) */
+                if (!narrow || !peer && !listWasHidden) return;
+                if (peer) slidePane(threadPane, 'right');
+                else slidePane(listPane, 'left');
+            }
+
+            // 一次性播放的位移入场 (动画结束摘类, 免得 fill-mode 的收尾帧压住别的效果)
+            function slidePane(pane, dir) {
+                if (!pane || !pane.isConnected) return;
+                pane.classList.remove('pane-in-left', 'pane-in-right');
+                void pane.offsetWidth;   // 强制回流, 同一方向的动画才会重播
+                pane.classList.add(dir === 'left' ? 'pane-in-left' : 'pane-in-right');
+                pane.addEventListener('animationend', () => {
+                    pane.classList.remove('pane-in-left', 'pane-in-right');
+                }, { once: true });
+            }
+
+            /* 会话列表: 数据更新不播动画, 只有「切进来」那一下播 (页面首载 / 窄屏从对话返回列表) */
+            /* 会话列表的「在途」标记: 同一时刻只允许一次请求 */
+            let convLoading = false;
+
+            async function loadConversations(force, options) {
+                /* 同一时刻只允许一次: 「回到列表」撞上 15 秒会话轮询会重画两次 + 动画重播两次 */
+                if (convLoading) return;
+                convLoading = true;
+                const box = $('chat-list');
+                const animate = !!(options && options.animate);
+                try {
+                    const response = await fetch('/api/chat/conversations', { cache: 'no-store' });
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.error || '加载失败');
+                    // 指纹没变就不重画 (重画会抖掉滚动位置与 hover 状态)
+                    const sig = JSON.stringify(data.conversations || []) + '#' + (data.unread || 0);
+                    if (!force && sig === convoSig && !animate) return;
+                    convoSig = sig;
+                    renderConversations(data.conversations || [], data.unread || 0, animate);
+                    // 只有「切进来」的那次才重播卡片动画
+                    if (animate) replayItems(box, '.chat-item');
+                } catch (error) {
+                    box.innerHTML = '';
+                    box.appendChild(el('p', 'editor-hint', error.message || '加载失败'));
+                } finally {
+                    convLoading = false;
+                }
+            }
+
+            /* 刚发出/刚收到一条时不等接口就改第二栏 (预览与时间就地改, 会话顶到最前) */
+            function touchConversation(username, preview) {
+                if (!username) return;
+                const now = Date.now();
+                const hit = convList.find((c) => c.username === username);
+                if (hit) {
+                    hit.last_body = preview;
+                    hit.last_at = now;
+                    hit.last_mine = true;
+                    // 这条已经在前台看过了 → 未读抹掉 (别让角标等 5 秒轮询)
+                    if (hit.unread) {
+                        convUnread = Math.max(0, convUnread - hit.unread);
+                        hit.unread = 0;
+                    }
+                } else if (peer && peer.username === username) {
+                    convList.unshift({
+                        username: username,
+                        nickname: peer.nickname || username,
+                        avatar_url: peer.avatar_url || null,
+                        last_body: preview,
+                        last_at: now,
+                        last_mine: true,
+                        unread: 0
+                    });
+                } else {
+                    return;
+                }
+                convList.sort((a, b) => (b.last_at || 0) - (a.last_at || 0));
+                renderConversations(convList, convUnread, false);
+                // 指纹作废: 下一次真实拉取会重画一次, 与服务端那份对上 (仍然不播动画)
+                convoSig = '';
+            }
+
+            /* 慢轮询: 15 秒一次, 给「别人发了消息而我正在挂机看列表」兜底 */
+            function startConvPolling() {
+                if (convTimer) return;
+                convTimer = setInterval(() => {
+                    if (document.hidden) return;   // 页面在后台就不扰民
+                    loadConversations();           // 指纹没变会自己早退
+                }, CONV_POLL_MS);
+            }
+
+            function renderConversations(list, unread, animate) {
+                const box = $('chat-list');
+                convList = list || [];
+                convUnread = unread || 0;
+                box.innerHTML = '';
+                $('chat-list-count').textContent = convUnread ? convUnread + ' 条未读' : '';
+
+                if (!list.length) {
+                    convSeen = new Map();
+                    box.appendChild(el('p', 'editor-hint', '暂无会话。点击下方「发起私聊」开始新的对话。'));
+                    return;
+                }
+
+                /* 脉冲: 内容变了的卡片闪一下淡紫底; 「切进来」那次不闪 (每张卡都是新的) */
+                const seen = new Map();
+                list.forEach((c) => {
+                    const sig = String(c.last_body || '') + '|' + (c.last_at || 0) + '|' + (c.unread || 0);
+                    seen.set(c.username, sig);
+                    const prev = convSeen ? convSeen.get(c.username) : undefined;
+                    const pulse = !animate && prev !== undefined && prev !== sig;
+
+                    const item = el('div', 'chat-item' + (peer && peer.username === c.username ? ' is-active' : ''));
+                    if (pulse) {
+                        item.classList.add('is-pulse');
+                        item.addEventListener('animationend', (event) => {
+                            if (event.target === item) item.classList.remove('is-pulse');
+                        });
+                    }
+                    const img = document.createElement('img');
+                    img.className = 'chat-item-avatar';
+                    img.alt = '';
+                    img.loading = 'lazy';
+                    img.src = c.avatar_url || DEFAULT_AVATAR;
+                    img.onerror = () => { img.onerror = null; img.src = DEFAULT_AVATAR; };
+                    item.appendChild(img);
+
+                    const body = el('div', 'chat-item-body');
+                    const top = el('div', 'chat-item-top');
+                    top.appendChild(el('span', 'chat-item-name', c.nickname || c.username));
+                    top.appendChild(el('span', 'chat-item-time', formatChatTime(c.last_at)));
+                    body.appendChild(top);
+                    body.appendChild(el('div', 'chat-item-last', c.last_body || ''));
+                    item.appendChild(body);
+
+                    if (c.unread > 0) item.appendChild(el('span', 'chat-item-badge', String(c.unread)));
+
+                    item.onclick = () => openThread(c.username, c);
+                    box.appendChild(item);
+                });
+                convSeen = seen;   // 记下这一轮的指纹, 下次好比
+            }
+
+            /* 发起私聊 */
+            async function openPicker() {
+                let users = [];
+                // 拉名单之后才弹选人框, 这段等待挂「加载中」
+                const busy = showForaineToast({ text: I18N.t('foraine-toast.loading'), block: true });
+                try {
+                    const response = await fetch('/api/users?size=60', { cache: 'no-store' });
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.error || '加载用户失败');
+                    users = (data.users || []).filter((u) => u.username !== (me && me.username));
+                } catch (error) {
+                    showToast(error.message, 'error');
+                    return;
+                } finally {
+                    busy.close();
+                }
+                if (!users.length) { showToast('站内还没有别人', 'warn'); return; }
+
+                await confirmAction({
+                    title: '发起私聊',
+                    message: '选一个人开始聊。',
+                    confirmText: '开始',
+                    warning: '',
+                    fields: [{
+                        name: 'to',
+                        type: 'select',
+                        label: '收信人',
+                        placeholder: '选择聊天的对象',
+                        required: true,
+                        options: users.map((u) => ({ value: u.username, label: u.nickname || u.username }))
+                    }],
+                    onConfirm: async (values) => {
+                        const target = users.find((u) => u.username === values.to);
+                        openThread(values.to, target);
+                    }
+                });
+            }
+
+            /* 一段对话 */
+            function myAvatar() {
+                return (me && me.avatar_url) || DEFAULT_AVATAR;
+            }
+
+            /* 消息内容可能是纯文字或一块附件 JSON, 解析与渲染都在 ui.js (与个人页弹窗共用) */
+
+            /* 一条消息 = 头像 + 气泡 + 时间 (mine / isNew / body 可用 options 覆盖); isNew 走滑入动画 */
+            function messageRow(data, options) {
+                const opts = options || {};
+                const mine = opts.mine !== undefined ? opts.mine : !!data.mine;
+                const row = el('div', 'chat-msg' + (mine ? ' is-mine' : '') + (opts.isNew ? ' is-new' : ''));
+                /* 右键菜单 (复制/引用/删除/撤回) 靠这四个属性认人: id 调接口, at 判 5 分钟内, body 是原文, who 是引用条的名字 */
+                if (data.id) row.dataset.id = String(data.id);
+                if (data.created_at) row.dataset.at = String(data.created_at);
+                if (data.cid || opts.cid) row.dataset.cid = String(data.cid || opts.cid);
+                row.dataset.body = String(opts.body !== undefined ? opts.body : (data.body || ''));
+                row.dataset.who = mine ? '我' : ((peer && peer.nickname) || '');
+
+                const img = document.createElement('img');
+                img.className = 'chat-msg-avatar';
+                img.alt = '';
+                img.loading = 'lazy';
+                img.src = mine ? myAvatar() : ((peer && peer.avatar_url) || DEFAULT_AVATAR);
+                img.onerror = () => { img.onerror = null; img.src = DEFAULT_AVATAR; };
+                row.appendChild(img);
+
+                const main = el('div', 'chat-msg-main');
+                const bubble = el('span', 'chat-bubble');
+                fillChatBubble(bubble, opts.body !== undefined ? opts.body : data.body);
+                main.appendChild(bubble);
+                /* 时间悬浮才显示 (见 page-chat.css), 文案用带秒的那种; 发送失败时这行换成错误信息 */
+                main.appendChild(el('span', 'chat-time', formatChatStamp(data.created_at)));
+                row.appendChild(main);
+                return row;
+            }
+
+            /* ui.js 的 document 委派删完会来报一声: 不抹缓存的话, 切走再切回来 openThread 会把那条画回去 */
+            window.foraineChatDropped = (ids) => {
+                Object.keys(msgCache).forEach((key) => {
+                    const cache = msgCache[key];
+                    if (!cache || !cache.list) return;
+                    cache.list = cache.list.filter((m) => ids.indexOf(String(m && m.id)) < 0);
+                });
+            };
+
+            async function openThread(username, info) {
+                if (!username) return;
+                peer = {
+                    username,
+                    nickname: (info && (info.nickname || info.username)) || username,
+                    avatar_url: (info && info.avatar_url) || DEFAULT_AVATAR
+                };
+                lastId = 0;
+                $('thread-name').textContent = peer.nickname;
+                $('thread-username').textContent = '@' + peer.username;
+                $('thread-avatar').src = peer.avatar_url;
+                // 点头像去 TA 的主页 (要用 <a href> 让 transition.js 走去场动画)
+                const home = $('thread-home');
+                if (home) {
+                    home.href = '/u/' + encodeURIComponent(username);
+                    home.title = peer.nickname + ' 的主页';
+                }
+                // 先拿缓存直接铺上 (没缓存才闪 loading)
+                const cache = cacheOf('c:' + username);
+                const body = $('chat-body');
+                if (cache.list.length || pendingOf('c:' + username).length) {
+                    renderMessages(cache.list, 'c:' + username);
+                    body.scrollTop = body.scrollHeight;
+                } else {
+                    body.innerHTML = '';
+                    body.appendChild(loadingState());
+                }
+                lastId = cache.lastId;
+                applyPanes();
+
+                // 地址栏跟上 (刷新/分享都还能回到这段对话)
+                try { history.replaceState(null, '', '/chat/?u=' + encodeURIComponent(username)); } catch (err) { /* 忽略 */ }
+
+                const input = $('chat-input');
+                if (input && !input.dataset.bound) {
+                    input.dataset.bound = '1';
+                    hardenField(input);
+                    input.addEventListener('keydown', (event) => {
+                        if (event.key === 'Enter' && !event.shiftKey) {
+                            event.preventDefault();
+                            sendChat();
+                        }
+                    });
+                    // 粘贴: 图片 / 文件都挂到输入框上沿; 注册在 autoGrow 之前
+                    // (autoGrow 抛异常也不能带死「粘贴」这么基础的功能)
+                    input.addEventListener('paste', (event) => {
+                        const items = (event.clipboardData && event.clipboardData.items) || [];
+                        for (let i = 0; i < items.length; i += 1) {
+                            if (items[i].kind !== 'file') continue;
+                            const file = items[i].getAsFile();
+                            if (!file) continue;
+                            event.preventDefault(); // 别把文件名当文字插进输入框
+                            attachPastedFile(file);
+                            return;
+                        }
+                    });
+                    // 输入框跟着内容长高 (它在底部 → 看起来是向上长)
+                    input.addEventListener('input', autoGrowChatInput);
+                    autoGrowChatInput();
+                }
+
+                await refreshThread(!cache.list.length);
+                await loadConversations(); // 未读角标要跟着消掉
+                startPolling();
+                if (input && !isNarrow()) input.focus();
+            }
+
+            function showList() {
+                if (!peer) return;   // 已经在列表上了 (移动端连点 / 返回键), 不要再刷一遍
+                peer = null;
+                stopPolling();
+                try { history.replaceState(null, '', '/chat/'); } catch (err) { /* 忽略 */ }
+                applyPanes();
+            // 从对话返回列表 = 「切进私聊界面」, 这一次播卡片动画
+                loadConversations(true, { animate: true });
+            }
+
+            // 消息轮询: 只有打开着一段对话时跑, 每 5 秒增量拉一次
+            function startPolling() {
+                stopPolling();
+                pollTimer = setInterval(() => {
+                    if (!peer) { stopPolling(); return; }
+                    refreshThread(false);
+                }, POLL_MS);
+            }
+
+            function stopPolling() {
+                clearInterval(pollTimer);
+                pollTimer = null;
+            }
+
+            /* 拉一段对话: force = 全量拉; 否则走增量, 只问 id 大于手上最后一条的那几条 */
+            async function refreshThread(force) {
+                if (!peer) return;
+                const username = peer.username;
+                const cache = cacheOf('c:' + username);
+                const incremental = !force && cache.lastId > 0;
+                try {
+                    const url = '/api/chat?username=' + encodeURIComponent(username)
+                        + (incremental ? '&after=' + cache.lastId : '');
+                    const response = await fetch(url, { cache: 'no-store' });
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.error || '加载失败');
+                    if (!peer || peer.username !== username) return; // 期间切走了
+
+                    const box = $('chat-body');
+                    /* 本地删掉的那些 (右键 → 删除) 服务端不知道, 每次拉回来都要在客户端过一道 */
+                    const raw = (data.messages || []).filter((m) => !isChatMessageHidden(m.id));
+                    /* 撤回的旧消息 id 小于 after, 不在上面那段里, 服务端在增量里单独带回 id 列表 */
+                    if (data.recalled && data.recalled.length) dropChatRows(data.recalled);
+
+                    /* 去重: 乐观上屏那条轮询又会拉回来, 已画着的只补属性 (否则消息出现两次) */
+                    const incoming = [];
+                    raw.forEach((m) => {
+                        const existing = findChatRow(m);
+                        if (existing) patchChatRow(existing, m);
+                        else incoming.push(m);
+                    });
+
+                    if (incremental) {
+                        if (!raw.length) return; // 真的没新的 → 什么也不做
+                        const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 64;
+                        const prevAt = cache.list.length ? cache.list[cache.list.length - 1].created_at : 0;
+                        raw.forEach((m) => cache.list.push(m));
+                        cache.lastId = raw[raw.length - 1].id;
+                        lastId = cache.lastId;
+                        if (incoming.length) appendMessages(box, incoming, prevAt);
+                        if (atBottom) box.scrollTop = box.scrollHeight;
+                        loadConversations();
+                        return;
+                    }
+
+                    // 全量: 缓存一份, 整块重画 (打开会话 / 手动刷新)
+                    cache.list = raw.slice();
+                    cache.lastId = raw.length ? raw[raw.length - 1].id : 0;
+                    lastId = cache.lastId;
+                    if (box.querySelector('.chat-empty') || !box.querySelector('.chat-msg') || force) {
+                        renderMessages(cache.list, 'c:' + username);
+                        box.scrollTop = box.scrollHeight;
+                    }
+                } catch (error) {
+                    if (force) {
+                        const box = $('chat-body');
+                        box.innerHTML = '';
+                        box.appendChild(el('p', 'editor-hint', error.message));
+                    }
+                }
+            }
+
+            /* 一条消息 → 一个节点 (距上一条超过 5 分钟就先把时间胶囊插在前面) */
+            function messageNode(m, prevAt, isNew) {
+                const frag = document.createDocumentFragment();
+                if (!prevAt || (m.created_at - prevAt) > CHAT_TIME_GAP_MS) {
+                    frag.appendChild(el('div', 'chat-day', formatChatTime(m.created_at)));
+                }
+                frag.appendChild(messageRow(m, isNew ? { isNew: true } : undefined));
+                return frag;
+            }
+
+            function renderMessages(messages, key) {
+                const box = $('chat-body');
+                box.innerHTML = '';
+                const pend = key ? pendingOf(key) : [];
+                if (!messages.length && !pend.length) {
+                    box.appendChild(el('p', 'chat-empty', ''));
+                    return;
+                }
+                let prevAt = 0;
+                messages.forEach((m) => {
+                    box.appendChild(messageNode(m, prevAt, false));
+                    prevAt = m.created_at;
+                });
+                // 还没传完的那几条补在最后 (切走再切回来它们也得在)
+                pend.forEach((p) => {
+                    const row = messageRow({ cid: p.cid, body: p.body, created_at: p.created_at, mine: true }, { mine: true });
+                    if (p.failed) {
+                        row.classList.add('is-failed');
+                        const time = row.querySelector('.chat-time');
+                        if (time) time.textContent = '发送失败';
+                    }
+                    box.appendChild(row);
+                });
+            }
+
+            /* 增量只追加、不重画整块 (滚动位置与动画才不会打架); prevAt 用来接上时间胶囊 */
+            function appendMessages(box, list, prevAt) {
+                const empty = box.querySelector('.chat-empty');
+                if (empty) empty.remove();
+                let at = prevAt || 0;
+                list.forEach((m) => {
+                    box.appendChild(messageNode(m, at, true));
+                    at = m.created_at;
+                });
+            }
+
+            /* 附件 (粘贴 / 按钮上传): 实体都在 ui.js (与个人页弹窗共用), 本页只管「当前附件」与那层 DOM */
+            const attachState = { att: null };
+
+            function renderAttachChip() {
+                renderChatAttach(document.querySelector('.chat-send-box'), attachState.att, () => clearAttach(true));
+            }
+
+            // revokePreview = true 时连本地预览地址一起放掉 (发送后气泡里已经换成真地址)
+            function clearAttach(revokePreview) {
+                if (revokePreview && attachState.att && attachState.att.previewUrl) {
+                    URL.revokeObjectURL(attachState.att.previewUrl);
+                }
+                attachState.att = null;
+                renderAttachChip();
+            }
+
+            function attachPastedFile(file) {
+                return setChatAttach(attachState, file, document.querySelector('.chat-send-box'), renderAttachChip);
+            }
+
+            /* 工具行的图片 / 文件: 直接用对应 accept 开系统选择器 (不弹选择类型那个框), 选完立刻发 */
+            function openChatPick(kind) {
+                pickChatFile({
+                    kind: kind === 'file' ? 'file' : 'image',
+                    onPick: (file) => { if (attachPastedFile(file)) sendChat(); }
+                });
+            }
+
+            /* 表情面板: 开关那个网格, 点一张直接发出去 */
+            function toggleStickers() {
+                toggleStickerPanel(document.querySelector('.chat-send-box'), (url) => sendSticker(url));
+            }
+
+            // 发表情: 不用上传 —— 它本身就是公开地址, 直接当图片消息发出去
+            function sendSticker(url) {
+                if (!peer || !url) return;
+                const username = peer.username;
+                const cid = newChatCid();
+                const row = appendSentMessage(chatStickerBody(url), cid);
+                touchConversation(username, '[图片]');
+                syncSentMessage(row, username, '', null, null, url, cid);
+            }
+
+            /* 输入框跟着内容长高, 最多 5 行 (在底部 → 看起来是向上长); 实体在 ui.js 的 autoGrowLines */
+            function autoGrowChatInput() {
+                autoGrowLines($('chat-input'), 5);
+            }
+
+            /* 乐观发送: 一按下就上屏 + 播动画, 后台再传附件与发消息, 回来把这条换成真身 (不重画整块) */
+            function appendSentMessage(body, cid) {
+                const box = $('chat-body');
+                if (!box) return null;
+                const empty = box.querySelector('.chat-empty');
+                if (empty) empty.remove();
+                const row = messageRow({ body: body, created_at: Date.now() }, { mine: true, isNew: true, cid: cid });
+                box.appendChild(row);
+                box.scrollTop = box.scrollHeight;
+                return row;
+            }
+
+            async function syncSentMessage(row, username, text, att, quote, stickerUrl, cid) {
+                try {
+                    let body = text;
+                    if (att) {
+                        // 进度写回气泡里那张卡片的水位层 (见 ui.js 的 setChatFileProgress)
+                        const data = await uploadChatAttach(att, (pct) => setChatFileProgress(row, pct));
+                        body = chatAttachBody(text, att, data.url, { id: data.id });
+                    } else if (stickerUrl) {
+                        // 表情: 已经是一个公开地址, 不再上传
+                        body = chatStickerBody(stickerUrl);
+                    } else if (quote) {
+                        // 引用: 把「引用哪条 + 我说的话」打包进 body 的 JSON (见 ui.js 的 chatQuoteBody)
+                        body = chatQuoteBody(text, quote);
+                    }
+                    const res = await apiPost('/api/chat', { username: username, body: body, cid: cid });
+                    const msg = res.message || null;
+                    // 传完了: 摘掉「发送中」那条
+                    dropPending(username, cid);
+                    /* 真身贴回还活着的那一行: 没切走 = 原来那行, 切走过 = 重画的那行 (按 cid 找) */
+                    const live = (row && row.isConnected)
+                        ? row
+                        : document.querySelector('.chat-body .chat-msg[data-cid="' + cid + '"]');
+                    if (live) {
+                        live.classList.remove('is-new');
+                        if (msg) {
+                            const bubble = live.querySelector('.chat-bubble');
+                            if (bubble) fillChatBubble(bubble, msg.body);
+                            const time = live.querySelector('.chat-time');
+                            if (time) time.textContent = formatChatStamp(msg.created_at);
+                            /* 真身回来了: 右键菜单用的属性也要更新 (id 决定能不能撤回 / 另存为) */
+                            patchChatRow(live, msg);
+                        }
+                    }
+                    if (att && att.previewUrl) URL.revokeObjectURL(att.previewUrl);
+                    // 缓存里也补一条, 并推高 lastId —— 下一轮轮询就不会把它再拉一遍
+                    if (msg && peer && peer.username === username) {
+                        const cache = cacheOf('c:' + username);
+                        cache.list.push(msg);
+                        if (msg.id) { cache.lastId = msg.id; lastId = msg.id; }
+                    }
+                    loadConversations();
+                } catch (error) {
+                    // 失败就把气泡标红 + 时间那行换成错误 (不静默丢掉这句话)
+                    failPending(username, cid);   // 切走再切回来也要保持「失败」的样子
+                    if (row && row.isConnected) {
+                        row.classList.add('is-failed');
+                        failChatFileUpload(row);   // 「上传中」→「上传失败」(水位停在原地)
+                        const time = row.querySelector('.chat-time');
+                        if (time) time.textContent = '发送失败：' + (error.message || '未知错误');
+                    }
+                    showToast(error.message, 'error');
+                }
+            }
+
+            function sendChat() {
+                const input = $('chat-input');
+                if (!input || !peer) return;
+                const box = document.querySelector('.chat-send-box');
+                const text = input.value.trim();
+                const att = attachState.att;
+                const quote = currentChatQuote(box);
+                if (!text && !att && !quote) return;
+
+                const username = peer.username;
+                // pending: 客户端标记「这条还在上传」→ 气泡里就是那张灰边 + 水位波浪的卡片
+                const preview = att ? chatAttachBody(text, att, '', { pending: true })
+                    : (quote ? chatQuoteBody(text, quote) : text);
+                // 客户端 id: 靠它跟轮询拉回来的同一条合体 (见 ui.js 的去重)
+                const cid = newChatCid();
+                // 记一份「发送中」的 —— 切走再切回来重画时要把它补上 (见 pendingMsgs)
+                pendingOf('c:' + username).push({ cid: cid, body: preview, created_at: Date.now() });
+                const row = appendSentMessage(preview, cid);
+                // 第二栏就地更新 (不等上传与接口), 上传与入库全在后台
+                touchConversation(username, chatPreviewTextClient(preview));
+                input.value = '';
+                autoGrowChatInput();
+                if (quote) takeChatQuote(box);   // 引用条用掉了就收起来
+                // 注意: 别 revoke 预览地址 —— 气泡里正拿它显图
+                if (att) clearAttach(false);
+                syncSentMessage(row, username, text, att, att ? null : quote, null, cid);
+            }
+
+
+            /* 启动 */
+            document.addEventListener('DOMContentLoaded', async () => {
+                me = await getCurrentUser();
+                if (!me) {
+                    // 私信必须登录 (页面本身不带登录守位, 免得把 ?u= 参数冲掉)
+                    location.replace('/login.html');
+                    return;
+                }
+                applyChatBackground(me);
+                // 图标栏最下面那颗头像
+                const railAvatar = $('rail-avatar');
+                if (railAvatar) {
+                    railAvatar.src = me.avatar_url || DEFAULT_AVATAR;
+                    railAvatar.onerror = () => { railAvatar.onerror = null; railAvatar.src = DEFAULT_AVATAR; };
+                    const railMe = $('rail-me');
+                    if (railMe) railMe.title = me.nickname || me.username;
+                }
+                const params = new URLSearchParams(location.search);
+                const want = params.get('u');
+
+                applyPanes();
+                // 首次进入私信界面 → 这一次播卡片动画 (之后更新都不播)
+                await loadConversations(true, { animate: true });
+                if (want && want !== me.username) openThread(want);
+                startConvPolling();   // 列表自己的慢轮询 (15s), 与消息轮询各管各的
+                window.addEventListener('resize', applyPanes);
+            });
+
+            /* 聊天背景: 只有自己看得到, 直接拿 /api/me 那份; 样式在 main.css 的 html.has-chat-bg */
+            function applyChatBackground(user) {
+                const url = user && user.chat_bg;
+                const blur = (user && user.chat_blur) || 0;
+                const root = document.documentElement;
+                if (!url) return;
+                root.style.setProperty('--chat-img', 'url("' + String(url).replace(/"/g, '%22') + '")');
+                root.style.setProperty('--chat-blur', (blur / 100 * 24).toFixed(1) + 'px');
+                root.classList.add('has-chat-bg');
+            }
+        </script>
+    </body>
+</html>

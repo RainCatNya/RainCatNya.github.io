@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+    <head>
+        <!-- 元数据定义 -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <base href="/">
+        <title>星历 · Foraine</title>
+        <meta name="description" content="Foraine 的星历 —— 一年十二月、每月三十日。">
+
+        <link rel="icon" type="image/x-icon" href="/assets/Icon/foraine-icon-v2.png">
+        <link rel="stylesheet" href="/style/main.css?v=40">
+        <!-- 右下角的「加载中」牌子 (showBusyNote) -->
+        <link rel="stylesheet" href="/style/page-foraine-toast.css?v=40">
+        <link rel="stylesheet" href="/style/page-aceris.css?v=40">
+        <script>
+            /* 窄屏样式按需加载 (与其它页面同一套) */
+            if (matchMedia('(max-width: 900px)').matches) {
+                const mediaLink = document.createElement('link');
+                mediaLink.rel = 'stylesheet';
+                mediaLink.href = '/style/main-media.css';
+                document.head.appendChild(mediaLink);
+            }
+        </script>
+        <script src="/script/i18n.js?v=40" defer></script>
+        <script src="/script/core.js?v=40" defer></script>
+        <script src="/script/ui.js?v=40" defer></script>
+        <script src="/script/transition.js?v=40" defer></script>
+        <script src="/script/header.js?v=40" defer></script>
+        <script src="/script/layout.js?v=40" defer></script>
+        <script src="/script/rain-sound.js?v=40" defer></script>
+        <!-- 历法内核 (纯函数, 有回归测试), 页面逻辑在下面那段内联脚本里 -->
+        <script src="/script/aceris-calendar.js?v=40" defer></script>
+
+        <script>
+            /*
+              星历页
+              内容: 一个月一张 6 列 × 5 行的网格 + 左右翻月 + 选中那一日的详情面板
+              依赖: aceris-calendar.js(历法运算) / core.js
+            */
+            // 星历没有「周」, 网格按 6 列 × 5 行铺满 30 天 (窄屏 5 列 × 6 行, 一样正好铺满)
+            // 每格里的小公历日期只是对照, 不是星期对齐
+            // 历法运算一律走 aceris-calendar.js, 这里只负责画
+
+            let viewYear = 1;
+            let viewMonth = 1;
+            let pickedDelta = null;
+
+            const cellEl = (tag, cls, text) => {
+              const node = document.createElement(tag);
+              if (cls) node.className = cls;
+              if (text !== undefined) node.textContent = text;
+              return node;
+            };
+
+            /* 今天的星历日期 (切日按内核里的 UTC+8) */
+            const todayDate = () => {
+              const t = acerisToday();
+              return acerisFromGregorian(t.y, t.m, t.d);
+            };
+
+            // 画当月网格: 今天 / 选中日 / 节日各一个态
+            function renderGrid() {
+              const grid = document.getElementById('grid');
+              grid.innerHTML = '';
+              const days = acerisMonthDays(viewYear, viewMonth);
+              const today = todayDate();
+              days.forEach((info) => {
+                const cell = cellEl('button', 'aceris-cell');
+                cell.type = 'button';
+                cell.dataset.delta = String(info.delta);
+                if (info.delta === today.delta) cell.classList.add('is-today');
+                if (info.delta === pickedDelta) cell.classList.add('is-picked');
+                if (info.festival) cell.classList.add('is-festival');
+                cell.appendChild(cellEl('span', 'aceris-cell-day', info.dayName));
+                cell.appendChild(cellEl('span', 'aceris-cell-greg', info.gregorian.m + '/' + info.gregorian.d));
+                if (info.festival) cell.appendChild(cellEl('span', 'aceris-cell-fest', info.festival.name));
+                cell.setAttribute('aria-label', acerisDateText(info) + '（公历 ' + info.gregorianText + '）');
+                cell.onclick = () => {
+                  pickedDelta = info.delta;
+                  renderGrid();
+                  renderDayPanel();
+                };
+                grid.appendChild(cell);
+              });
+            }
+
+            // 画年月标题与公历区间, 并决定「上一月」是否禁用
+            function renderHead() {
+              document.getElementById('year-text').textContent = acerisNumberText(viewYear) + '历';
+              document.getElementById('month-text').textContent = acerisMonthName(viewMonth);
+              // 一历正月之前没有历法可翻 (纪元从 2025-11-17 开始)
+              const atStart = viewYear === 1 && viewMonth === 1;
+              document.getElementById('prev-month').disabled = atStart;
+              const days = acerisMonthDays(viewYear, viewMonth);
+              document.getElementById('month-range').textContent =
+                '公历 ' + days[0].gregorianText + ' — ' + days[29].gregorianText;
+            }
+
+            // 画选中那一日的详情面板 (没选就整块收起)
+            function renderDayPanel() {
+              const panel = document.getElementById('day-panel');
+              if (pickedDelta === null) {
+                panel.hidden = true;
+                return;
+              }
+              const date = acerisFromDelta(pickedDelta);
+              const gregorian = acerisGregorianFromDelta(pickedDelta);
+              const festival = acerisFestivalOf(date.month, date.day);
+              const today = todayDate();
+              panel.hidden = false;
+              document.getElementById('day-title').textContent =
+                acerisMonthName(date.month) + acerisDayName(date.day);
+              document.getElementById('day-full').textContent = acerisDateText(date);
+              document.getElementById('day-greg').textContent = acerisGregorianText(gregorian);
+              document.getElementById('day-today-tag').hidden = date.delta !== today.delta;
+              const fest = document.getElementById('day-fest');
+              fest.hidden = !festival;
+              if (festival) {
+                fest.textContent = festival.name + '　' + festival.note;
+              }
+            }
+
+            // 翻到某年某月, 顺带决定选中日 (不给就清空选中)
+            function showMonth(year, month, pickDelta) {
+              viewYear = year;
+              viewMonth = month;
+              pickedDelta = pickDelta === undefined ? null : pickDelta;
+              renderHead();
+              renderGrid();
+              renderDayPanel();
+            }
+
+            // 回到今天
+            function goToday() {
+              const today = todayDate();
+              showMonth(today.year, today.month, today.delta);
+            }
+
+            // 等共享脚本(defer)加载完成后再初始化, 绑定翻月与「回到今天」
+            document.addEventListener('DOMContentLoaded', () => {
+              const today = acerisToday();
+              const date = acerisFromGregorian(today.y, today.m, today.d);
+              document.getElementById('hero-today').textContent =
+                '今天是 ' + acerisDateText(date) + '（公历 ' + acerisGregorianText(today) + '）';
+              document.getElementById('prev-month').onclick = () => {
+                const next = acerisShiftMonth(viewYear, viewMonth, -1);
+                showMonth(next.year, next.month);
+              };
+              document.getElementById('next-month').onclick = () => {
+                const next = acerisShiftMonth(viewYear, viewMonth, 1);
+                showMonth(next.year, next.month);
+              };
+              document.getElementById('to-today').onclick = goToday;
+              goToday();
+            });
+        </script>
+    </head>
+
+    <body class="page-aceris">
+
+        <!-- 星幕: 铺满视口的缓慢闪烁 (纯 CSS, 不吃鼠标事件) -->
+        <div class="aceris-stars" aria-hidden="true"></div>
+
+        <div class="page-layout">
+
+            <header class="aceris-hero No-slc" data-anim>
+                <h1 class="aceris-title font-hand">星历</h1>
+                <p class="aceris-sub">Aceris</p>
+                <p class="aceris-today" id="hero-today"></p>
+            </header>
+
+            <section class="aceris-card" data-anim>
+                <div class="aceris-bar">
+                    <button type="button" class="aceris-nav" id="prev-month" aria-label="上一个月">‹</button>
+                    <div class="aceris-now No-slc">
+                        <p class="aceris-year" id="year-text">一历</p>
+                        <p class="aceris-month" id="month-text">正月</p>
+                    </div>
+                    <button type="button" class="aceris-nav" id="next-month" aria-label="下一个月">›</button>
+                </div>
+                <p class="aceris-range No-slc" id="month-range"></p>
+
+                <div class="aceris-grid" id="grid"></div>
+
+                <div class="aceris-foot">
+                    <p class="aceris-hint">点选一日查看细节</p>
+                    <button type="button" class="btn-outline" id="to-today">回到今天</button>
+                </div>
+            </section>
+
+            <section class="aceris-day No-slc" id="day-panel" hidden data-anim>
+                <div class="aceris-day-main">
+                    <p class="aceris-day-title font-hand" id="day-title"></p>
+                    <p class="aceris-day-full" id="day-full"></p>
+                    <span class="aceris-day-tag" id="day-today-tag" hidden>今天</span>
+                </div>
+                <div class="aceris-day-side">
+                    <p class="aceris-key">公历</p>
+                    <p class="aceris-value" id="day-greg"></p>
+                    <p class="aceris-fest" id="day-fest" hidden></p>
+                </div>
+            </section>
+            <div class="spacer-flex"></div>
+
+        </div>
+
+    </body>
+</html>

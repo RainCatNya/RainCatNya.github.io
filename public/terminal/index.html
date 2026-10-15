@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta content="width=device-width, initial-scale=1.0" name="viewport">
+        <meta name="description" content="Foraine 终端">
+        <meta name="theme-color" content="#000000">
+        <title>终端 · Foraine</title>
+
+        <link rel="icon" type="image/x-icon" href="/assets/Icon/foraine-icon-v2.png">
+        <link rel="stylesheet" href="/style/main.css?v=40">
+        <link rel="stylesheet" href="/style/page-terminal.css?v=40">
+        <script src="/script/i18n.js?v=40" defer></script>
+        <script src="/script/core.js?v=40" defer></script>
+        <script src="/script/transition.js?v=40" defer></script>
+        <!-- 文章卡模态框要把正文按 Markdown 画 (highlight 与 latex 要先于 markdown 加载) -->
+        <script src="/script/highlight.js?v=40" defer></script>
+        <script src="/script/latex.js?v=40" defer></script>
+        <script src="/script/markdown.js?v=40" defer></script>
+        <script src="/script/terminal.js?v=40" defer></script>
+    </head>
+
+    <body class="page-terminal">
+        <div class="term-world" id="term-world">
+            <canvas class="term-world-grid"></canvas>
+            <div class="term-world-panels">
+                <!-- 父节点与子节点之间那根细线: 两端由 JS 按形状边界算 (颜色三档见 page-terminal.css) -->
+                <svg class="term-links" aria-hidden="true">
+                    <line data-link="terminal.iota.left-1"></line>
+                    <line data-link="terminal.iota.right-1"></line>
+                </svg>
+                <!-- 0,0: 主面板 (终端图标 → 回首页), 恒为可点 -->
+                <div class="term-panel term-panel-hex" data-cell="0,0" data-state="active">
+                    <i class="term-panel-glow" aria-hidden="true"></i>
+                    <div class="term-panel-face">
+                        <button type="button" class="term-node" onclick="pageTransitionTo('/')" data-anim
+                                aria-label="返回首页" data-i18n-title="terminal.home">
+                            <i class="term-panel-logo" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </div>
+                <!-- 0,1 ~ 0,6: 六个权限阶段, 环着主面板摆 (data-slot = 几点钟方向, 12 点起顺时针);
+                     data-attribute = 持有这个属性就算「已完成」 -->
+                <div class="term-panel term-panel-key" data-cell="0,1" data-slot="1" data-attribute="foraine.iota" data-state="active">
+                    <i class="term-panel-glow" aria-hidden="true"></i>
+                    <div class="term-panel-face">
+                        <button type="button" class="term-node term-node-key" data-anim
+                                aria-label="Iota" title="Iota">
+                            <span class="term-panel-name">Iota</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="term-panel term-panel-tier" data-cell="0,2" data-slot="2" data-attribute="foraine.vapor">
+                    <i class="term-panel-glow" aria-hidden="true"></i>
+                    <div class="term-panel-face">
+                        <span class="term-panel-name">Vapor</span>
+                    </div>
+                </div>
+                <div class="term-panel term-panel-tier" data-cell="0,3" data-slot="3" data-attribute="foraine.xenon">
+                    <i class="term-panel-glow" aria-hidden="true"></i>
+                    <div class="term-panel-face">
+                        <span class="term-panel-name">Xenon</span>
+                    </div>
+                </div>
+                <div class="term-panel term-panel-tier" data-cell="0,4" data-slot="4" data-attribute="foraine.wreck">
+                    <i class="term-panel-glow" aria-hidden="true"></i>
+                    <div class="term-panel-face">
+                        <span class="term-panel-name">Wreck</span>
+                    </div>
+                </div>
+                <div class="term-panel term-panel-tier" data-cell="0,5" data-slot="5" data-attribute="foraine.omega">
+                    <i class="term-panel-glow" aria-hidden="true"></i>
+                    <div class="term-panel-face">
+                        <span class="term-panel-name">Omega</span>
+                    </div>
+                </div>
+                <!-- 还没定名字的这一块: 没属性可挂, 永远锁着 -->
+                <div class="term-panel term-panel-tier" data-cell="0,6" data-slot="6">
+                    <i class="term-panel-glow" aria-hidden="true"></i>
+                    <div class="term-panel-face">
+                        <span class="term-panel-name">？？？</span>
+                    </div>
+                </div>
+                <!-- Iota 两肩那两张平行四边形卡 (11 点 / 1 点方向各一张, 离 Iota 面板 30px):
+                     点开是「文章集」——左边一列 quotekey 卡片, 右边是对应的正文 -->
+                <div class="term-card" data-key="terminal.iota.left-1" data-side="left" data-parent="0,1">
+                    <button type="button" class="term-card-btn" aria-label="文章" title="文章">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H19v15H6.5A2.5 2.5 0 0 0 4 20.5z"></path><path d="M4 18.5V5.5"></path><path d="M8 7.5h7M8 11h5"></path></svg>
+                    </button>
+                </div>
+                <div class="term-card" data-key="terminal.iota.right-1" data-side="right" data-parent="0,1">
+                    <button type="button" class="term-card-btn" aria-label="文章" title="文章">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H19v15H6.5A2.5 2.5 0 0 0 4 20.5z"></path><path d="M4 18.5V5.5"></path><path d="M8 7.5h7M8 11h5"></path></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

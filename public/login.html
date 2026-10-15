@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+
+<html lang="zh">
+    <head>
+        <!-- 元数据定义 -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <base href="/">
+        <title>Foraine 登录</title>
+
+        <!-- 加载资源 -->
+        <link rel="icon" type="image/x-icon" href="assets/Icon/foraine-icon-v2.png">
+        <link rel="stylesheet" href="/style/main.css?v=40">
+        <link rel="stylesheet" href="/style/page-auth.css?v=40">
+        <!-- 右下角的「加载中」牌子 (showBusyNote) -->
+        <link rel="stylesheet" href="/style/page-foraine-toast.css?v=40">
+        <!-- 窄屏样式按需加载: 宽屏下连请求都不发 (只写 <link media> 的 Chrome 仍会下载, 所以用脚本判断) -->
+        <script>
+            /* 桌面端默认缩放已整体删除 (配套的 foraine_zoom 标记 / ui-zoom-off 也一并没了), 别加回来 */
+            if (matchMedia('(max-width: 900px)').matches) {
+                const mediaLink = document.createElement('link');
+                mediaLink.rel = 'stylesheet';
+                mediaLink.href = '/style/main-media.css';
+                document.head.appendChild(mediaLink);
+            }
+        </script>
+        <script src="/script/i18n.js?v=40" defer></script>
+        <script src="/script/core.js?v=40" defer></script>
+        <script src="/script/ui.js?v=40" defer></script>
+        <script src="/script/transition.js?v=40" defer></script>
+        <script src="/script/header.js?v=40" defer></script>
+        <script src="/script/layout.js?v=40" defer></script>
+        <script src="/script/rain-sound.js?v=40" defer></script>
+    </head>
+
+    <body class="page-auth">
+
+        <!-- 背景: 卡片自己就是画面, 全站的紫色柔光已关 (见 main.css 的 body.page-auth::before) -->
+
+        <!-- 页面骨架: 整屏居中双栏卡片 -->
+        <main class="auth-layout">
+            <!-- 入场动画只给框体: 两个面板各自飘会显得散 -->
+            <section class="auth-card" data-anim>
+
+                <!-- 左图像区: 图铺满整栏, 站名压在左下角 -->
+                <aside class="auth-brand">
+                    <img class="auth-cover" src="assets/img/BlueNightSky-cover.jpg" alt="">
+                    <div class="auth-brand-text">
+                        <img class="auth-logo" src="assets/Icon/foraine-icon-v2.png" alt="Foraine">
+                        <h1 class="auth-title">Foraine</h1>
+                        <p class="auth-welcome">欢迎回来，旅人</p>
+                    </div>
+                </aside>
+
+                <!-- 右表单区 -->
+                <section class="auth-form">
+
+                    <!-- 登录视图 -->
+                    <div id="login-view" class="auth-view">
+                        <h2 class="auth-view-title">登录</h2>
+                        <div class="spacer-xs"></div>
+
+                        <div class="field">
+                            <input id="login-username" autocomplete="new-password" placeholder="用户名">
+                            <label for="login-username">用户名</label>
+                        </div>
+
+                        <div class="field">
+                            <input id="login-password" type="password" autocomplete="new-password" placeholder="密码">
+                            <label for="login-password">密码</label>
+                        </div>
+                    </div>
+
+                    <!-- 注册视图 -->
+                    <div id="register-view" class="auth-view" hidden>
+                        <h2 class="auth-view-title">注册</h2>
+                        <div class="spacer-xs"></div>
+
+                        <div class="field">
+                            <input id="reg-username" maxlength="20" autocomplete="off" placeholder="用户名">
+                            <label for="reg-username">用户名</label>
+                        </div>
+                        <!-- 用户名规则实时提示 (规则与 worker.js 的 checkUsername 同一套) -->
+                        <p class="editor-hint" id="reg-username-hint"></p>
+
+                        <div class="field">
+                            <input id="reg-password" type="password" placeholder="密码">
+                            <label for="reg-password">密码</label>
+                        </div>
+
+                        <div class="field">
+                            <input id="reg-password2" type="password" placeholder="确认密码">
+                            <label for="reg-password2">确认密码</label>
+                        </div>
+
+                        <div class="field">
+                            <input id="reg-email" placeholder="邮箱">
+                            <label for="reg-email">邮箱</label>
+                        </div>
+                        <!-- 邮箱必填, 验证之前不能修改 -->
+                        <p class="editor-hint">必填：用来验证身份、找回密码；<strong>验证之前不能修改</strong>，注册时请核对清楚</p>
+                    
+                        <label class="auth-agree">
+                            <input type="checkbox" id="reg-agree">
+                            <span class="auth-note">我已阅读并同意 <span class="auth-link" onclick="showAgreement()">用户协议</span></span>
+                        </label>
+                    </div>
+
+                    <!-- 提示一律走底部 Toast, 页面里不留状态行 -->
+
+                    <!-- 第三方入口: 紧跟当前表单字段 (两个视图共用一份, 切到注册也跟着往下移) -->
+                    <div class="auth-oauth">
+                        <button type="button" class="btn-gh" onclick="startOauth('github')">
+                            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.73.5.5 5.73.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56 0-.28-.01-1.02-.02-2-3.2.7-3.88-1.54-3.88-1.54-.53-1.34-1.29-1.7-1.29-1.7-1.05-.72.08-.71.08-.71 1.17.08 1.78 1.2 1.78 1.2 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11.1 11.1 0 0 1 2.9-.39c.98 0 1.97.13 2.9.39 2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.42-2.69 5.39-5.25 5.68.41.36.78 1.06.78 2.14 0 1.55-.01 2.8-.01 3.18 0 .31.21.68.8.56A11.51 11.51 0 0 0 23.5 12C23.5 5.73 18.27.5 12 .5z"></path></svg>
+                            <span>通过 GitHub 登录</span>
+                        </button>
+                    </div>
+
+                    <!-- 底部: 操作在上、切换在下 (margin-top:auto 推到底) -->
+                    <footer class="auth-form-foot">
+                        <div class="auth-actions">
+                            <button type="button" class="btn-outline" onclick="pageTransitionTo('/index.html')">返回</button>
+                            <button type="button" id="submit-btn" class="btn" onclick="submit()">登录</button>
+                        </div>
+                        <div class="spacer-xs"></div>
+                        <div class="auth-toggle">
+                            <span id="toggle-text" class="auth-note">没有账户？</span>
+                            <button type="button" id="toggle-btn" class="auth-link-btn" onclick="toggleMode()">注册</button>
+                        </div>
+                    </footer>
+
+                </section>
+            </section>
+        </main>
+
+        <script>
+            /*
+              登录 / 注册页
+              内容: 两套表单切换 / 用户名规则与占用校验 / GitHub OAuth 回跳与错误提示 / 用户协议
+              依赖: core.js(checkUsername, isValidEmailAddress, initAuthGuard, openPasswordResetDialog)
+                    ui.js(showToast, showMessage, confirmAction)
+            */
+
+            let mode = 'login'; // 当前模式: 'login' | 'register'
+
+            // 后端 OAuth 失败会带 ?error=xxx 跳回来, 这里映射成提示文案
+            const OAUTH_ERRORS = {
+              github_unconfigured: '站点尚未配置 GitHub 登录',
+              github_state: '登录校验超时, 请重新试一次',
+              github_token: 'GitHub 授权失败, 请重新试一次',
+              github_user: '读取 GitHub 资料失败, 请重新试一次',
+              github_conflict: '这个 GitHub 账号已经绑定过其他账户了',
+              github_error: 'GitHub 登录出错，请稍后再试'
+            };
+
+            // 跳第三方授权页 (跨站跳转, 不能走 pageTransitionTo)
+            function startOauth(provider) {
+              window.location.href = '/api/auth/' + provider;
+            }
+
+            // 已登录用户无需再登录, 直接回到首页 (含 bfcache 处理)
+            document.addEventListener('DOMContentLoaded', () => {
+              initAuthGuard({ redirectIfAuthed: '/index.html' });
+
+              // 用户名规则提示: 一进来先摆上「规则」那句, 打字时实时重算
+              refreshUsernameHint();
+              const nameInput = document.getElementById('reg-username');
+              if (nameInput) nameInput.addEventListener('input', refreshUsernameHint);
+
+              // 忘了密码的人是从邮件里的链接落到这里的 (?reset=<令牌>) → 弹重置密码框
+              openPasswordResetDialog(new URLSearchParams(location.search).get('reset'));
+
+              const errKey = new URLSearchParams(location.search).get('error');
+              if (errKey && OAUTH_ERRORS[errKey]) {
+                notify(OAUTH_ERRORS[errKey]);
+              }
+            });
+
+            /* asyfunc 提交 JSON, 非 2xx 一律抛错 */
+            async function postJSON(url, data) {
+              const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+              });
+              const result = await response.json().catch(() => ({}));
+              if (!response.ok) {
+                throw new Error(result.error || `HTTP ${response.status}`);
+              }
+              return result;
+            }
+
+            /* 提示一律走底部 Toast (kind: 'error' | 'warn' | 'ok') */
+            function notify(text, kind) {
+              showToast(text, kind || 'error');
+            }
+
+            // 在登录 / 注册两个视图之间切换
+            function toggleMode() {
+              const toRegister = mode === 'login';
+              mode = toRegister ? 'register' : 'login';
+              document.getElementById('login-view').hidden = toRegister;
+              document.getElementById('register-view').hidden = !toRegister;
+              document.getElementById('toggle-text').textContent = toRegister ? '已有账户？' : '没有账户？';
+              document.getElementById('toggle-btn').textContent = toRegister ? '登录' : '注册';
+              document.getElementById('submit-btn').textContent = toRegister ? '注册' : '登录';
+              if (toRegister) refreshUsernameHint();
+            }
+
+            // 用户名提示: 空着显示规则 / 格式与保留字不合规标红 / 合规再问一句占用情况
+            // 拿不到校验结果就不说「能用」, 宁可说「正在检查..」
+            let nameCheckSeq = 0;
+            let nameCheckTimer = 0;
+
+            function refreshUsernameHint() {
+              const hint = document.getElementById('reg-username-hint');
+              if (!hint) return;
+              const value = document.getElementById('reg-username').value.trim();
+              hint.classList.remove('text-danger', 'text-ok');
+              if (!value) {
+                hint.textContent = '3–20 位，只能用半角字母、数字、下划线（_）、短横线（-）';
+                return;
+              }
+              const check = checkUsername(value);
+              if (!check.ok) {
+                hint.classList.add('text-danger');
+                hint.textContent = check.error;
+                return;
+              }
+              // 防抖 300ms: 打字比请求快, 别每敲一下就问一次
+              const seq = ++nameCheckSeq;
+              clearTimeout(nameCheckTimer);
+              hint.textContent = '正在检查这个名字有没有人用…';
+              nameCheckTimer = setTimeout(async () => {
+                let data = null;
+                try {
+                  const response = await fetch('/api/username/check?username=' + encodeURIComponent(value), { cache: 'no-store' });
+                  data = await response.json();
+                } catch (error) {
+                  data = null;
+                }
+                if (seq !== nameCheckSeq) return; // 已经打新字了 → 这个结果作废
+                hint.classList.remove('text-danger', 'text-ok');
+                if (!data || data.uncertain) {
+                  hint.textContent = '暂时查不了占用情况，提交时也会再拦一次';
+                  return;
+                }
+                if (!data.available) {
+                  hint.classList.add('text-danger');
+                  hint.textContent = data.reason || '用户名已被占用';
+                  return;
+                }
+                hint.classList.add('text-ok');
+                hint.textContent = data.username && data.username !== value
+                  ? '✓ 名称将为：' + data.username + '，昵称不变'
+                  : '✓ 名称可以使用';
+              }, 300);
+            }
+
+            // 按当前模式分发到 login / register
+            function submit() {
+              if (mode === 'register') register(); else login();
+            }
+
+            // asyfunc 登录: 失败不区分「用户名不存在」与「密码错」
+            async function login() {
+              const username = document.getElementById('login-username').value.trim();
+              const password = document.getElementById('login-password').value;
+              if (!username || !password) return notify('请输入正确的账号和密码');
+              try {
+                await postJSON('/api/login', { username, password });
+                pageTransitionTo('/index.html');
+              } catch (error) {
+                notify('请输入正确的账号和密码');
+              }
+            }
+
+            // asyfunc 注册: 一次只报一条错 (叠四五条 Toast 太吵), 改完一条再报下一条
+            async function register() {
+              const username = document.getElementById('reg-username').value.trim();
+              const password = document.getElementById('reg-password').value;
+              const password2 = document.getElementById('reg-password2').value;
+              const email = document.getElementById('reg-email').value.trim();
+              const agree = document.getElementById('reg-agree').checked;
+
+              // 一次只报一条 (字段级错误文字已删, 全走 Toast)
+              const nameCheck = checkUsername(username);
+              if (!nameCheck.ok) return notify(nameCheck.error);
+              if (!password) return notify('密码不能为空');
+              if (password.length < 6) return notify('密码至少 6 个字符');
+              if (password2 !== password) return notify('确认密码必须和密码相同');
+              // 邮箱是身份凭证 (注销 / 改密都要用), 且注册后验证前不能改, 所以提交前再确认一次
+              if (!email) return notify('请填写邮箱');
+              if (!isValidEmailAddress(email)) return notify('邮箱格式不正确');
+              if (!agree) return notify('请先阅读并同意用户协议', 'warn');
+
+              const emailOk = await confirmAction({
+                title: '确认邮箱',
+                message: '确定填写了正确的邮箱？这在验证前不可以再更改！\n\n' + email,
+                confirmText: '没问题',
+                warning: ''
+              });
+              if (!emailOk) return;
+
+              try {
+                await withLoading(() => postJSON('/api/register', { username, password, email }));
+                pageTransitionTo('/index.html');
+              } catch (error) {
+                notify(error.message);
+              }
+            }
+
+            /* 用户协议: 内联在页面里, 换行照旧转 <br> */
+            const AGREEMENT_HTML = [
+              '<span class="font-hand gradient-text No-slc">Foraine 用户协议</span>',
+              '',
+              '<div class="modal-doc">',
+              '最后更新日期：2026年8月30日',
+              '',
+              '1. 定义',
+              '1.1 「Foraine」（以下简称「本站」）是由 Raincat（以下简称「作者」）以「现状」（AS IS）提供的个人网站。',
+              '1.2 「用户」指注册并使用本站账号的自然人。',
+              '',
+              '2. 账号',
+              '2.1 注册需提供用户名与密码，邮箱为选填。',
+              '2.2 用户应妥善保管账号与密码，因泄露造成的后果由用户自行承担。',
+              '2.3 用户违反本协议时，作者保留暂停或终止其账号的权利。',
+              '',
+              '3. 用户内容',
+              '3.1 用户在本站发布的内容应遵守中华人民共和国法律法规。',
+              '3.2 用户不得发布违法、侵权、有害或不实的内容，并对其发布的内容自行承担责任。',
+              '',
+              '4. 数据与隐私',
+              '4.1 本站仅收集运行所必需的最小数据：用户名、邮箱（选填）、密码哈希（不可逆加密）。',
+              '4.2 本站不会将上述数据出售或提供给第三方。',
+              '',
+              '5. 免责声明',
+              '5.1 本站按「现状」和「现有」基础提供，不附带任何形式的明示或默示保证。',
+              '5.2 作者不对因使用或无法使用本站而导致的任何直接或间接损失承担责任。',
+              '',
+              '6. 协议变更',
+              '6.1 作者可在本站公示变更后的协议；用户不同意时请停止使用，继续使用视为接受。',
+              '',
+              '7. 法律管辖',
+              '7.1 本协议的解释与执行适用中华人民共和国法律。',
+              '</div>'
+            ].join('\n');
+
+            // 弹用户协议
+            function showAgreement() {
+              showMessage(AGREEMENT_HTML.replace(/\n/g, '<br>'));
+            }
+        </script>
+    </body>
+</html>

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh">
+    <head>
+        <!-- Meta -->
+        <base href="/">
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=0.8">
+        <link rel="stylesheet" href="/style/main.css?v=40">
+        <!-- 右下角的「加载中」牌子 (showBusyNote) -->
+        <link rel="stylesheet" href="/style/page-foraine-toast.css?v=40">
+        <!-- 窄屏样式按需加载: 宽屏下连请求都不发 (只写 <link media> 的 Chrome 仍会下载, 所以用脚本判断) -->
+        <script>
+            /* 桌面端默认缩放已整体删除 (配套的 foraine_zoom 标记 / ui-zoom-off 也一并没了), 别加回来 */
+            if (matchMedia('(max-width: 900px)').matches) {
+                const mediaLink = document.createElement('link');
+                mediaLink.rel = 'stylesheet';
+                mediaLink.href = '/style/main-media.css';
+                document.head.appendChild(mediaLink);
+            }
+        </script>
+        <link rel="icon" type="image/x-icon" href="assets/Icon/foraine-icon-v2.png">
+        <title>Foraine 拒绝访问</title>
+    </head>
+
+    <body class="page-denied">
+        <div class="page-top-space"></div>
+        <div align="center" id="content">
+            <img src="assets/Icon/foraine-icon-v2.png" alt="Foraine Icon">
+            <h1 id="access-title"></h1>
+            <p id="access-message"></p>
+        </div>
+
+        <script>
+            // 按 ?reason= 画不同的拒绝页
+            const params = new URLSearchParams(window.location.search);
+            const reason = params.get('reason') || 'default';
+            switch (reason) {
+                case 'mobile':
+                    content.innerHTML = `
+                        <div align="center" class="center-of-all panel panel-bare No-slc" data-anim>
+                            <img src="assets/Icon/foraine-icon-v2.png" class="hero-icon" alt="Icon">
+                            <h1>暂不支持手机端访问</h1>
+                            <p>请使用电脑端查看</p>
+                        </div>
+                        <div class="spacer-xl"></div>
+                        <p class="text-xs text-faint">其实是Raincat懒得做适配（</p>
+                    `;
+                    break
+                case '404':
+                    content.innerHTML = `
+                        <div align="center" class="center-of-all panel panel-bare No-slc" data-anim>
+                            <img src="assets/Icon/foraine-icon-v2.png" class="hero-icon" alt="Icon">
+                            <h1>页面不存在</h1>
+                            <p>你所访问的页面迷失于星海中了..</p>
+                        </div>
+                    `;
+                    break
+                case 'denied':
+                    /* 编辑页的守卫: 没权限开编辑器时送到这里 */
+                    content.innerHTML = `
+                        <div align="center" class="center-of-all panel panel-bare No-slc" data-anim>
+                            <img src="assets/Icon/foraine-icon-v2.png" class="hero-icon" alt="Icon">
+                            <h1>拒绝访问</h1>
+                            <p>你没有进入这个页面的权限</p>
+                        </div>
+                    `;
+                    break
+                default:
+                    content.innerHTML = `
+                        <div align="center" class="center-of-all panel panel-bare No-slc" data-anim>
+                            <img src="assets/Icon/foraine-icon-v2.png" class="hero-icon" alt="Icon">
+                            <h1>拒绝访问</h1>
+                            <p>由于某些原因，你无法访问此页面</p>
+                        </div>
+                    `;
+                    break
+            }
+        </script>
+
+    </body>
+</html>

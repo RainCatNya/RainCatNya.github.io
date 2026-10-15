@@ -1,0 +1,105 @@
+{
+  "name": "foraine-main",
+  "compatibility_date": "2026-08-27",
+  "main": "./worker.js",
+  // esbuild 打包：dev/deploy 前自动跑 build.mjs，把 src/ 合成 worker.js。
+  // watch_dir 让 `wrangler dev` 在 src 改动时自动重打包。public/ 仍零构建直出。
+  "build": {
+    "command": "node build.mjs",
+    "watch_dir": "./src"
+  },
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "not_found_handling": "none",
+    // ⚠️ 默认是「静态资源优先」: 命中的文件直接返回, Worker 根本不会被调用。
+    //    我们要在 <head> 里注入 OG 标签、要按 IP 记访问, 所以必须让 Worker 先过一道。
+    //    用数组只拦页面路径, CSS/JS/图片仍然直出, 不额外增加开销。
+    "run_worker_first": [
+      "/",
+      "/index.html",
+      "/article",
+      "/article/",
+      "/articles",
+      "/articles/",
+      "/resource",
+      "/resource/",
+      "/login",
+      "/login.html",
+      "/profile",
+      "/profile.html",
+      "/stats",
+      "/stats.html",
+      "/aceris",
+      "/aceris/",
+      "/terminal",
+      "/terminal/",
+      "/terminal/verify",
+      "/terminal/verify/",
+      "/u/*",
+      "/sitemap.xml",
+      "/robots.txt"
+    ]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "foraine-db",
+      "database_id": "4b212cea-af1a-4663-aba3-54df8bd418c6"
+    }
+  ],
+
+  // 第三方登录
+  // client_id 是公开的, 放这里即可;
+  // client_secret 绝不能写进本文件, 用:
+  //   npx wrangler secret put GITHUB_CLIENT_SECRET
+  // 留空时 GitHub 入口会友好报错(不影响用户名/密码登录)
+  "vars": {
+    "GITHUB_CLIENT_ID": "Ov23liw6MmYBQRbs749O",
+    // IndexNow 密钥 (Bing / Edge 收录加速)。
+    // 密钥文件必须能公开访问: public/<key>.txt 内容就是这个 key。
+    // 改 key 要同时改这里和那个 txt 文件名。
+    "INDEXNOW_KEY": "4cc62e111a9d16dc33ef5fdafe8ccfd1",
+
+    // 发信 (Resend) 的发件人。
+    // ⚠️ 这里必须用**在 Resend 里验证过的那个域名** —— 现在验的是子域名
+    //    email.foraine.xyz (DKIM 在 resend._domainkey.email.foraine.xyz,
+    //    SPF/MX 在 send.email.foraine.xyz), 所以发件人得挂在它下面;
+    //    写成 no-reply@foraine.xyz (根域名) 会被 Resend 403 拒掉。
+    //    想用干净的 no-reply@foraine.xyz, 就去 Resend 里把根域名也加进去验一遍。
+    // ⚠️ 密钥绝对不能写进本文件, 用: npx wrangler secret put RESEND_API_KEY
+    // 两个还缺一个时 mailConfigured() 为 false → 邮箱验证入口会提示「邮件服务未配置」
+    "MAIL_FROM": "Foraine <no-reply@email.foraine.xyz>"
+  },
+
+  // 定时任务: 每天 04:00 (UTC) 跑一次「注销到期清理」(worker.js 末尾的 scheduled)。
+  // 注销申请只打标记 (users.is_deleted / deleted_at), 满 7 天才真删 —— 保留期就靠它结束。
+  "triggers": {
+    "crons": ["0 4 * * *"]
+  },
+
+  "routes": [
+    {
+      "pattern": "foraine.xyz",
+      "custom_domain": true
+    },
+    {
+      "pattern": "www.foraine.xyz",
+      "custom_domain": true
+    }
+  ],
+  // 观察性 / 日志
+  // enabled 是总开关 —— 之前它是 false 而 logs.enabled 是 true, 看着像开着其实没上报。
+  // 打开后线上报错能在 Cloudflare 控制台直接查到, 也能用 `npx wrangler tail` 实时看。
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "persist": true,
+      "invocation_logs": true
+    }
+  }
+}
+
